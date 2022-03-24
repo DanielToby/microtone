@@ -1,6 +1,6 @@
+#include <microtone/midi_input.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
-#include <microtone/midi_input.hpp>
 
 #include <rtmidi/RtMidi.h>
 

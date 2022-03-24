@@ -12,6 +12,8 @@ HEADERS += \
     include/microtone/exception.hpp \
     include/microtone/log.hpp \
     include/microtone/midi_input.hpp \
+    include/microtone/midi_note.hpp \
+    include/microtone/oscillator.hpp \
     include/microtone/synthesizer.hpp
 
 SOURCES += \

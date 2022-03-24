@@ -1,8 +1,12 @@
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
 #include <microtone/synthesizer.hpp>
+#include <microtone/oscillator.hpp>
+#include <microtone/midi_note.hpp>
 
 #include <rtmidi/RtMidi.h>
+
+#include <unordered_map>
 
 #include <audio>
 
@@ -10,7 +14,7 @@ namespace microtone {
 
 class Synthesizer::impl {
 public:
-    impl() {
+    impl() : _currentNotes{} {
         _outputDevice = std::experimental::get_default_audio_output_device();
         if (!_outputDevice) {
             throw MicrotoneException("The default audio output device could not be identified.");
@@ -39,41 +43,48 @@ public:
         _outputDevice->start();
     }
 
-    float noteToFrequencyHertz(int note) {
+    double noteToFrequencyHertz(int note) {
         constexpr auto pitch = 440.0f;
-        return pitch * std::pow(2.0f, float(note - 69) / 12.0f);
+        return pitch * std::pow(2.0f, float(note - 69) / 12.0);
     }
 
-    void update() noexcept {
-        auto frequency = noteToFrequencyHertz(_currentNote);
-        _delta = 2.0f * frequency * static_cast<float>(M_PI / _sampleRate);
+    double velocityToAmplitude(int velocity) {
+        // desired dynamic range: 60db
+        const auto r = std::pow(10, 60 / 20);
+        const auto b = 127 / (126 * sqrt(r)) - 1/126;
+        const auto m = (1 - b) / 127;
+        return std::pow(m * velocity + b, 2);
     }
 
     float nextSample() {
-        if (_currentNote != -1) {
-            update();
-        } else {
+        if (_currentNotes.empty()) {
             return 0;
         }
 
-        auto next_sample = std::copysign(0.1f, std::sin(_phase));
-        _phase = std::fmod(_phase + _delta, 2.0f * float(M_PI));
-        return next_sample;
+        auto nextSample = 0.0;
+        for (auto& [note, data] : _currentNotes) {
+            auto frequency = noteToFrequencyHertz(note);
+            data.second.delta = 2.0f * frequency * static_cast<float>(M_PI / _sampleRate);
+            nextSample += velocityToAmplitude(data.first.velocity) * std::copysign(0.1f, std::sin(data.second.phase));
+            data.second.phase = std::fmod(data.second.phase + data.second.delta, 2.0f * float(M_PI));
+        }
+        return nextSample;
     }
 
-    void setNote(int note) {
-        if (note == _currentNote) {
-            _currentNote = -1;
-        } else if (0 <= note && note <= 127) {
-            _currentNote = note;
+    void addNoteData(int note, int velocity, double timeStamp) {
+        if (_currentNotes.find(note) != _currentNotes.end()) {
+            _currentNotes[note].first.finishTimeStamp = timeStamp;
+
+            // TODO: calculate isActive with envelope.
+            _currentNotes.erase(note);
+        } else {
+            _currentNotes[note] = std::make_pair<MidiNote, Oscillator>(MidiNote{note, velocity, timeStamp}, Oscillator{});
         }
     }
 
     std::optional<std::experimental::audio_device> _outputDevice;
-    int _currentNote = -1;
-    float _sampleRate = 0;
-    float _delta = 0;
-    float _phase = 0;
+    std::unordered_map<int, std::pair<MidiNote, Oscillator>> _currentNotes;
+    double _sampleRate;
 };
 
 Synthesizer::Synthesizer() :
@@ -93,8 +104,8 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 
 Synthesizer::~Synthesizer() = default;
 
-void Synthesizer::setNote(int note) {
-    _impl->setNote(note);
+void Synthesizer::addNoteData(int note, int velocity, double timeStamp) {
+    _impl->addNoteData(note, velocity, timeStamp);
 }
 
 }

@@ -45,15 +45,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         midiInput.openPort(selectedPort);
 
-        auto synth = microtone::Synthesizer();
+        auto synth = microtone::Synthesizer{};
 
-        auto midiCallback = [&synth](double deltatime, const std::string& message) {
+        auto midiCallback = [&synth](double timeStamp, const std::string& message) {
             auto numBytes = message.size();
             for (unsigned int i = 0; i < numBytes; ++i) {
                 std::cout << fmt::format("Byte {} = '{}'.", i, static_cast<int>(message[i])) << std::endl;
             }
             if (numBytes > 0) {
-                std::cout << fmt::format("Timestamp = {}.", deltatime) << std::endl;
+                std::cout << fmt::format("Timestamp = {}.", timeStamp) << std::endl;
             }
 
             if (message.size() == 3) {
@@ -61,7 +61,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 auto midiNote = static_cast<int>(message[1]);
                 auto velocity = static_cast<int>(message[2]);
 
-                synth.setNote(midiNote);
+                synth.addNoteData(midiNote, velocity, timeStamp);
             }
         };
         midiInput.start(midiCallback);
@@ -69,8 +69,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         std::cout << "\nReading MIDI input... press <enter> to quit.\n";
         auto input = char{};
         std::cin.get(input);
-
-        midiInput.stop();
 
     } catch (microtone::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

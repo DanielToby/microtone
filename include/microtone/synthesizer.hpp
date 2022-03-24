@@ -13,7 +13,7 @@ public:
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    void setNote(int note);
+    void addNoteData(int note, int velocity, double timeStamp);
 
 private:
     class impl;
