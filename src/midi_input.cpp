@@ -53,8 +53,10 @@ public:
     }
 
     void stop() {
-        _isRunning.store(false);
-        _dataThread.join();
+        if (_isRunning.load() == true) {
+            _isRunning.store(false);
+            _dataThread.join();
+        }
     }
 
     std::unique_ptr<RtMidiIn> _rtMidiConnection;

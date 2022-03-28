@@ -16,10 +16,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         auto selectedPort = -1;
         auto numPorts = midiInput.portCount();
-        if (numPorts == 0) {
-            std::cout << "No ports are available. Exiting." << std::endl;
-            return 0;
-        } else if (numPorts == 1) {
+        while (numPorts == 0) {
+            std::cout << "No midi ports are available. Enter 'r' to retry or 'q' to quit." << std::endl;
+            auto input = std::string{};
+            std::getline(std::cin, input);
+            if (input == "r") {
+                numPorts = midiInput.portCount();
+            } else if (input == "q") {
+                return 0;
+            }
+        }
+        if (numPorts == 1) {
             selectedPort = 0;
         } else {
             while (selectedPort < 0 || selectedPort > numPorts - 1) {
@@ -48,20 +55,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto synth = microtone::Synthesizer{};
 
         auto midiCallback = [&synth](double timeStamp, const std::string& message) {
-            auto numBytes = message.size();
-            for (unsigned int i = 0; i < numBytes; ++i) {
-                std::cout << fmt::format("Byte {} = '{}'.", i, static_cast<int>(message[i])) << std::endl;
-            }
-            if (numBytes > 0) {
-                std::cout << fmt::format("Timestamp = {}.", timeStamp) << std::endl;
-            }
-
             if (message.size() == 3) {
-                auto unknown = static_cast<int>(message[0]);
+                auto keyStatus = static_cast<int>(message[0]);
                 auto midiNote = static_cast<int>(message[1]);
                 auto velocity = static_cast<int>(message[2]);
 
-                synth.addNoteData(midiNote, velocity, timeStamp);
+                synth.addNoteData(midiNote, velocity, keyStatus == -112);
             }
         };
         midiInput.start(midiCallback);

@@ -9,18 +9,21 @@ DEFINES += \
     __MACOSX_CORE__
 
 HEADERS += \
+    include/microtone/envelope.hpp \
     include/microtone/exception.hpp \
     include/microtone/log.hpp \
     include/microtone/midi_input.hpp \
-    include/microtone/midi_note.hpp \
     include/microtone/oscillator.hpp \
-    include/microtone/synthesizer.hpp
+    include/microtone/synthesizer.hpp \
+    include/microtone/synthesizer_voice.hpp
 
 SOURCES += \
     main.cpp \
+    src/envelope.cpp \
     src/exception.cpp \
     src/log.cpp \
     src/midi_input.cpp \
+    src/oscillator.cpp \
     src/synthesizer.cpp
 
 INCLUDEPATH += \
