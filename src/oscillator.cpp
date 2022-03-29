@@ -8,30 +8,22 @@
 
 namespace microtone {
 
-const int WAVETABLE_LENGTH = 512;
-
 class Oscillator::impl {
 public:
-    impl(WaveType waveType, double frequency, double sampleRate) :
-        _waveType{waveType},
+    impl(double frequency, double sampleRate, WaveTableFn fillFn) :
         _frequency{frequency},
         _sampleRate{sampleRate},
-        _currentIndex{0} {
-        fillTable();
+        _currentIndex{0},
+        _table{WAVETABLE_LENGTH} {
+
+        fillFn(_table);
     }
 
     impl(const impl& other) :
-        _waveType{other._waveType},
         _frequency{other._frequency},
         _sampleRate{other._sampleRate},
         _currentIndex{0},
         _table{other._table} {
-    }
-
-    void fillTable() {
-        for (auto i = 0; i < WAVETABLE_LENGTH; ++i) {
-            _table[i] = std::sin(2.0 * M_PI * i / WAVETABLE_LENGTH);
-        }
     }
 
     float nextSample() {
@@ -49,15 +41,14 @@ public:
         return fractionBelow * _table[indexBelow] + fractionAbove * _table[indexAbove];
     }
 
-    WaveType _waveType;
     double _frequency;
     double _sampleRate;
     double _currentIndex;
     std::array<float, WAVETABLE_LENGTH> _table;
 };
 
-Oscillator::Oscillator(WaveType waveType, double frequency, double sampleRate) :
-    _impl{new impl{waveType, frequency, sampleRate}} {
+Oscillator::Oscillator(double frequency, double sampleRate, WaveTableFn fillFn) :
+    _impl{new impl{frequency, sampleRate, fillFn}} {
 }
 
 Oscillator::Oscillator(const Oscillator& other) :

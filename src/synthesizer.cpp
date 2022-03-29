@@ -48,7 +48,12 @@ public:
 
         // Create voices ahead of time
         for (auto i = 0; i < 127; ++i) {
-            auto oscillator = Oscillator{WaveType::Sine, noteToFrequencyHertz(i), _sampleRate};
+            // Sine wave oscillator
+            auto oscillator = Oscillator{noteToFrequencyHertz(i), _sampleRate, [](WaveTable& table) {
+                for (auto i = 0; i < static_cast<int>(table.size()); ++i) {
+                    table[i] = std::sin(2.0 * M_PI * i / static_cast<int>(table.size()));
+                }
+            }};
             _voices.emplace_back(noteToFrequencyHertz(i), envelope, oscillator);
         }
 

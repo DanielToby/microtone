@@ -2,18 +2,19 @@
 
 #include <microtone/synthesizer_voice.hpp>
 
+#include <functional>
 #include <memory>
 
 namespace microtone {
 
-enum class WaveType {
-    Sine = 0,
-    Square
-};
+const int WAVETABLE_LENGTH = 512;
+
+using WaveTable = std::array<float, WAVETABLE_LENGTH>;
+using WaveTableFn = std::function<void(WaveTable& table)>;
 
 class Oscillator {
 public:
-    explicit Oscillator(WaveType waveType, double frequency, double sampleRate);
+    explicit Oscillator(double frequency, double sampleRate, WaveTableFn fillFn);
     Oscillator(const Oscillator&);
     Oscillator& operator=(const Oscillator&) = delete;
     Oscillator(Oscillator&&) noexcept;

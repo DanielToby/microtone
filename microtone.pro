@@ -11,6 +11,7 @@ DEFINES += \
 HEADERS += \
     include/microtone/envelope.hpp \
     include/microtone/exception.hpp \
+    include/microtone/filter.hpp \
     include/microtone/log.hpp \
     include/microtone/midi_input.hpp \
     include/microtone/oscillator.hpp \
@@ -21,6 +22,7 @@ SOURCES += \
     main.cpp \
     src/envelope.cpp \
     src/exception.cpp \
+    src/filter.cpp \
     src/log.cpp \
     src/midi_input.cpp \
     src/oscillator.cpp \
