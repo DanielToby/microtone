@@ -12,10 +12,10 @@ public:
         _sustain{sustain},
         _release{release},
         _sampleRate{sampleRate},
-        _currentValue{0.001},
+        _currentValue{0},
         _increment{0},
         _counter{0},
-        _state{EnvelopeState::Attack} {}
+        _state{EnvelopeState::Off} {}
 
     impl(const impl& other) :
         _attack{other._attack},

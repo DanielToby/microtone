@@ -3,52 +3,61 @@
 #include <microtone/synthesizer_voice.hpp>
 #include <microtone/oscillator.hpp>
 
+#include <cmath>
+#include <array>
+
 namespace microtone {
+
+const int WAVETABLE_LENGTH = 512;
 
 class Oscillator::impl {
 public:
-    impl(WaveType waveType, double sampleRate, double lfoFrequency, double lfoAmplitude) :
+    impl(WaveType waveType, double frequency, double sampleRate) :
         _waveType{waveType},
+        _frequency{frequency},
         _sampleRate{sampleRate},
-        _phase{0},
-        _lfoPhase{0},
-        _lfoFrequency{lfoFrequency},
-        _lfoAmplitude{lfoAmplitude} {}
+        _currentIndex{0} {
+        fillTable();
+    }
 
     impl(const impl& other) :
         _waveType{other._waveType},
+        _frequency{other._frequency},
         _sampleRate{other._sampleRate},
-        _phase{other._phase},
-        _lfoPhase{other._lfoPhase},
-        _lfoFrequency{other._lfoFrequency},
-        _lfoAmplitude{other._lfoAmplitude} {}
+        _currentIndex{0},
+        _table{other._table} {
+    }
 
-    float nextSample(double frequency) {
-        auto delta = 2.0f * frequency * static_cast<float>(M_PI / _sampleRate);
-        _phase = std::fmod(_phase + delta, 2.0f * float(M_PI));
-
-        auto lfoDelta = 2.0f * _lfoFrequency * static_cast<float>(M_PI / _sampleRate);
-        _lfoPhase = std::fmod(_lfoPhase + lfoDelta, 2.0f * float(M_PI));
-        auto lfo = _lfoAmplitude * std::sin(_lfoPhase);
-
-        switch (_waveType) {
-        case WaveType::Sine:
-            return std::sin(_phase + lfo);
-        case WaveType::Square:
-            return std::copysign(0.1f, std::sin(_phase + lfo));
+    void fillTable() {
+        for (auto i = 0; i < WAVETABLE_LENGTH; ++i) {
+            _table[i] = std::sin(2.0 * M_PI * i / WAVETABLE_LENGTH);
         }
     }
 
+    float nextSample() {
+        // Linear interpolation improves signal approximation accuracy at discrete index.
+        auto indexBelow = static_cast<int>(floor(_currentIndex));
+        auto indexAbove = indexBelow + 1;
+        if (indexAbove >= WAVETABLE_LENGTH) {
+            indexAbove = 0;
+        }
+        auto fractionAbove = _currentIndex - indexBelow;
+        auto fractionBelow = 1.0 - fractionAbove;
+
+        _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
+
+        return fractionBelow * _table[indexBelow] + fractionAbove * _table[indexAbove];
+    }
+
     WaveType _waveType;
+    double _frequency;
     double _sampleRate;
-    double _phase;
-    double _lfoPhase;
-    double _lfoFrequency;
-    double _lfoAmplitude;
+    double _currentIndex;
+    std::array<float, WAVETABLE_LENGTH> _table;
 };
 
-Oscillator::Oscillator(WaveType waveType, double sampleRate, double lfoFrequency, double lfoAmplitude) :
-    _impl{new impl{waveType, sampleRate, lfoFrequency, lfoAmplitude}} {
+Oscillator::Oscillator(WaveType waveType, double frequency, double sampleRate) :
+    _impl{new impl{waveType, frequency, sampleRate}} {
 }
 
 Oscillator::Oscillator(const Oscillator& other) :
@@ -68,8 +77,8 @@ Oscillator& Oscillator::operator=(Oscillator&& other) noexcept {
 
 Oscillator::~Oscillator() = default;
 
-float Oscillator::nextSample(double frequency) {
-    return _impl->nextSample(frequency);
+float Oscillator::nextSample() {
+    return _impl->nextSample();
 }
 
 }

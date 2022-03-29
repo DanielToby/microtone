@@ -24,7 +24,8 @@ SOURCES += \
     src/log.cpp \
     src/midi_input.cpp \
     src/oscillator.cpp \
-    src/synthesizer.cpp
+    src/synthesizer.cpp \
+    src/synthesizer_voice.cpp
 
 INCLUDEPATH += \
     $$PWD/include \

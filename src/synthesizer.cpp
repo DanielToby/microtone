@@ -7,9 +7,9 @@
 
 #include <rtmidi/RtMidi.h>
 
-#include <chrono>
 #include <mutex>
 #include <unordered_set>
+#include <vector>
 
 #include <audio>
 
@@ -18,7 +18,7 @@ namespace microtone {
 class Synthesizer::impl {
 public:
     impl() :
-        _currentNotes{} {
+        _voices{} {
         _outputDevice = std::experimental::get_default_audio_output_device();
         if (!_outputDevice) {
             throw MicrotoneException("The default audio output device could not be identified.");
@@ -44,49 +44,48 @@ public:
             }
         });
 
-        _envelope = Envelope{0.01, 0.1, .8, 0.01, _sampleRate};
-        _oscillator = Oscillator{WaveType::Sine, _sampleRate, 5, 1.0};
+        auto envelope = Envelope{0.01, 0.1, .8, 0.01, _sampleRate};
+
+        // Create voices ahead of time
+        for (auto i = 0; i < 127; ++i) {
+            auto oscillator = Oscillator{WaveType::Sine, noteToFrequencyHertz(i), _sampleRate};
+            _voices.emplace_back(noteToFrequencyHertz(i), envelope, oscillator);
+        }
+
         _outputDevice->start();
     }
 
     double noteToFrequencyHertz(int note) {
         constexpr auto pitch = 440.0f;
-        return pitch * std::pow(2.0f, float(note - 69) / 12.0);
+        return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
     }
 
     void addNoteData(int note, int velocity, bool isPressed) {
         auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-
-        if (_currentNotes.find(note) != _currentNotes.end()) {
-            if (isPressed) {
-                _currentNotes[note].velocity = velocity;
-                _currentNotes[note].envelope.triggerOn();
-            } else {
-                _currentNotes[note].envelope.triggerOff();
-            }
+        if (isPressed) {
+            _voices[note].setVelocity(velocity);
+            _voices[note].triggerOn();
+            _activeVoices.insert(note);
         } else {
-            if (isPressed) {
-                auto synthNote = SynthesizerVoice{noteToFrequencyHertz(note), velocity, _envelope, _oscillator};
-                synthNote.envelope.triggerOn();
-                _currentNotes[note] = std::move(synthNote);
+            _voices[note].triggerOff();
+        }
+        for (const auto& id : _activeVoices) {
+            if (!_voices[id].isActive()) {
+                _activeVoices.erase(id);
             }
         }
     }
 
     float nextSample() {
-        if (_currentNotes.empty()) {
+        if (_voices.empty()) {
             return 0;
         }
         auto nextSample = 0.0;
         // Never block the audio thread.
         // And never, ever stop playing in the middle of a hoedown
         if (_mutex.try_lock()) {
-            for (auto& [id, synthNote] : _currentNotes) {
-                if (synthNote.envelope.state() == EnvelopeState::Off) {
-                    _currentNotes.erase(id);
-                } else {
-                    nextSample += synthNote.nextSample();
-                }
+            for (auto& id : _activeVoices) {
+                nextSample += _voices[id].nextSample();
             }
             _mutex.unlock();
         }
@@ -96,9 +95,8 @@ public:
 
     std::optional<std::experimental::audio_device> _outputDevice;
     std::mutex _mutex;
-    std::unordered_map<int, SynthesizerVoice> _currentNotes;
-    Envelope _envelope;
-    Oscillator _oscillator;
+    std::unordered_set<int> _activeVoices;
+    std::vector<SynthesizerVoice> _voices;
     double _sampleRate;
 };
 

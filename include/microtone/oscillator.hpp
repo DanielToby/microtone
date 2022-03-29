@@ -13,17 +13,14 @@ enum class WaveType {
 
 class Oscillator {
 public:
-    explicit Oscillator(WaveType waveType = WaveType::Sine,
-                        double sampleRate = -1,
-                        double lfoFrequency = 2,
-                        double lfoAmplitude = 1.0);
+    explicit Oscillator(WaveType waveType, double frequency, double sampleRate);
     Oscillator(const Oscillator&);
     Oscillator& operator=(const Oscillator&) = delete;
     Oscillator(Oscillator&&) noexcept;
     Oscillator& operator=(Oscillator&&) noexcept;
     ~Oscillator();
 
-    float nextSample(double frequency);
+    float nextSample();
 
 private:
     class impl;
