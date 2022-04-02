@@ -1,0 +1,1 @@
+/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++  -Werror -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.1.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names -framework CoreAudio CMakeFiles/sine_wave.dir/examples/sine_wave.cpp.o -o sine_wave 
