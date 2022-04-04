@@ -13,27 +13,28 @@
 
 namespace microtone::internal {
 
+using namespace ftxui;
+
 class Display::impl {
 public:
     impl() :
+        _screen{ScreenInteractive::Fullscreen()},
         _data{} {
     }
 
-    void addNoteData(int status, int note, int velocity) {
-    }
-
-    void addWaveData(float data) {
+    void addOutputData(const std::vector<float> &data) {
+        _data.insert(_data.begin(), data.begin(), data.end());
+        _screen.PostEvent(ftxui::Event::Custom);
     }
 
     void loop() {
-        using namespace ftxui;
-        auto screen = ScreenInteractive::Fullscreen();
 
-        auto oscilloscope = [&](int width, int height) {
+        auto oscilloscope = [this](int width, int height) {
             std::vector<int> output(width);
             for (auto i = 0; i < width; ++i) {
                 if (i < static_cast<int>(_data.size())) {
-                    output[width - i - 1] = _data[_data.size() - i - 1];
+                    output[width - i - 1] = static_cast<int>(fabs(_data[_data.size() - i - 1]) * height);
+                    std::cout << output[width - i - 1];
                 }
             }
             return output;
@@ -56,10 +57,8 @@ public:
         });
 
         auto tab_index = 0;
-        auto tab_entries = std::vector<std::string>{
-            "Synthesizer"};
-        auto tab_selection =
-            Menu(&tab_entries, &tab_index, MenuOption::HorizontalAnimated());
+        auto tab_entries = std::vector<std::string>{"Synthesizer"};
+        auto tab_selection = Menu(&tab_entries, &tab_index, MenuOption::HorizontalAnimated());
         auto tab_content = Container::Tab(
             {synthesizer},
             &tab_index);
@@ -69,7 +68,7 @@ public:
             tab_content,
         });
 
-        auto main_renderer = Renderer(main_container, [&tab_selection, tab_content] {
+        auto main_renderer = Renderer(main_container, [&tab_selection, &tab_content] {
             return vbox({
                 text("microtone") | bold | hcenter,
                 tab_selection->Render(),
@@ -77,19 +76,10 @@ public:
             });
         });
 
-        //        bool refresh_ui_continue = true;
-        //        std::thread refresh_ui([&] {
-        //            while (refresh_ui_continue) {
-        //                using namespace std::chrono_literals;
-        //                std::this_thread::sleep_for(0.05s);
-        //                shift++;
-        //                screen.PostEvent(Event::Custom);
-        //            }
-        //        });
-
-        screen.Loop(main_renderer);
+        _screen.Loop(main_renderer);
     }
 
+    ftxui::ScreenInteractive _screen;
     std::vector<float> _data;
 };
 
@@ -108,12 +98,8 @@ Display& Display::operator=(Display&& other) noexcept {
     return *this;
 }
 
-void Display::addNoteData(int status, int note, int velocity) {
-    _impl->addNoteData(status, note, velocity);
-}
-
-void Display::addWaveData(float data) {
-    _impl->addWaveData(data);
+void Display::addOutputData(const std::vector<float> &data) {
+    _impl->addOutputData(data);
 }
 
 void Display::loop() {

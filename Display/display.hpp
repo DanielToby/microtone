@@ -14,8 +14,7 @@ public:
     Display& operator=(Display&&) noexcept;
     ~Display();
 
-    void addNoteData(int status, int note, int velocity);
-    void addWaveData(float data);
+    void addOutputData(const std::vector<float>& data);
     void loop();
 
 private:

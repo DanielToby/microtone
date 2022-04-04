@@ -7,7 +7,7 @@ class Filter::impl {
 public:
     impl() :
         _lastSample{0},
-        _alpha{0.99} {}
+        _alpha{0.5} {}
 
     impl(const impl& other) :
         _lastSample{other._lastSample},

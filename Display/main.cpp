@@ -42,22 +42,23 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
     try {
 
-//        // Display
-//        auto display = microtone::internal::Display();
-//        display.loop();
+        // Display
+        auto display = microtone::internal::Display();
 
         // Listen to midi input
         auto midiInput = microtone::MidiInput();
         selectPort(midiInput);
 
-        // Start synthesizer
-        auto synth = microtone::Synthesizer{};
-        auto midiCallback = [&synth](int status, int note, int velocity) {
-            synth.addNoteData(status, note, velocity);
-        };
-        midiInput.start(midiCallback);
+        // Create synthesizer
+        auto synth = microtone::Synthesizer{[&display](const std::vector<float>& outputData) {
+            display.addOutputData(outputData);
+        }};
 
-        std::cin.get();
+        midiInput.start([&synth](int status, int note, int velocity) {
+            synth.addNoteData(status, note, velocity);
+        });
+
+        display.loop();
 
     } catch (microtone::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

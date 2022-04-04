@@ -24,7 +24,8 @@ namespace microtone {
 
 class Synthesizer::impl {
 public:
-    impl() :
+    impl(OnOutputFn fn) :
+        _onOutputFn{fn},
         _activeVoices{},
         _sustainedVoices{},
         _voices{},
@@ -45,14 +46,18 @@ public:
                 return;
 
             auto& out = *io.output_buffer;
+            auto forwardedOutput = std::vector<float>(out.size_frames());
 
             for (std::size_t frame = 0; frame < out.size_frames(); ++frame) {
                 auto sample = nextSample();
+                forwardedOutput[frame] = sample;
 
                 for (std::size_t channel = 0; channel < out.size_channels(); ++channel) {
                     out(frame, channel) = sample;
                 }
             }
+
+            _onOutputFn(forwardedOutput);
         });
 
         auto envelope = Envelope{0.01, 0.1, .8, 0.01, _sampleRate};
@@ -129,6 +134,7 @@ public:
         return nextSample;
     }
 
+    OnOutputFn _onOutputFn;
     std::optional<std::experimental::audio_device> _outputDevice;
     std::mutex _mutex;
     std::unordered_set<int> _activeVoices;
@@ -138,8 +144,8 @@ public:
     double _sampleRate;
 };
 
-Synthesizer::Synthesizer() :
-    _impl{new impl{}} {
+Synthesizer::Synthesizer(OnOutputFn fn) :
+    _impl{new impl{fn}} {
 }
 
 Synthesizer::Synthesizer(Synthesizer&& other) noexcept :

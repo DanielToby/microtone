@@ -38,7 +38,7 @@ public:
     }
 
     float nextSample() {
-        return _envelope.nextSample() * _velocity * _oscillator.nextSample(); // _filter.nextSample(_envelope.nextSample() * _velocity * _oscillator.nextSample());
+        return _filter.nextSample(_envelope.nextSample() * _velocity * _oscillator.nextSample());
     }
 
     double _frequency;
