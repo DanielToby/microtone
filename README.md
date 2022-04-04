@@ -1,5 +1,5 @@
 # microtone
-A tiny (445 KB!) macOS midi synthesizer written in pure C++17.
+A tiny (445 KB!) polyphonic synthesizer for macOS that reads MIDI input.
 
 The goal of this project is to create a tiny polyphonic synthesizer capable of reading midi input, accessible from the command line.
 
