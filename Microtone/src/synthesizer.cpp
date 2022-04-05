@@ -82,7 +82,7 @@ public:
         return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
     }
 
-    void addNoteData(int status, int note, int velocity) {
+    void addMidiData(int status, int note, int velocity) {
 //        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         _mutex.lock();
         if (status == 0b10010000) {
@@ -161,8 +161,8 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 
 Synthesizer::~Synthesizer() = default;
 
-void Synthesizer::addNoteData(int status, int note, int velocity) {
-    _impl->addNoteData(status, note, velocity);
+void Synthesizer::addMidiData(int status, int note, int velocity) {
+    _impl->addMidiData(status, note, velocity);
 }
 
 }

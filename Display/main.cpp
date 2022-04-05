@@ -54,8 +54,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             display.addOutputData(outputData);
         }};
 
-        midiInput.start([&synth](int status, int note, int velocity) {
-            synth.addNoteData(status, note, velocity);
+        midiInput.start([&synth, &display](int status, int note, int velocity) {
+            synth.addMidiData(status, note, velocity);
+            display.addMidiData(status, note, velocity);
         });
 
         display.loop();

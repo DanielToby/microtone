@@ -19,7 +19,7 @@ public:
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    void addNoteData(int status, int note, int velocity);
+    void addMidiData(int status, int note, int velocity);
 
 private:
     class impl;

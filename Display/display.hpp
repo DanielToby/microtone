@@ -15,6 +15,7 @@ public:
     ~Display();
 
     void addOutputData(const std::vector<float>& data);
+    void addMidiData(int status, int note, int velocity);
     void loop();
 
 private:
