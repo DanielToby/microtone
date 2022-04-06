@@ -1,10 +1,13 @@
 #pragma once
 
 #include <microtone/microtone_platform.hpp>
+#include <microtone/envelope.hpp>
+#include <microtone/filter.hpp>
 
 #include <atomic>
 #include <functional>
 #include <memory>
+
 
 using OnOutputFn = std::function<void(const std::vector<float>&)>;
 
@@ -18,6 +21,9 @@ public:
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
+
+    void setEnvelope(const Envelope& envelope);
+    void setFilter(const Filter& filter);
 
     void addMidiData(int status, int note, int velocity);
 

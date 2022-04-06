@@ -18,6 +18,14 @@ public:
         _filter{filter} {
     }
 
+    void setEnvelope(const Envelope& envelope) {
+        _envelope = envelope;
+    }
+
+    void setFilter(const Filter& filter) {
+        _filter = filter;
+    }
+
     bool isActive() {
         return _envelope.state() != EnvelopeState::Off;
     }
@@ -61,6 +69,14 @@ SynthesizerVoice& SynthesizerVoice::operator=(SynthesizerVoice&& other) noexcept
         _impl = std::move(other._impl);
     }
     return *this;
+}
+
+void SynthesizerVoice::setEnvelope(const Envelope &envelope) {
+    _impl->setEnvelope(envelope);
+}
+
+void SynthesizerVoice::setFilter(const Filter &filter) {
+    _impl->setFilter(filter);
 }
 
 SynthesizerVoice::~SynthesizerVoice() = default;

@@ -17,6 +17,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wreorder-ctor"
 #pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Welaborated-enum-base"
 #include <audio>
 #pragma GCC diagnostic pop
 
@@ -77,14 +78,42 @@ public:
         _outputDevice->start();
     }
 
+    float nextSample() {
+        if (_voices.empty()) {
+            return 0;
+        }
+        auto nextSample = 0.0;
+        // Never block the audio thread.
+        // And never, ever stop playing in the middle of a hoedown
+        if (_mutex.try_lock()) {
+            for (auto& id : _activeVoices) {
+                nextSample += _voices[id].nextSample();
+            }
+            _mutex.unlock();
+        }
+        return nextSample;
+    }
+
+    void setEnvelope(const Envelope &envelope) {
+        for (auto& voice : _voices) {
+            voice.setEnvelope(envelope);
+        }
+    }
+
+    void setFilter(const Filter &filter) {
+        for (auto& voice : _voices) {
+            voice.setFilter(filter);
+        }
+    }
+
     double noteToFrequencyHertz(int note) {
         constexpr auto pitch = 440.0f;
         return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
     }
 
+
     void addMidiData(int status, int note, int velocity) {
-//        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-        _mutex.lock();
+        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         if (status == 0b10010000) {
             // Note on
             _voices[note].setVelocity(velocity);
@@ -115,24 +144,8 @@ public:
                 _activeVoices.erase(id);
             }
         }
-        _mutex.unlock();
     }
 
-    float nextSample() {
-        if (_voices.empty()) {
-            return 0;
-        }
-        auto nextSample = 0.0;
-        // Never block the audio thread.
-        // And never, ever stop playing in the middle of a hoedown
-        if (_mutex.try_lock()) {
-            for (auto& id : _activeVoices) {
-                nextSample += _voices[id].nextSample();
-            }
-            _mutex.unlock();
-        }
-        return nextSample;
-    }
 
     OnOutputFn _onOutputFn;
     std::optional<std::experimental::audio_device> _outputDevice;
@@ -160,6 +173,14 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 }
 
 Synthesizer::~Synthesizer() = default;
+
+void Synthesizer::setEnvelope(const Envelope &envelope) {
+    _impl->setEnvelope(envelope);
+}
+
+void Synthesizer::setFilter(const Filter &filter) {
+    _impl->setFilter(filter);
+}
 
 void Synthesizer::addMidiData(int status, int note, int velocity) {
     _impl->addMidiData(status, note, velocity);

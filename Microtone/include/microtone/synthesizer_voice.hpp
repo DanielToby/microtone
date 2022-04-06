@@ -19,6 +19,8 @@ public:
     SynthesizerVoice& operator=(SynthesizerVoice&&) noexcept;
     ~SynthesizerVoice();
 
+    void setEnvelope(const Envelope& envelope);
+    void setFilter(const Filter& filter);
     bool isActive();
     void setVelocity(int velocity);
     void triggerOn();

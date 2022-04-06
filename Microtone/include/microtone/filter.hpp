@@ -10,8 +10,8 @@ class Filter {
 public:
     explicit Filter();
     Filter(const Filter&);
-    Filter& operator=(const Filter&) = delete;
     Filter(Filter&&) noexcept;
+    Filter& operator=(const Filter&) noexcept;
     Filter& operator=(Filter&&) noexcept;
     ~Filter();
 

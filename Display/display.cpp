@@ -28,7 +28,7 @@ public:
         _sustainPedalOn{false} {}
 
     void addOutputData(const std::vector<float> &data) {
-        _data.insert(_data.begin(), data.begin(), data.end());
+        _data = data;
         _screen.PostEvent(Event::Custom);
     }
 
@@ -56,37 +56,42 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-    void loop() {
 
+    void loop() {
         auto oscilloscope = [this](int width, int height) {
             std::vector<int> output(width);
             for (auto i = 0; i < width; ++i) {
                 if (i < static_cast<int>(_data.size())) {
-                    output[width - i - 1] = static_cast<int>(fabs(_data[_data.size() - i - 1]) * height);
-                } else {
-                    output[width - i - 1] = 4;
+                    output[i] = abs(_data[i]) * height;
                 }
             }
             return output;
         };
 
-        auto keyboard = [this](int width, int height) {
-            std::vector<int> output(width);
+        auto keyboard = [](int width, int height) {
+            std::vector<int> output(width, 0);
             auto blackKeys = std::unordered_set<int>{1, 3, 6, 8, 10};
             for (auto i = 0; i < width; ++i) {
-                // Draw white keys
-                if (blackKeys.find((i) % 11) == blackKeys.end()) {
+                if (blackKeys.find((i) % 12) == blackKeys.end()) {
+                    // White key
                     output[i] = height - 1;
-                }
-                if (_activeMidiNotes.find(i) != _activeMidiNotes.end() ||
-                        _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
-                    output[i]++;
                 }
             }
             return output;
         };
 
-        auto synthesizer = Renderer([&oscilloscope, &keyboard] {
+        auto activeNotes = [this](int width, [[maybe_unused]] int height) {
+            std::vector<int> output(width, -1);
+            for (auto i = 0; i < width; ++i) {
+                if (_activeMidiNotes.find(i) != _activeMidiNotes.end() ||
+                        _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
+                    output[i] = 1;
+                }
+            }
+            return output;
+        };
+
+        auto synthesizer = Renderer([&oscilloscope, &keyboard, &activeNotes] {
             return vbox({
                 vbox({
                     vbox({
@@ -103,7 +108,13 @@ public:
                         }) | flex,
                     }) | borderRounded,
                     vbox({
-                        text("Midi Input") | hcenter,
+                        hbox({
+                            filler(),
+                            graph(std::ref(activeNotes))
+                                        | size(WIDTH, EQUAL, 66)
+                                        | size(HEIGHT, EQUAL, 2) | color(Color::GreenLight),
+                            filler()
+                        }),
                         hbox({
                             filler(),
                             graph(std::ref(keyboard))

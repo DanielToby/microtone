@@ -35,6 +35,12 @@ Filter::Filter(Filter&& other) noexcept :
     _impl{std::move(other._impl)} {
 }
 
+
+Filter& Filter::operator=(const Filter& other) noexcept {
+    _impl = std::make_unique<impl>(*other._impl);
+    return *this;
+}
+
 Filter& Filter::operator=(Filter&& other) noexcept {
     if (this != &other) {
         _impl = std::move(other._impl);

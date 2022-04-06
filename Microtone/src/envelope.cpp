@@ -98,6 +98,11 @@ Envelope::Envelope(Envelope&& other) noexcept :
     _impl{std::move(other._impl)} {
 }
 
+Envelope& Envelope::operator=(const Envelope& other) noexcept {
+    _impl = std::make_unique<impl>(*other._impl);
+    return *this;
+}
+
 Envelope& Envelope::operator=(Envelope&& other) noexcept {
     if (this != &other) {
         _impl = std::move(other._impl);
