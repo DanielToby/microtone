@@ -37,20 +37,24 @@ SOURCES += \
 INCLUDEPATH += \
     $$PWD/include \
     $$PWD/../vendor/fmt-8.0.1/include \
-    $$PWD/vendor/libstdaudio-0.0.2/include \
+    $$PWD/vendor/portaudio-19.7.0/include \
     $$PWD/vendor/rtmidi-5.0.0/include \
     $$PWD/vendor/spdlog-1.9.0/include
 
 DEPENDPATH += \
     $$PWD/include \
     $$PWD/../vendor/fmt-8.0.1/include \
-    $$PWD/vendor/libstdaudio-0.0.2/include \
+    $$PWD/vendor/portaudio-19.7.0/include \
     $$PWD/vendor/spdlog-1.9.0/include \
     $$PWD/vendor/rtmidi-5.0.0/include
 
 LIBS += \
     -L$$PWD/vendor/rtmidi-5.0.0/lib -lrtmidi \
-    -framework CoreMIDI \
+    -L$$PWD/vendor/portaudio-19.7.0/lib -lportaudio \
+    -framework AudioToolbox \
+    -framework Carbon \
     -framework CoreAudio \
-    -framework CoreFoundation
+    -framework CoreFoundation \
+    -framework CoreServices \
+    -framework CoreMIDI
 

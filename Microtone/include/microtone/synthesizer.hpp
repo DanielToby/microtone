@@ -4,14 +4,14 @@
 #include <microtone/envelope.hpp>
 #include <microtone/filter.hpp>
 
-#include <atomic>
+#include <array>
 #include <functional>
 #include <memory>
 
-
-using OnOutputFn = std::function<void(const std::vector<float>&)>;
-
 namespace microtone {
+
+const int FRAMES_PER_BUFFER = 512;
+using OnOutputFn = std::function<void(const std::array<float, FRAMES_PER_BUFFER>&)>;
 
 class Synthesizer {
 public:
@@ -24,8 +24,8 @@ public:
 
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
-
     void addMidiData(int status, int note, int velocity);
+    double sampleRate();
 
 private:
     class impl;

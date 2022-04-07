@@ -44,14 +44,13 @@ public:
             _isRunning.store(true);
             while (_isRunning.load() == true) {
                 auto message = std::vector<unsigned char>{};
-                auto timestamp = _rtMidiConnection->getMessage(&message);
+                _rtMidiConnection->getMessage(&message);
                 if (message.size() == 3) {
                     auto status = static_cast<int>(message[0]);
                     auto note = static_cast<int>(message[1]);
                     auto velocity = static_cast<int>(message[2]);
 
                     onReceivedDataFn(status, note, velocity);
-                    // M_TRACE("Received midi data. (t = {})", timestamp);
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));

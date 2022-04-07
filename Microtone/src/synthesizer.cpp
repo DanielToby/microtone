@@ -6,20 +6,13 @@
 #include <microtone/synthesizer_voice.hpp>
 #include <microtone/oscillator.hpp>
 
+#include <portaudio/portaudio.h>
 #include <rtmidi/RtMidi.h>
 
 #include <mutex>
 #include <unordered_set>
 #include <vector>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Welaborated-enum-base"
-#include <audio>
-#pragma GCC diagnostic pop
 
 namespace microtone {
 
@@ -32,50 +25,104 @@ public:
         _voices{},
         _sustainPedalOn{false},
         _sampleRate{0} {
-        _outputDevice = std::experimental::get_default_audio_output_device();
-        if (!_outputDevice) {
-            throw MicrotoneException("The default audio output device could not be identified.");
+        auto portAudioInitResult = Pa_Initialize();
+        if (portAudioInitResult != paNoError) {
+            throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
+                                                 portAudioInitResult,
+                                                 Pa_GetErrorText(portAudioInitResult)));
         }
 
-        _sampleRate = _outputDevice->get_sample_rate();
-        if (_sampleRate == 0) {
-            throw MicrotoneException("The device sample rate could not be identified.");
+        auto deviceId = Pa_GetDefaultOutputDevice();
+        auto outputParameters = PaStreamParameters{};
+        outputParameters.device = deviceId;
+        if (outputParameters.device == paNoDevice) {
+            throw MicrotoneException(fmt::format("Unable to open output device {}.", deviceId));
         }
 
-        _outputDevice->connect([this](std::experimental::audio_device&, std::experimental::audio_device_io<float>& io) mutable noexcept {
-            if (!io.output_buffer.has_value())
-                return;
+        const auto deviceInfo = Pa_GetDeviceInfo(deviceId);
+        if (deviceInfo) {
+            M_INFO("Opened output device '{}'.", deviceInfo->name);
+        } else {
+            throw MicrotoneException(fmt::format("Unable to collect info on output device {}.", deviceId));
+        }
 
-            auto& out = *io.output_buffer;
-            auto forwardedOutput = std::vector<float>(out.size_frames());
+        _sampleRate = deviceInfo->defaultSampleRate;
 
-            for (std::size_t frame = 0; frame < out.size_frames(); ++frame) {
-                auto sample = nextSample();
-                forwardedOutput[frame] = sample;
-
-                for (std::size_t channel = 0; channel < out.size_channels(); ++channel) {
-                    out(frame, channel) = sample;
-                }
-            }
-
-            _onOutputFn(forwardedOutput);
-        });
+        outputParameters.channelCount = 2;
+        outputParameters.sampleFormat = paFloat32;
+        outputParameters.suggestedLatency = deviceInfo->defaultLowOutputLatency;
+        outputParameters.hostApiSpecificStreamInfo = nullptr;
 
         auto envelope = Envelope{0.01, 0.1, .8, 0.01, _sampleRate};
         auto lowPassFilter = Filter{};
+
+        PaError openStreamResult = Pa_OpenStream(
+            &_portAudioStream,
+            nullptr,
+            &outputParameters,
+            _sampleRate,
+            FRAMES_PER_BUFFER,
+            paClipOff,
+            &impl::paCallback,
+            this);
+
+        if (openStreamResult != paNoError) {
+            throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
+                                                 openStreamResult,
+                                                 Pa_GetErrorText(openStreamResult)));
+        }
+        auto startStreamResult = Pa_StartStream(_portAudioStream);
+        if (startStreamResult != paNoError) {
+            throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
+                                                 startStreamResult,
+                                                 Pa_GetErrorText(startStreamResult)));
+        }
 
         // Create voices ahead of time
         for (auto i = 0; i < 127; ++i) {
             // Sine wave oscillator
             auto oscillator = Oscillator{noteToFrequencyHertz(i), _sampleRate, [](WaveTable& table) {
-                for (auto i = 0; i < static_cast<int>(table.size()); ++i) {
-                    table[i] = std::sin(2.0 * M_PI * i / static_cast<int>(table.size()));
-                }
-            }};
+                                             for (auto i = 0; i < static_cast<int>(table.size()); ++i) {
+                                                 table[i] = std::sin(2.0 * M_PI * i / static_cast<int>(table.size()));
+                                             }
+                                         }};
             _voices.emplace_back(noteToFrequencyHertz(i), envelope, oscillator, lowPassFilter);
         }
+    }
 
-        _outputDevice->start();
+    ~impl() {
+        if (_portAudioStream) {
+            Pa_StopStream(_portAudioStream);
+        }
+        Pa_Terminate();
+    }
+
+    /* This routine will be called by the PortAudio engine when audio is needed.
+    ** It may called at interrupt level on some machines so don't do anything
+    ** that could mess up the system like calling malloc() or free().
+    */
+    static int paCallback([[maybe_unused]] const void *inputBuffer,
+                          void *outputBuffer,
+                          unsigned long framesPerBuffer,
+                          [[maybe_unused]] const PaStreamCallbackTimeInfo* timeInfo,
+                          [[maybe_unused]] PaStreamCallbackFlags statusFlags,
+                          void *userData) {
+
+            auto data = static_cast<impl*>(userData);
+            auto out = static_cast<float*>(outputBuffer);
+
+            for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
+                auto sample = data->nextSample();
+                data->_lastOutputBuffer[frame] = sample;
+
+                for (std::size_t channel = 0; channel < 2; ++channel) {
+                    *out++ = sample;
+                }
+            }
+
+            data->_onOutputFn(data->_lastOutputBuffer);
+
+            return paContinue;
     }
 
     float nextSample() {
@@ -146,10 +193,14 @@ public:
         }
     }
 
+    double sampleRate() {
+        return _sampleRate;
+    }
 
     OnOutputFn _onOutputFn;
-    std::optional<std::experimental::audio_device> _outputDevice;
+    PaStream* _portAudioStream;
     std::mutex _mutex;
+    std::array<float, FRAMES_PER_BUFFER> _lastOutputBuffer; // Forwarded to onOutputFn()
     std::unordered_set<int> _activeVoices;
     std::unordered_set<int> _sustainedVoices;
     std::vector<SynthesizerVoice> _voices;
@@ -184,6 +235,10 @@ void Synthesizer::setFilter(const Filter &filter) {
 
 void Synthesizer::addMidiData(int status, int note, int velocity) {
     _impl->addMidiData(status, note, velocity);
+}
+
+double Synthesizer::sampleRate() {
+    return _impl->sampleRate();
 }
 
 }

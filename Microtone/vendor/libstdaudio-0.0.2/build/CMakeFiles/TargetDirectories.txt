@@ -1,8 +1,0 @@
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/white_noise.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/print_devices.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/sine_wave.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/melody.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/level_meter.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/test.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/edit_cache.dir
-/Users/danieltoby/Developer/microtone/Microtone/vendor/libstdaudio-0.0.2/build/CMakeFiles/rebuild_cache.dir

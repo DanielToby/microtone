@@ -3,8 +3,8 @@ CONFIG += ordered
 
 SUBDIRS += \
     Microtone \
-    Display
+    Asciiboard
 
-Display.depends = \
+Asciiboard.depends = \
     Microtone
 
