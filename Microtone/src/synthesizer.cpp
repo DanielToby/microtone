@@ -13,8 +13,9 @@
 #include <unordered_set>
 #include <vector>
 
-
 namespace microtone {
+
+const double M_PI = 3.1415926535;
 
 class Synthesizer::impl {
 public:
