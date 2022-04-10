@@ -2,7 +2,6 @@
 #include <microtone/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
-#include <microtone/oscillator.hpp>
 
 #include <cmath>
 
@@ -10,12 +9,19 @@ namespace microtone {
 
 class SynthesizerVoice::impl {
 public:
-    impl(double frequency, Envelope envelope, Oscillator oscillator, Filter filter) :
+    impl(double frequency,
+         const Envelope& envelope,
+         const Oscillator& oscillator,
+         const Filter& filter) :
         _frequency{frequency},
         _velocity(0),
         _envelope{envelope},
         _oscillator{oscillator},
         _filter{filter} {
+    }
+
+    void setOscillators(const Oscillator& oscillator) {
+        _oscillator = oscillator;
     }
 
     void setEnvelope(const Envelope& envelope) {
@@ -45,8 +51,9 @@ public:
         _envelope.triggerOff();
     }
 
-    float nextSample() {
-        return _filter.nextSample(_envelope.nextSample() * _velocity * _oscillator.nextSample());
+    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+        auto nextSample = _oscillator.nextSample(weightedWaveTables);
+        return _filter.nextSample(_envelope.nextSample() * _velocity * nextSample);
     }
 
     double _frequency;
@@ -56,7 +63,10 @@ public:
     Filter _filter;
 };
 
-SynthesizerVoice::SynthesizerVoice(double frequency, Envelope envelope, Oscillator oscillator, Filter filter) :
+SynthesizerVoice::SynthesizerVoice(double frequency,
+                                   const Oscillator& oscillator,
+                                   const Envelope& envelope,
+                                   const Filter& filter) :
     _impl{new impl{frequency, envelope, oscillator, filter}} {
 }
 
@@ -69,6 +79,10 @@ SynthesizerVoice& SynthesizerVoice::operator=(SynthesizerVoice&& other) noexcept
         _impl = std::move(other._impl);
     }
     return *this;
+}
+
+void SynthesizerVoice::setOscillator(const Oscillator& oscillator) {
+    _impl->setOscillators(oscillator);
 }
 
 void SynthesizerVoice::setEnvelope(const Envelope &envelope) {
@@ -97,8 +111,8 @@ void SynthesizerVoice::triggerOff() {
     _impl->triggerOff();
 }
 
-float SynthesizerVoice::nextSample() {
-    return _impl->nextSample();
+float SynthesizerVoice::nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+    return _impl->nextSample(weightedWaveTables);
 }
 
 }

@@ -1,27 +1,23 @@
 #pragma once
 
 #include <microtone/microtone_platform.hpp>
+#include <microtone/weighted_wavetable.hpp>
 
 #include <functional>
 #include <memory>
 
 namespace microtone {
 
-const int WAVETABLE_LENGTH = 512;
-
-using WaveTable = std::array<float, WAVETABLE_LENGTH>;
-using WaveTableFn = std::function<void(WaveTable& table)>;
-
 class Oscillator {
 public:
-    explicit Oscillator(double frequency, double sampleRate, WaveTableFn fillFn);
+    explicit Oscillator(double frequency, double sampleRate);
     Oscillator(const Oscillator&);
-    Oscillator& operator=(const Oscillator&) = delete;
+    Oscillator& operator=(const Oscillator&);
     Oscillator(Oscillator&&) noexcept;
     Oscillator& operator=(Oscillator&&) noexcept;
     ~Oscillator();
 
-    float nextSample();
+    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables);
 
 private:
     class impl;

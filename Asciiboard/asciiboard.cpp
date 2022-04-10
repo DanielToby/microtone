@@ -30,7 +30,7 @@ public:
         _sustainPedalOn{false} {}
 
     // No allocation can take place here (called every frame)
-    void addOutputData(const std::array<float, FRAMES_PER_BUFFER>& data) {
+    void addOutputData(const microtone::AudioBuffer& data) {
         std::copy(std::begin(data), std::end(data), std::begin(_lastOutputBuffer));
         _screen.PostEvent(Event::Custom);
     }
@@ -171,7 +171,7 @@ public:
     }
 
     ftxui::ScreenInteractive _screen;
-    std::array<float, FRAMES_PER_BUFFER> _lastOutputBuffer;
+    microtone::AudioBuffer _lastOutputBuffer;
     std::unordered_set<int> _activeMidiNotes;
     std::unordered_set<int> _sustainedMidiNotes;
     bool _sustainPedalOn;
@@ -192,7 +192,7 @@ Asciiboard& Asciiboard::operator=(Asciiboard&& other) noexcept {
     return *this;
 }
 
-void Asciiboard::addOutputData(const std::array<float, FRAMES_PER_BUFFER>& data) {
+void Asciiboard::addOutputData(const microtone::AudioBuffer& data) {
     _impl->addOutputData(data);
 }
 

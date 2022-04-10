@@ -17,6 +17,7 @@ DEFINES += __WINDOWS_MM__
 }
 
 HEADERS += \
+    include/microtone/audio_buffer.hpp \
     include/microtone/envelope.hpp \
     include/microtone/exception.hpp \
     include/microtone/filter.hpp \
@@ -24,7 +25,9 @@ HEADERS += \
     include/microtone/midi_input.hpp \
     include/microtone/oscillator.hpp \
     include/microtone/synthesizer.hpp \
-    include/microtone/synthesizer_voice.hpp
+    include/microtone/synthesizer_voice.hpp \
+    include/microtone/wavetable.hpp \
+    include/microtone/weighted_wavetable.hpp
 
 HEADERS += \
     src/log.hpp

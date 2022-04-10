@@ -9,23 +9,24 @@
 #include <portaudio/portaudio.h>
 #include <rtmidi/RtMidi.h>
 
+#include <cmath>
 #include <mutex>
 #include <unordered_set>
 #include <vector>
 
 namespace microtone {
 
-const double M_PI = 3.1415926535;
-
 class Synthesizer::impl {
 public:
-    impl(OnOutputFn fn) :
+    impl(const std::vector<WeightedWaveTable>& weightedWaveTables, OnOutputFn fn) :
         _onOutputFn{fn},
+        _weightedWaveTables{weightedWaveTables},
         _activeVoices{},
         _sustainedVoices{},
         _voices{},
         _sustainPedalOn{false},
         _sampleRate{0} {
+        // Initialize portaudio
         auto portAudioInitResult = Pa_Initialize();
         if (portAudioInitResult != paNoError) {
             throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
@@ -54,9 +55,6 @@ public:
         outputParameters.suggestedLatency = deviceInfo->defaultLowOutputLatency;
         outputParameters.hostApiSpecificStreamInfo = nullptr;
 
-        auto envelope = Envelope{0.01, 0.1, .8, 0.01, _sampleRate};
-        auto lowPassFilter = Filter{};
-
         PaError openStreamResult = Pa_OpenStream(
             &_portAudioStream,
             nullptr,
@@ -72,35 +70,44 @@ public:
                                                  openStreamResult,
                                                  Pa_GetErrorText(openStreamResult)));
         }
+
+        for (auto i = 0; i < 127; ++i) {
+            _voices.emplace_back(noteToFrequencyHertz(i),
+                                 Oscillator{noteToFrequencyHertz(i), _sampleRate},
+                                 Envelope{0.01, 0.1, .8, 0.01, _sampleRate},
+                                 Filter{});
+        }
+
+    }
+
+    ~impl() {
+        if (_portAudioStream && _portAudioStream) {
+            Pa_StopStream(_portAudioStream);
+        }
+        Pa_Terminate();
+    }
+
+    void start() {
         auto startStreamResult = Pa_StartStream(_portAudioStream);
         if (startStreamResult != paNoError) {
             throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
                                                  startStreamResult,
                                                  Pa_GetErrorText(startStreamResult)));
         }
-
-        // Create voices ahead of time
-        for (auto i = 0; i < 127; ++i) {
-            // Sine wave oscillator
-            auto oscillator = Oscillator{noteToFrequencyHertz(i), _sampleRate, [](WaveTable& table) {
-                                             for (auto i = 0; i < static_cast<int>(table.size()); ++i) {
-                                                 table[i] = std::sin(2.0 * M_PI * i / static_cast<int>(table.size()));
-                                             }
-                                         }};
-            _voices.emplace_back(noteToFrequencyHertz(i), envelope, oscillator, lowPassFilter);
-        }
     }
 
-    ~impl() {
-        if (_portAudioStream) {
-            Pa_StopStream(_portAudioStream);
+    void stop() {
+        auto startStreamResult = Pa_StopStream(_portAudioStream);
+        if (startStreamResult != paNoError) {
+            throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
+                                                 startStreamResult,
+                                                 Pa_GetErrorText(startStreamResult)));
         }
-        Pa_Terminate();
     }
 
     /* This routine will be called by the PortAudio engine when audio is needed.
-    ** It may called at interrupt level on some machines so don't do anything
-    ** that could mess up the system like calling malloc() or free().
+       It may called at interrupt level on some machines so don't do anything
+       that could mess up the system like calling malloc() or free().
     */
     static int paCallback([[maybe_unused]] const void *inputBuffer,
                           void *outputBuffer,
@@ -131,24 +138,32 @@ public:
             return 0;
         }
         auto nextSample = 0.0;
-        // Never block the audio thread.
-        // And never, ever stop playing in the middle of a hoedown
         if (_mutex.try_lock()) {
             for (auto& id : _activeVoices) {
-                nextSample += _voices[id].nextSample();
+                nextSample += _voices[id].nextSample(_weightedWaveTables);
             }
             _mutex.unlock();
         }
         return nextSample;
     }
 
+    std::vector<WeightedWaveTable> weightedWaveTables() const {
+        return _weightedWaveTables;
+    }
+
+    void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+        _weightedWaveTables = weightedWaveTables;
+    }
+
     void setEnvelope(const Envelope &envelope) {
+        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         for (auto& voice : _voices) {
             voice.setEnvelope(envelope);
         }
     }
 
     void setFilter(const Filter &filter) {
+        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         for (auto& voice : _voices) {
             voice.setFilter(filter);
         }
@@ -201,7 +216,8 @@ public:
     OnOutputFn _onOutputFn;
     PaStream* _portAudioStream;
     std::mutex _mutex;
-    std::array<float, FRAMES_PER_BUFFER> _lastOutputBuffer; // Forwarded to onOutputFn()
+    std::vector<WeightedWaveTable> _weightedWaveTables;
+    AudioBuffer _lastOutputBuffer; // Forwarded to onOutputFn()
     std::unordered_set<int> _activeVoices;
     std::unordered_set<int> _sustainedVoices;
     std::vector<SynthesizerVoice> _voices;
@@ -209,8 +225,8 @@ public:
     double _sampleRate;
 };
 
-Synthesizer::Synthesizer(OnOutputFn fn) :
-    _impl{new impl{fn}} {
+Synthesizer::Synthesizer(const std::vector<WeightedWaveTable>& weightedWaveTables, OnOutputFn fn) :
+    _impl{new impl{weightedWaveTables, fn}} {
 }
 
 Synthesizer::Synthesizer(Synthesizer&& other) noexcept :
@@ -225,6 +241,22 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 }
 
 Synthesizer::~Synthesizer() = default;
+
+void Synthesizer::start() {
+    _impl->start();
+}
+
+void Synthesizer::stop() {
+    _impl->stop();
+}
+
+std::vector<WeightedWaveTable> Synthesizer::weightedWaveTables() const {
+    return _impl->weightedWaveTables();
+}
+
+void Synthesizer::setWaveTables(const std::vector<WeightedWaveTable> &weightedWaveTables) {
+    _impl->setWaveTables(weightedWaveTables);
+}
 
 void Synthesizer::setEnvelope(const Envelope &envelope) {
     _impl->setEnvelope(envelope);

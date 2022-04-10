@@ -40,9 +40,10 @@ DEPENDPATH += \
 
 macx {
 LIBS += \
+    -L$$PWD/vendor/ftxui-2.0.0/lib/macos -lftxui-component -lftxui-dom -lftxui-screen \
     -L$$OUT_PWD/../Microtone -lMicrotone \
-    -L$$PWD/vendor/rtmidi-5.0.0/lib/macos -lrtmidi \
-    -L$$PWD/vendor/portaudio-19.7.0/lib/macos -lportaudio \
+    -L$$PWD/../Microtone/vendor/rtmidi-5.0.0/lib/macos -lrtmidi \
+    -L$$PWD/../Microtone/vendor/portaudio-19.7.0/lib/macos -lportaudio \
     -framework AudioToolbox \
     -framework Carbon \
     -framework CoreAudio \
@@ -61,8 +62,8 @@ CONFIG(debug, debug|release) {
 }
 
 LIBS += \
-    -L$$OUT_PWD/../Microtone/$$DEST_DIR/ -lMicrotone \
     -L$$PWD/vendor/ftxui-2.0.0/lib/windows -lftxui-component -lftxui-dom -lftxui-screen \
+    -L$$OUT_PWD/../Microtone/$$DEST_DIR/ -lMicrotone \
     -L$$PWD/../Microtone/vendor/rtmidi-5.0.0/lib/windows -lrtmidi \
     -L$$PWD/../Microtone/vendor/portaudio-19.7.0/lib/windows -lportaudio_x64
 

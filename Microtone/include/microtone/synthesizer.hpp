@@ -1,8 +1,10 @@
 #pragma once
 
 #include <microtone/microtone_platform.hpp>
+#include <microtone/audio_buffer.hpp>
 #include <microtone/envelope.hpp>
 #include <microtone/filter.hpp>
+#include <microtone/weighted_wavetable.hpp>
 
 #include <array>
 #include <functional>
@@ -10,22 +12,29 @@
 
 namespace microtone {
 
-const int FRAMES_PER_BUFFER = 512;
-using OnOutputFn = std::function<void(const std::array<float, FRAMES_PER_BUFFER>&)>;
+using OnOutputFn = std::function<void(const AudioBuffer&)>;
 
 class Synthesizer {
 public:
-    explicit Synthesizer(OnOutputFn);
+    explicit Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
+    void start();
+    void stop();
+
+    std::vector<WeightedWaveTable> weightedWaveTables() const;
+    void setWaveTables(const std::vector<WeightedWaveTable>& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
+
     void addMidiData(int status, int note, int velocity);
     double sampleRate();
+
+    std::vector<WeightedWaveTable> &getWaveTables() const;
 
 private:
     class impl;

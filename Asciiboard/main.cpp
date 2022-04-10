@@ -1,8 +1,10 @@
 #include <asciiboard.hpp>
 
+#include <microtone/audio_buffer.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/midi_input.hpp>
 #include <microtone/synthesizer.hpp>
+#include <microtone/weighted_wavetable.hpp>
 
 #include <fmt/format.h>
 
@@ -49,12 +51,36 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto midiInput = microtone::MidiInput();
         selectPort(midiInput);
 
-        // Create synthesizer
-        auto synth = microtone::Synthesizer{[&asciiboard](const std::array<float, microtone::FRAMES_PER_BUFFER>& outputData) {
-            asciiboard.addOutputData(outputData);
-        }};
+        // These wave tables are sampled using the synthesizers oscillators.
+        auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
+        auto sineWave = microtone::WaveTable{};
+        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
+             sineWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH);
+        }
 
-        // Start synthesier, update UI and synth when midi data changes
+        auto squareWave = microtone::WaveTable{};
+        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
+            squareWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH) > 0 ? 1.0 : -1.0;
+        }
+
+        auto triangleWave = microtone::WaveTable{};
+        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
+            triangleWave[i] = std::asin(std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH)) * (2.0 / M_PI);
+        }
+
+        weightedWaveTables.emplace_back(sineWave, 0.5);
+        weightedWaveTables.emplace_back(squareWave, 0.1);
+        weightedWaveTables.emplace_back(triangleWave, 0.4);
+
+        // This callback is invoked on every audio frame. Don't do anything blocking here!
+        auto onOutputFn = [&asciiboard](const microtone::AudioBuffer& outputData) {
+             asciiboard.addOutputData(outputData);
+        };
+
+        // Create synthesizer
+        auto synth = microtone::Synthesizer{weightedWaveTables, onOutputFn};
+
+        // Start midi input, update UI and synth when midi data changes
         midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
             synth.addMidiData(status, note, velocity);
             asciiboard.addMidiData(status, note, velocity);
@@ -65,6 +91,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             synth.setEnvelope(microtone::Envelope{attack, decay, sustain, release, synth.sampleRate()});
         };
 
+        synth.start();
         asciiboard.loop(onEnvelopeChangedFn);
 
     } catch (microtone::MicrotoneException& e) {

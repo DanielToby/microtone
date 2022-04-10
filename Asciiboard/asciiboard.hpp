@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 
+#include <microtone/audio_buffer.hpp>
+
 namespace asciiboard {
 
 const int FRAMES_PER_BUFFER = 512;
@@ -19,7 +21,7 @@ public:
     Asciiboard& operator=(Asciiboard&&) noexcept;
     ~Asciiboard();
 
-    void addOutputData(const std::array<float, FRAMES_PER_BUFFER>& data);
+    void addOutputData(const microtone::AudioBuffer& data);
     void addMidiData(int status, int note, int velocity);
     void loop(const OnEnvelopeChangedFn& onEnvelopeChangedFn);
 
