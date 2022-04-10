@@ -1,6 +1,6 @@
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
-#include <microtone/oscillator.hpp>
+#include <microtone/synthesizer/oscillator.hpp>
 
 #include <cmath>
 #include <array>

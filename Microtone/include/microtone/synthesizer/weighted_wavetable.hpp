@@ -1,7 +1,7 @@
 #pragma once
 
 #include <microtone/microtone_platform.hpp>
-#include <microtone/wavetable.hpp>
+#include <microtone/synthesizer/wavetable.hpp>
 
 namespace microtone {
 

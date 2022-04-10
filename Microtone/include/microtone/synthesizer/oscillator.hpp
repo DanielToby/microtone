@@ -1,7 +1,7 @@
 #pragma once
 
 #include <microtone/microtone_platform.hpp>
-#include <microtone/weighted_wavetable.hpp>
+#include <microtone/synthesizer/weighted_wavetable.hpp>
 
 #include <functional>
 #include <memory>

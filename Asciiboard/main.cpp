@@ -1,10 +1,10 @@
 #include <asciiboard.hpp>
 
-#include <microtone/audio_buffer.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/midi_input.hpp>
-#include <microtone/synthesizer.hpp>
-#include <microtone/weighted_wavetable.hpp>
+#include <microtone/synthesizer/audio_buffer.hpp>
+#include <microtone/synthesizer/synthesizer.hpp>
+#include <microtone/synthesizer/weighted_wavetable.hpp>
 
 #include <fmt/format.h>
 
@@ -51,7 +51,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto midiInput = microtone::MidiInput();
         selectPort(midiInput);
 
-        // These wave tables are sampled using the synthesizers oscillators.
+        // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
         auto sineWave = microtone::WaveTable{};
         for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
@@ -92,6 +92,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         };
 
         synth.start();
+
+        // Blocks this thread
         asciiboard.loop(onEnvelopeChangedFn);
 
     } catch (microtone::MicrotoneException& e) {

@@ -2,10 +2,10 @@
 
 #include <microtone/microtone_platform.hpp>
 
-#include <microtone/envelope.hpp>
-#include <microtone/filter.hpp>
-#include <microtone/oscillator.hpp>
-#include <microtone/weighted_wavetable.hpp>
+#include <microtone/synthesizer/envelope.hpp>
+#include <microtone/synthesizer/filter.hpp>
+#include <microtone/synthesizer/oscillator.hpp>
+#include <microtone/synthesizer/weighted_wavetable.hpp>
 
 #include <memory>
 

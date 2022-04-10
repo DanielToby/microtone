@@ -1,5 +1,5 @@
-#include <microtone/synthesizer_voice.hpp>
-#include <microtone/envelope.hpp>
+#include <microtone/synthesizer/synthesizer_voice.hpp>
+#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
 

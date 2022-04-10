@@ -1,10 +1,10 @@
-#include <microtone/synthesizer.hpp>
-#include <microtone/envelope.hpp>
+#include <microtone/synthesizer/synthesizer.hpp>
+#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
-#include <microtone/filter.hpp>
+#include <microtone/synthesizer/filter.hpp>
 #include <microtone/log.hpp>
-#include <microtone/synthesizer_voice.hpp>
-#include <microtone/oscillator.hpp>
+#include <microtone/synthesizer/synthesizer_voice.hpp>
+#include <microtone/synthesizer/oscillator.hpp>
 
 #include <portaudio/portaudio.h>
 #include <rtmidi/RtMidi.h>

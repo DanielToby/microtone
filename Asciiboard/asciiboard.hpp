@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-#include <microtone/audio_buffer.hpp>
+#include <microtone/synthesizer/audio_buffer.hpp>
 
 namespace asciiboard {
 

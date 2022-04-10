@@ -17,31 +17,31 @@ DEFINES += __WINDOWS_MM__
 }
 
 HEADERS += \
-    include/microtone/audio_buffer.hpp \
-    include/microtone/envelope.hpp \
-    include/microtone/exception.hpp \
-    include/microtone/filter.hpp \
     include/microtone/microtone_platform.hpp \
+    include/microtone/exception.hpp \
     include/microtone/midi_input.hpp \
-    include/microtone/oscillator.hpp \
-    include/microtone/synthesizer.hpp \
-    include/microtone/synthesizer_voice.hpp \
-    include/microtone/wavetable.hpp \
-    include/microtone/weighted_wavetable.hpp
+    include/microtone/synthesizer/audio_buffer.hpp \
+    include/microtone/synthesizer/envelope.hpp \
+    include/microtone/synthesizer/filter.hpp \
+    include/microtone/synthesizer/oscillator.hpp \
+    include/microtone/synthesizer/synthesizer.hpp \
+    include/microtone/synthesizer/synthesizer_voice.hpp \
+    include/microtone/synthesizer/wavetable.hpp \
+    include/microtone/synthesizer/weighted_wavetable.hpp
 
 HEADERS += \
     src/log.hpp
 
 SOURCES += \
-    src/envelope.cpp \
-    src/exception.cpp \
-    src/filter.cpp \
-    src/log.cpp \
     src/microtone_platform.cpp \
+    src/exception.cpp \
+    src/log.cpp \
     src/midi_input.cpp \
-    src/oscillator.cpp \
-    src/synthesizer.cpp \
-    src/synthesizer_voice.cpp
+    src/synthesizer/envelope.cpp \
+    src/synthesizer/filter.cpp \
+    src/synthesizer/oscillator.cpp \
+    src/synthesizer/synthesizer.cpp \
+    src/synthesizer/synthesizer_voice.cpp
 
 INCLUDEPATH += \
     $$PWD/include \

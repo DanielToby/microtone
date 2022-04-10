@@ -1,4 +1,4 @@
-#include <microtone/filter.hpp>
+#include <microtone/synthesizer/filter.hpp>
 
 namespace microtone {
 

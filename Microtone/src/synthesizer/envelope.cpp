@@ -1,4 +1,4 @@
-#include <microtone/envelope.hpp>
+#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
 
