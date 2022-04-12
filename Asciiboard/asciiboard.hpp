@@ -1,5 +1,7 @@
 #pragma once
 
+#include <synth_controls.hpp>
+
 #include <array>
 #include <functional>
 #include <memory>
@@ -9,12 +11,11 @@
 namespace asciiboard {
 
 const int FRAMES_PER_BUFFER = 512;
-using OnEnvelopeChangedFn = std::function<void(double attack, double decay, double sustain, double release)>;
-using OnFilterChangedFn = std::function<void()>;
+using OnControlsChangedFn = std::function<void(const SynthControls&)>;
 
 class Asciiboard {
 public:
-    explicit Asciiboard();
+    explicit Asciiboard(const SynthControls& controls);
     Asciiboard(const Asciiboard&) = delete;
     Asciiboard& operator=(const Asciiboard&) = delete;
     Asciiboard(Asciiboard&&) noexcept;
@@ -23,7 +24,7 @@ public:
 
     void addOutputData(const microtone::AudioBuffer& data);
     void addMidiData(int status, int note, int velocity);
-    void loop(const OnEnvelopeChangedFn& onEnvelopeChangedFn);
+    void loop(const OnControlsChangedFn& onEnvelopeChangedFn);
 
 private:
     class impl;

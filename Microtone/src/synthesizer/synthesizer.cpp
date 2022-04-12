@@ -1,10 +1,11 @@
 #include <microtone/synthesizer/synthesizer.hpp>
 #include <microtone/synthesizer/envelope.hpp>
-#include <microtone/exception.hpp>
 #include <microtone/synthesizer/filter.hpp>
-#include <microtone/log.hpp>
 #include <microtone/synthesizer/synthesizer_voice.hpp>
 #include <microtone/synthesizer/oscillator.hpp>
+#include <microtone/midi_input.hpp>
+#include <microtone/exception.hpp>
+#include <microtone/log.hpp>
 
 #include <portaudio/portaudio.h>
 #include <rtmidi/RtMidi.h>
@@ -94,15 +95,17 @@ public:
                                                  startStreamResult,
                                                  Pa_GetErrorText(startStreamResult)));
         }
+        M_INFO("Started synthesizer.");
     }
 
     void stop() {
-        auto startStreamResult = Pa_StopStream(_portAudioStream);
-        if (startStreamResult != paNoError) {
+        auto stopStreamResult = Pa_StopStream(_portAudioStream);
+        if (stopStreamResult != paNoError) {
             throw MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
-                                                 startStreamResult,
-                                                 Pa_GetErrorText(startStreamResult)));
+                                                 stopStreamResult,
+                                                 Pa_GetErrorText(stopStreamResult)));
         }
+        M_INFO("Stopped synthesizer.");
     }
 
     /* This routine will be called by the PortAudio engine when audio is needed.
@@ -134,11 +137,11 @@ public:
     }
 
     float nextSample() {
-        if (_voices.empty()) {
-            return 0;
-        }
         auto nextSample = 0.0;
         if (_mutex.try_lock()) {
+            if (_voices.empty()) {
+                return 0;
+            }
             for (auto& id : _activeVoices) {
                 nextSample += _voices[id].nextSample(_weightedWaveTables);
             }
@@ -152,6 +155,7 @@ public:
     }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         _weightedWaveTables = weightedWaveTables;
     }
 
@@ -174,23 +178,20 @@ public:
         return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
     }
 
-
     void addMidiData(int status, int note, int velocity) {
         auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
+        // auto midiStatus = static_cast<MidiStatusMessage>(status);
         if (status == 0b10010000) {
-            // Note on
             _voices[note].setVelocity(velocity);
             _voices[note].triggerOn();
             _activeVoices.insert(note);
         } else if (status == 0b10000000) {
-            // Note off
             if (_sustainPedalOn) {
                 _sustainedVoices.insert(note);
             } else {
                 _voices[note].triggerOff();
             }
         } else if (status == 0b10110000) {
-            // Control Change
             if (note == 64) {
                 _sustainPedalOn = velocity > 64;
                 if (!_sustainPedalOn) {

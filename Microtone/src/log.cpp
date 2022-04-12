@@ -1,6 +1,7 @@
 #include <microtone/log.hpp>
 
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <memory>
@@ -16,6 +17,7 @@ void Log::init() {
     console_sink->set_level(spdlog::level::trace);
     console_sink->set_pattern("[microtone] [%^%l%$] %v");
     sinks.emplace_back(console_sink);
+
     s_Logger = std::make_shared<spdlog::logger>("microtone_logger", sinks.begin(), sinks.end());
 }
 

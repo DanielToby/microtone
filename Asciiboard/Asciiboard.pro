@@ -17,6 +17,7 @@ DEFINES += __WINDOWS_MM__
 
 HEADERS += \
   asciiboard.hpp \
+    synth_controls.hpp
 
 SOURCES += \
   asciiboard.cpp \

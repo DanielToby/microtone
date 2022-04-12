@@ -43,13 +43,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
     microtone::Platform::init();
 
     try {
+        // Initial GUI / synthesizer values
+        auto initialControls = asciiboard::SynthControls{};
+        initialControls.sineWeight = 0.9;
+        initialControls.squareWeight = 0.1;
+        initialControls.triangleWeight = 0;
 
         // Asciiboard
-        auto asciiboard = asciiboard::Asciiboard();
-
-        // Listen to midi input
-        auto midiInput = microtone::MidiInput();
-        selectPort(midiInput);
+        auto asciiboard = asciiboard::Asciiboard(initialControls);
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
@@ -68,9 +69,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             triangleWave[i] = std::asin(std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH)) * (2.0 / M_PI);
         }
 
-        weightedWaveTables.emplace_back(sineWave, 0.5);
-        weightedWaveTables.emplace_back(squareWave, 0.1);
-        weightedWaveTables.emplace_back(triangleWave, 0.4);
+        weightedWaveTables.emplace_back(sineWave, initialControls.sineWeight);
+        weightedWaveTables.emplace_back(squareWave, initialControls.squareWeight);
+        weightedWaveTables.emplace_back(triangleWave, initialControls.triangleWeight);
 
         // This callback is invoked on every audio frame. Don't do anything blocking here!
         auto onOutputFn = [&asciiboard](const microtone::AudioBuffer& outputData) {
@@ -80,21 +81,39 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // Create synthesizer
         auto synth = microtone::Synthesizer{weightedWaveTables, onOutputFn};
 
+        // Listen to midi input
+        auto midiInput = microtone::MidiInput();
+        selectPort(midiInput);
+
         // Start midi input, update UI and synth when midi data changes
         midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
             synth.addMidiData(status, note, velocity);
             asciiboard.addMidiData(status, note, velocity);
         });
 
-        // Callback invoked when asciiboard envelope is changed
-        auto onEnvelopeChangedFn = [&synth](double attack, double decay, double sustain, double release) {
-            synth.setEnvelope(microtone::Envelope{attack, decay, sustain, release, synth.sampleRate()});
+        // Callback invoked when asciiboard controls are changed
+        auto onControlsChangedFn = [&synth, &weightedWaveTables](const asciiboard::SynthControls& controls) {
+            auto shouldUpdateWaveTables = false;
+            if (controls.sineWeight != weightedWaveTables[0].weight) {
+                weightedWaveTables[0].weight = controls.sineWeight;
+                shouldUpdateWaveTables = true;
+            }
+            if (controls.squareWeight != weightedWaveTables[1].weight) {
+                weightedWaveTables[1].weight = controls.squareWeight;
+                shouldUpdateWaveTables = true;
+            }
+            if (controls.triangleWeight != weightedWaveTables[2].weight) {
+                weightedWaveTables[2].weight = controls.triangleWeight;
+                shouldUpdateWaveTables = true;
+            }
+            if (shouldUpdateWaveTables) {
+                synth.setWaveTables(weightedWaveTables);
+            }
         };
-
         synth.start();
 
         // Blocks this thread
-        asciiboard.loop(onEnvelopeChangedFn);
+        asciiboard.loop(onControlsChangedFn);
 
     } catch (microtone::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;
