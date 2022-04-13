@@ -93,6 +93,7 @@ public:
                                               squareSlider,
                                               triangleSlider,
                                               });
+
         auto oscillatorControls = Renderer(oscillatorControlsContainer,
                                            [&sineSlider, &squareSlider, &triangleSlider] () {
             return hbox({
@@ -236,15 +237,14 @@ public:
             return document;
         });
 
-        auto eventListener = CatchEvent(mainRenderer, [&](Event event) {
+        auto eventListener = CatchEvent(mainRenderer, [&] (Event event) {
             if (event == Event::Character('q')) {
                 _screen.ExitLoopClosure()();
                 return true;
             } else if (event == Event::Return) {
-
-                _controls.sineWeight = static_cast<double>(sine / 100);
-                _controls.squareWeight = static_cast<double>(square / 100);
-                _controls.triangleWeight = static_cast<double>(triangle / 100);
+                _controls.sineWeight = static_cast<double>(sine) / 100;
+                _controls.squareWeight = static_cast<double>(square) / 100;
+                _controls.triangleWeight = static_cast<double>(triangle) / 100;
 
                 onControlsChangedFn(_controls);
             }
