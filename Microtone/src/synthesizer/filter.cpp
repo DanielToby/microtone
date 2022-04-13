@@ -2,7 +2,6 @@
 
 namespace microtone {
 
-
 class Filter::impl {
 public:
     impl() :
@@ -34,7 +33,6 @@ Filter::Filter(const Filter& other) :
 Filter::Filter(Filter&& other) noexcept :
     _impl{std::move(other._impl)} {
 }
-
 
 Filter& Filter::operator=(const Filter& other) noexcept {
     _impl = std::make_unique<impl>(*other._impl);

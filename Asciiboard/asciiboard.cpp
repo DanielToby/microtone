@@ -15,8 +15,8 @@
 
 #include <microtone/midi_input.hpp>
 
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 
 namespace asciiboard {
 
@@ -63,7 +63,6 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
         auto controls = SynthControls{initialControls};
 
@@ -71,14 +70,11 @@ public:
         auto showInstructions = true;
         auto closeInstructions = Button("Ok", [&showInstructions] { showInstructions = false; });
         auto instructions = Renderer(closeInstructions, [&closeInstructions] {
-            return vbox({
-                       text("Press <enter> to submit changes to the controls. Press 'q' to quit."),
-                         hbox({
-                           filler(),
-                           closeInstructions->Render(),
-                           filler()
-                         })
-                    }) | hcenter | border;
+            return vbox({text("Press <enter> to submit changes to the controls. Press 'q' to quit."),
+                         hbox({filler(),
+                               closeInstructions->Render(),
+                               filler()})}) |
+                   hcenter | border;
         });
 
         // Oscillator Controls
@@ -90,21 +86,19 @@ public:
         auto triangleSlider = Slider("Triangle:", &triangle, 0, 100, 1);
 
         auto oscillatorControlsContainer = Container::Horizontal({
-                                              sineSlider,
-                                              squareSlider,
-                                              triangleSlider,
-                                              });
+            sineSlider,
+            squareSlider,
+            triangleSlider,
+        });
 
         auto oscillatorControls = Renderer(oscillatorControlsContainer,
-                                           [&sineSlider, &squareSlider, &triangleSlider] () {
-            return hbox({
-                sineSlider->Render(),
-                filler(),
-                squareSlider->Render(),
-                filler(),
-                triangleSlider->Render()
-            });
-        });
+                                           [&sineSlider, &squareSlider, &triangleSlider]() {
+                                               return hbox({sineSlider->Render(),
+                                                            filler(),
+                                                            squareSlider->Render(),
+                                                            filler(),
+                                                            triangleSlider->Render()});
+                                           });
 
         // Envelope Controls
         auto attack = static_cast<int>(controls.attack * 100);
@@ -116,25 +110,21 @@ public:
         auto sustainSlider = Slider("Sustain:", &sustain, 0, 100, 1);
         auto releaseSlider = Slider("Release:", &release, 0, 100, 1);
 
-        auto envelopeControlsContainer = Container::Horizontal({
-            attackSlider,
-            decaySlider,
-            sustainSlider,
-            releaseSlider
-            });
+        auto envelopeControlsContainer = Container::Horizontal({attackSlider,
+                                                                decaySlider,
+                                                                sustainSlider,
+                                                                releaseSlider});
 
         auto envelopeControls = Renderer(envelopeControlsContainer,
-                                           [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider] () {
-                                               return hbox({
-                                                   attackSlider->Render(),
-                                                   filler(),
-                                                   decaySlider->Render(),
-                                                   filler(),
-                                                   sustainSlider->Render(),
-                                                 filler(),
-                                                     releaseSlider->Render()
-                                               });
-                                           });
+                                         [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider]() {
+                                             return hbox({attackSlider->Render(),
+                                                          filler(),
+                                                          decaySlider->Render(),
+                                                          filler(),
+                                                          sustainSlider->Render(),
+                                                          filler(),
+                                                          releaseSlider->Render()});
+                                         });
 
         // Oscilloscope
         auto scaleFactor = 0.5;
@@ -153,10 +143,8 @@ public:
                 }
             }
 
-            return vbox({
-                text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
-                canvas(std::move(c))
-            });
+            return vbox({text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
+                         canvas(std::move(c))});
         });
 
         // Piano roll
@@ -176,71 +164,50 @@ public:
             std::vector<int> output(width, -1);
             for (auto i = 0; i < width; ++i) {
                 if (_activeMidiNotes.find(i) != _activeMidiNotes.end() ||
-                        _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
+                    _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
                     output[i] = 1;
                 }
             }
             return output;
         };
 
-        auto pianoRoll = Renderer([&activeNotes, &keyboard](){
-            return vbox({
-                hbox({
-                    filler(),
-                    graph(std::ref(activeNotes))
-                        | size(WIDTH, EQUAL, 66)
-                        | size(HEIGHT, EQUAL, 2)
-                        | color(Color::GreenLight),
-                    filler()
-                }),
-                hbox({
-                    filler(),
-                    graph(std::ref(keyboard))
-                        | size(WIDTH, EQUAL, 66)
-                        | size(HEIGHT, EQUAL, 2),
-                    filler()
-                })
-            });
+        auto pianoRoll = Renderer([&activeNotes, &keyboard]() {
+            return vbox({hbox({filler(),
+                               graph(std::ref(activeNotes)) | size(WIDTH, EQUAL, 66) | size(HEIGHT, EQUAL, 2) | color(Color::GreenLight),
+                               filler()}),
+                         hbox({filler(),
+                               graph(std::ref(keyboard)) | size(WIDTH, EQUAL, 66) | size(HEIGHT, EQUAL, 2),
+                               filler()})});
         });
 
-        auto synthesizerContainer = Container::Vertical({
-                                                  oscillatorControls,
-                                                  envelopeControls,
-                                                  oscilloscope,
-                                                  pianoRoll});
+        auto synthesizerContainer = Container::Vertical({oscillatorControls,
+                                                         envelopeControls,
+                                                         oscilloscope,
+                                                         pianoRoll});
 
         auto synthesizer = Renderer(synthesizerContainer, [&] {
-            return vbox({
-                oscillatorControls->Render() | borderRounded,
-                envelopeControls->Render() | borderRounded,
-                vbox({
-                    oscilloscope->Render()
-                        | size(HEIGHT, LESS_THAN, oscilloscopeHeight)
-                        | hcenter
-                        | borderRounded,
-                    pianoRoll->Render() | borderRounded
-                 })
-            });
+            return vbox({oscillatorControls->Render() | borderRounded,
+                         envelopeControls->Render() | borderRounded,
+                         vbox({oscilloscope->Render() | size(HEIGHT, LESS_THAN, oscilloscopeHeight) | hcenter | borderRounded,
+                               pianoRoll->Render() | borderRounded})});
         });
 
-        auto mainContents = Container::Vertical({
-            instructions,
-            synthesizer
-        });
+        auto mainContents = Container::Vertical({instructions,
+                                                 synthesizer});
 
         auto mainRenderer = Renderer(mainContents, [&showInstructions, &synthesizer, &instructions] {
             Element document = synthesizer->Render();
 
             if (showInstructions) {
-            document = dbox({
-                             document,
+                document = dbox({
+                    document,
                     instructions->Render() | clear_under | center,
-                             });
+                });
             }
             return document;
         });
 
-        auto eventListener = CatchEvent(mainRenderer, [&] (Event event) {
+        auto eventListener = CatchEvent(mainRenderer, [&](Event event) {
             if (event == Event::Character('q')) {
                 _screen.ExitLoopClosure()();
                 return true;

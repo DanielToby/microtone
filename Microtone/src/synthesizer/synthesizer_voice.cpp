@@ -1,7 +1,7 @@
-#include <microtone/synthesizer/synthesizer_voice.hpp>
-#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
+#include <microtone/synthesizer/envelope.hpp>
+#include <microtone/synthesizer/synthesizer_voice.hpp>
 
 #include <cmath>
 
@@ -85,11 +85,11 @@ void SynthesizerVoice::setOscillator(const Oscillator& oscillator) {
     _impl->setOscillators(oscillator);
 }
 
-void SynthesizerVoice::setEnvelope(const Envelope &envelope) {
+void SynthesizerVoice::setEnvelope(const Envelope& envelope) {
     _impl->setEnvelope(envelope);
 }
 
-void SynthesizerVoice::setFilter(const Filter &filter) {
+void SynthesizerVoice::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 

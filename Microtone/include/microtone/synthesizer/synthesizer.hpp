@@ -34,7 +34,7 @@ public:
     void addMidiData(int status, int note, int velocity);
     double sampleRate();
 
-    std::vector<WeightedWaveTable> &getWaveTables() const;
+    std::vector<WeightedWaveTable>& getWaveTables() const;
 
 private:
     class impl;
