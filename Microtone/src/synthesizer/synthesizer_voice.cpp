@@ -53,7 +53,7 @@ public:
 
     float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
         auto nextSample = _oscillator.nextSample(weightedWaveTables);
-        return _filter.nextSample(_envelope.nextSample() * _velocity * nextSample);
+        return _filter.nextSample(_envelope.nextSample() * static_cast<float>(_velocity) * nextSample);
     }
 
     double _frequency;

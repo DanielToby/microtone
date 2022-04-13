@@ -66,12 +66,12 @@ public:
 
     void triggerOn() {
         _state = EnvelopeState::Attack;
-        rampTo(1.0, _attack);// perform attack
+        rampTo(1.0, _attack); // perform attack
     }
 
     void triggerOff() {
         _state = EnvelopeState::Release;
-        rampTo(0, _release);// perform release
+        rampTo(0, _release); // perform release
     }
 
     void setValue(float value) {
@@ -80,15 +80,15 @@ public:
         _counter = 0;
     }
 
-    void rampTo(float value, float time) {
+    void rampTo(double value, double time) {
         _increment = (value - _currentValue) / (_sampleRate * time);
-        _counter = (int)(_sampleRate * time);
+        _counter = static_cast<int>(_sampleRate * time);
     }
 
     float nextSample() {
         if (_counter > 0) {
             _counter--;
-            _currentValue += _increment;
+            _currentValue += static_cast<float>(_increment);
         }
 
         // Finished current phase.
@@ -112,7 +112,7 @@ public:
     double _release;
     double _sampleRate;
     float _currentValue;
-    float _increment;
+    double _increment;
     int _counter;
     EnvelopeState _state;
 };

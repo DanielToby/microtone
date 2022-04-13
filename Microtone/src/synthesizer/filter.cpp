@@ -13,7 +13,7 @@ public:
         _alpha{other._alpha} {}
 
     float nextSample(float in) {
-        auto out = _alpha * _lastSample + (1.0 - _alpha) * in;
+        auto out = static_cast<float>(_alpha * _lastSample + (1.0 - _alpha) * in);
         _lastSample = out;
         return out;
     }

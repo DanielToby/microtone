@@ -135,9 +135,9 @@ public:
             for (auto i = 0; i < width - 1; ++i) {
                 if (i < static_cast<int>(_lastOutputBuffer.size())) {
                     c.DrawPointLine(i,
-                                    (_lastOutputBuffer[i] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2),
+                                    static_cast<int>((_lastOutputBuffer[i] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2)),
                                     i + 1,
-                                    (_lastOutputBuffer[i + 1] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2));
+                                    static_cast<int>((_lastOutputBuffer[i + 1] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2)));
                 } else {
                     c.DrawPointLine(i, oscilloscopeHeight / 2, i + 1, oscilloscopeHeight / 2);
                 }
