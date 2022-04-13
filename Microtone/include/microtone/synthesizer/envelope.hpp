@@ -24,6 +24,16 @@ public:
     ~Envelope();
 
     EnvelopeState state();
+    double attack();
+    double decay();
+    double sustain();
+    double release();
+
+    void setAttack(double attack);
+    void setDecay(double decay);
+    void setSustain(double sustain);
+    void setRelease(double release);
+
     void triggerOn();
     void triggerOff();
     float nextSample();

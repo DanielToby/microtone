@@ -33,8 +33,9 @@ public:
 
         auto nextSample = 0.0;
         for (const auto& weightedWaveTable : weightedWaveTables) {
-            nextSample += weightedWaveTable.weight * (fractionBelow * weightedWaveTable.waveTable[indexBelow]
-                           + fractionAbove * weightedWaveTable.waveTable[indexAbove]);
+            nextSample += (fractionBelow * weightedWaveTable.waveTable[indexBelow]
+                           + fractionAbove * weightedWaveTable.waveTable[indexAbove])
+                            * weightedWaveTable.weight;
         }
 
         return nextSample;

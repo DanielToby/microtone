@@ -15,16 +15,16 @@ using OnControlsChangedFn = std::function<void(const SynthControls&)>;
 
 class Asciiboard {
 public:
-    explicit Asciiboard(const SynthControls& controls);
+    explicit Asciiboard();
     Asciiboard(const Asciiboard&) = delete;
     Asciiboard& operator=(const Asciiboard&) = delete;
     Asciiboard(Asciiboard&&) noexcept;
     Asciiboard& operator=(Asciiboard&&) noexcept;
     ~Asciiboard();
 
+    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
     void addOutputData(const microtone::AudioBuffer& data);
     void addMidiData(int status, int note, int velocity);
-    void loop(const OnControlsChangedFn& onEnvelopeChangedFn);
 
 private:
     class impl;

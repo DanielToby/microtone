@@ -43,14 +43,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
     microtone::Platform::init();
 
     try {
+        // Asciiboard
+        auto asciiboard = asciiboard::Asciiboard();
+
         // Initial GUI / synthesizer values
         auto initialControls = asciiboard::SynthControls{};
         initialControls.sineWeight = 0.9;
         initialControls.squareWeight = 0.1;
         initialControls.triangleWeight = 0;
-
-        // Asciiboard
-        auto asciiboard = asciiboard::Asciiboard(initialControls);
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
@@ -91,8 +91,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             asciiboard.addMidiData(status, note, velocity);
         });
 
+        // Set up envelope controls (must be done after synth is started, for sample rate).
+        initialControls.attack = 0.01;
+        initialControls.decay = 0.1;
+        initialControls.sustain = 0.8;
+        initialControls.release = 0.01;
+        auto envelope = microtone::Envelope(initialControls.attack,
+                                            initialControls.decay,
+                                            initialControls.sustain,
+                                            initialControls.release,
+                                            synth.sampleRate());
+
         // Callback invoked when asciiboard controls are changed
-        auto onControlsChangedFn = [&synth, &weightedWaveTables](const asciiboard::SynthControls& controls) {
+        auto onControlsChangedFn = [&synth, &weightedWaveTables, &envelope](const asciiboard::SynthControls& controls) {
             auto shouldUpdateWaveTables = false;
             if (controls.sineWeight != weightedWaveTables[0].weight) {
                 weightedWaveTables[0].weight = controls.sineWeight;
@@ -109,11 +120,32 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             if (shouldUpdateWaveTables) {
                 synth.setWaveTables(weightedWaveTables);
             }
+
+            auto shouldUpdateEnvelope = false;
+            if (controls.attack != envelope.attack()) {
+                envelope.setAttack(controls.attack);
+                shouldUpdateEnvelope = true;
+            }
+            if (controls.decay != envelope.decay()) {
+                envelope.setDecay(controls.decay);
+                shouldUpdateEnvelope = true;
+            }
+            if (controls.sustain != envelope.sustain()) {
+                envelope.setSustain(controls.sustain);
+                shouldUpdateEnvelope = true;
+            }
+            if (controls.release != envelope.release()) {
+                envelope.setRelease(controls.release);
+                shouldUpdateEnvelope = true;
+            }
+            if (shouldUpdateEnvelope) {
+                synth.setEnvelope(envelope);
+            }
         };
         synth.start();
 
         // Blocks this thread
-        asciiboard.loop(onControlsChangedFn);
+        asciiboard.loop(initialControls, onControlsChangedFn);
 
     } catch (microtone::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

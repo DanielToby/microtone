@@ -32,6 +32,38 @@ public:
         return _state;
     }
 
+    double attack() {
+        return _attack;
+    }
+
+    double decay() {
+        return _decay;
+    }
+
+    double sustain() {
+        return _sustain;
+    }
+
+    double release() {
+        return _release;
+    }
+
+    void setAttack(double attack) {
+        _attack = attack;
+    }
+
+    void setDecay(double decay) {
+        _decay = decay;
+    }
+
+    void setSustain(double sustain) {
+        _sustain = sustain;
+    }
+
+    void setRelease(double release) {
+        _release = release;
+    }
+
     void triggerOn() {
         _state = EnvelopeState::Attack;
         rampTo(1.0, _attack); // perform attack
@@ -112,6 +144,38 @@ Envelope& Envelope::operator=(Envelope&& other) noexcept {
 
 EnvelopeState Envelope::state() {
     return _impl->state();
+}
+
+double Envelope::attack() {
+    return _impl->attack();
+}
+
+double Envelope::decay() {
+    return _impl->decay();
+}
+
+double Envelope::sustain() {
+    return _impl->sustain();
+}
+
+double Envelope::release() {
+    return _impl->release();
+}
+
+void Envelope::setAttack(double attack) {
+    _impl->setAttack(attack);
+}
+
+void Envelope::setDecay(double decay) {
+    _impl->setDecay(decay);
+}
+
+void Envelope::setSustain(double sustain) {
+    _impl->setSustain(sustain);
+}
+
+void Envelope::setRelease(double release) {
+    _impl->setRelease(release);
 }
 
 Envelope::~Envelope() = default;

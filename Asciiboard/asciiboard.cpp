@@ -24,8 +24,7 @@ using namespace ftxui;
 
 class Asciiboard::impl {
 public:
-    impl(const SynthControls& controls) :
-        _controls{controls},
+    impl() :
         _screen{ScreenInteractive::Fullscreen()},
         _lastOutputBuffer{},
         _activeMidiNotes{},
@@ -65,7 +64,9 @@ public:
     }
 
 
-    void loop(const OnControlsChangedFn& onControlsChangedFn) {
+    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
+        auto controls = SynthControls{initialControls};
+
         // Instructions
         auto showInstructions = true;
         auto closeInstructions = Button("Ok", [&showInstructions] { showInstructions = false; });
@@ -81,9 +82,9 @@ public:
         });
 
         // Oscillator Controls
-        auto sine = static_cast<int>(_controls.sineWeight * 100);
-        auto square = static_cast<int>(_controls.squareWeight * 100);
-        auto triangle = static_cast<int>(_controls.triangleWeight * 100);
+        auto sine = static_cast<int>(controls.sineWeight * 100);
+        auto square = static_cast<int>(controls.squareWeight * 100);
+        auto triangle = static_cast<int>(controls.triangleWeight * 100);
         auto sineSlider = Slider("Sine:", &sine, 0, 100, 1);
         auto squareSlider = Slider("Square:", &square, 0, 100, 1);
         auto triangleSlider = Slider("Triangle:", &triangle, 0, 100, 1);
@@ -105,36 +106,35 @@ public:
             });
         });
 
-        // Envelope
-//        auto attack = std::string{"0.01"};
-//        auto decay = std::string{"0.1"};
-//        auto sustain = std::string{"0.8"};
-//        auto release = std::string{"0.01"};
+        // Envelope Controls
+        auto attack = static_cast<int>(controls.attack * 100);
+        auto decay = static_cast<int>(controls.decay * 100);
+        auto sustain = static_cast<int>(controls.sustain * 100);
+        auto release = static_cast<int>(controls.release * 100);
+        auto attackSlider = Slider("Attack:", &attack, 0, 100, 1);
+        auto decaySlider = Slider("Decay:", &decay, 0, 100, 1);
+        auto sustainSlider = Slider("Sustain:", &sustain, 0, 100, 1);
+        auto releaseSlider = Slider("Release:", &release, 0, 100, 1);
 
-//        Component attackInput = Input(&attack, "Attack");
-//        Component decayInput = Input(&decay, "Decay");
-//        Component sustainInput = Input(&sustain, "Sustain");
-//        Component releaseInput = Input(&release, "Decay");
+        auto envelopeControlsContainer = Container::Horizontal({
+            attackSlider,
+            decaySlider,
+            sustainSlider,
+            releaseSlider
+            });
 
-//        auto submitEnvelope = [&onEnvelopeChangedFn, &attack, &decay, &sustain, &release]() {
-//            try {
-//                auto attackDouble = std::stod(attack);
-//                auto decayDouble = std::stod(decay);
-//                auto sustainDouble = std::stod(sustain);
-//                auto releaseDouble = std::stod(release);
-//                onEnvelopeChangedFn(attackDouble, decayDouble, sustainDouble, releaseDouble);
-//            } catch (...) {
-
-//            }
-//        };
-
-//        auto envelopeControls = Container::Vertical({
-//            attackInput,
-//            decayInput,
-//            sustainInput,
-//            releaseInput,
-//            Button("Submit", submitEnvelope),
-//        });
+        auto envelopeControls = Renderer(envelopeControlsContainer,
+                                           [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider] () {
+                                               return hbox({
+                                                   attackSlider->Render(),
+                                                   filler(),
+                                                   decaySlider->Render(),
+                                                   filler(),
+                                                   sustainSlider->Render(),
+                                                 filler(),
+                                                     releaseSlider->Render()
+                                               });
+                                           });
 
         // Oscilloscope
         auto scaleFactor = 0.5;
@@ -203,13 +203,16 @@ public:
             });
         });
 
-        auto synthesizerContainer = Container::Vertical({oscillatorControls,
+        auto synthesizerContainer = Container::Vertical({
+                                                  oscillatorControls,
+                                                  envelopeControls,
                                                   oscilloscope,
                                                   pianoRoll});
 
         auto synthesizer = Renderer(synthesizerContainer, [&] {
             return vbox({
                 oscillatorControls->Render() | borderRounded,
+                envelopeControls->Render() | borderRounded,
                 vbox({
                     oscilloscope->Render()
                         | size(HEIGHT, LESS_THAN, oscilloscopeHeight)
@@ -242,11 +245,16 @@ public:
                 _screen.ExitLoopClosure()();
                 return true;
             } else if (event == Event::Return) {
-                _controls.sineWeight = static_cast<double>(sine) / 100;
-                _controls.squareWeight = static_cast<double>(square) / 100;
-                _controls.triangleWeight = static_cast<double>(triangle) / 100;
+                controls.sineWeight = static_cast<double>(sine) / 100;
+                controls.squareWeight = static_cast<double>(square) / 100;
+                controls.triangleWeight = static_cast<double>(triangle) / 100;
 
-                onControlsChangedFn(_controls);
+                controls.attack = static_cast<double>(attack) / 100;
+                controls.decay = static_cast<double>(decay) / 100;
+                controls.sustain = static_cast<double>(sustain) / 100;
+                controls.release = static_cast<double>(release) / 100;
+
+                onControlsChangedFn(controls);
             }
             return false;
         });
@@ -254,7 +262,6 @@ public:
         _screen.Loop(eventListener);
     }
 
-    SynthControls _controls;
     ftxui::ScreenInteractive _screen;
     microtone::AudioBuffer _lastOutputBuffer;
     std::unordered_set<int> _activeMidiNotes;
@@ -262,8 +269,8 @@ public:
     bool _sustainPedalOn;
 };
 
-Asciiboard::Asciiboard(const SynthControls& controls) :
-    _impl{new impl{controls}} {
+Asciiboard::Asciiboard() :
+    _impl{new impl{}} {
 }
 
 Asciiboard::Asciiboard(Asciiboard&& other) noexcept :
@@ -285,8 +292,8 @@ void Asciiboard::addMidiData(int status, int note, int velocity) {
     _impl->addMidiData(status, note, velocity);
 }
 
-void Asciiboard::loop(const OnControlsChangedFn& onControlsChangedFn) {
-    _impl->loop(onControlsChangedFn);
+void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
+    _impl->loop(initialControls, onControlsChangedFn);
 }
 
 Asciiboard::~Asciiboard() = default;
