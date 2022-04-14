@@ -1,6 +1,6 @@
-#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
+#include <microtone/synthesizer/envelope.hpp>
 
 namespace microtone {
 
@@ -80,26 +80,25 @@ public:
         _counter = 0;
     }
 
-    void rampTo(float value, float time) {
+    void rampTo(double value, double time) {
         _increment = (value - _currentValue) / (_sampleRate * time);
-        _counter = (int)(_sampleRate * time);
+        _counter = static_cast<int>(_sampleRate * time);
     }
 
     float nextSample() {
         if (_counter > 0) {
             _counter--;
-            _currentValue += _increment;
+            _currentValue += static_cast<float>(_increment);
         }
 
         // Finished current phase.
         if (_counter == 0) {
             if (_state == EnvelopeState::Attack) {
                 _state = EnvelopeState::Decay;
-                rampTo(_sustain, _decay); // perform decay
+                rampTo(_sustain, _decay);// perform decay
             } else if (_state == EnvelopeState::Decay) {
                 _state = EnvelopeState::Sustain;
-            }
-            else if (_state == EnvelopeState::Release) {
+            } else if (_state == EnvelopeState::Release) {
                 _state = EnvelopeState::Off;
             }
         }
@@ -113,7 +112,7 @@ public:
     double _release;
     double _sampleRate;
     float _currentValue;
-    float _increment;
+    double _increment;
     int _counter;
     EnvelopeState _state;
 };
@@ -193,4 +192,3 @@ float Envelope::nextSample() {
 }
 
 }
-

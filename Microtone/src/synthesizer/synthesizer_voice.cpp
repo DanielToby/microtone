@@ -1,7 +1,7 @@
-#include <microtone/synthesizer/synthesizer_voice.hpp>
-#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
+#include <microtone/synthesizer/envelope.hpp>
+#include <microtone/synthesizer/synthesizer_voice.hpp>
 
 #include <cmath>
 
@@ -18,6 +18,7 @@ public:
         _velocity(0),
         _envelope{envelope},
         _oscillator{oscillator},
+        _lfo{lfo},
         _filter{filter} {
     }
 
@@ -53,8 +54,8 @@ public:
     }
 
     float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-        auto nextSample = _oscillator.nextSample(weightedWaveTables);  // _lfo.nextSample();
-        return _filter.nextSample(_envelope.nextSample() * _velocity * nextSample);
+        auto nextSample = _oscillator.nextSample(weightedWaveTables);
+        return _filter.nextSample(_envelope.nextSample() * static_cast<float>(_velocity) * nextSample);
     }
 
     double _frequency;
@@ -88,11 +89,11 @@ void SynthesizerVoice::setOscillator(const Oscillator& oscillator) {
     _impl->setOscillators(oscillator);
 }
 
-void SynthesizerVoice::setEnvelope(const Envelope &envelope) {
+void SynthesizerVoice::setEnvelope(const Envelope& envelope) {
     _impl->setEnvelope(envelope);
 }
 
-void SynthesizerVoice::setFilter(const Filter &filter) {
+void SynthesizerVoice::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 

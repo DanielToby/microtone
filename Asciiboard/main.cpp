@@ -56,7 +56,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
         auto sineWave = microtone::WaveTable{};
         for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
-             sineWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH);
+            sineWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH);
         }
 
         auto squareWave = microtone::WaveTable{};
@@ -75,7 +75,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // This callback is invoked on every audio frame. Don't do anything blocking here!
         auto onOutputFn = [&asciiboard](const microtone::AudioBuffer& outputData) {
-             asciiboard.addOutputData(outputData);
+            asciiboard.addOutputData(outputData);
         };
 
         // Create synthesizer

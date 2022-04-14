@@ -31,5 +31,4 @@ private:
     std::unique_ptr<impl> _impl;
 };
 
-
 }

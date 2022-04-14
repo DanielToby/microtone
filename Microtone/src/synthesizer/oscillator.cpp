@@ -2,8 +2,8 @@
 #include <microtone/log.hpp>
 #include <microtone/synthesizer/oscillator.hpp>
 
-#include <cmath>
 #include <array>
+#include <cmath>
 
 namespace microtone {
 
@@ -31,11 +31,9 @@ public:
         auto fractionBelow = 1.0 - fractionAbove;
         _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
 
-        auto nextSample = 0.0;
+        auto nextSample = 0.0f;
         for (const auto& weightedWaveTable : weightedWaveTables) {
-            nextSample += (fractionBelow * weightedWaveTable.waveTable[indexBelow]
-                           + fractionAbove * weightedWaveTable.waveTable[indexAbove])
-                            * weightedWaveTable.weight;
+            nextSample += (fractionBelow * weightedWaveTable.waveTable[indexBelow] + fractionAbove * weightedWaveTable.waveTable[indexAbove]) * weightedWaveTable.weight;
         }
 
         return nextSample;

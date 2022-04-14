@@ -1,12 +1,12 @@
-#include <microtone/synthesizer/synthesizer.hpp>
-#include <microtone/synthesizer/envelope.hpp>
-#include <microtone/synthesizer/filter.hpp>
-#include <microtone/synthesizer/synthesizer_voice.hpp>
-#include <microtone/synthesizer/low_frequency_oscillator.hpp>
-#include <microtone/synthesizer/oscillator.hpp>
-#include <microtone/midi_input.hpp>
 #include <microtone/exception.hpp>
 #include <microtone/log.hpp>
+#include <microtone/midi_input.hpp>
+#include <microtone/synthesizer/envelope.hpp>
+#include <microtone/synthesizer/filter.hpp>
+#include <microtone/synthesizer/low_frequency_oscillator.hpp>
+#include <microtone/synthesizer/oscillator.hpp>
+#include <microtone/synthesizer/synthesizer.hpp>
+#include <microtone/synthesizer/synthesizer_voice.hpp>
 
 #include <portaudio/portaudio.h>
 #include <rtmidi/RtMidi.h>
@@ -80,7 +80,6 @@ public:
                                  LowFrequencyOscillator{0.25, _sampleRate},
                                  Filter{});
         }
-
     }
 
     ~impl() {
@@ -114,28 +113,27 @@ public:
        It may called at interrupt level on some machines so don't do anything
        that could mess up the system like calling malloc() or free().
     */
-    static int paCallback([[maybe_unused]] const void *inputBuffer,
-                          void *outputBuffer,
+    static int paCallback([[maybe_unused]] const void* inputBuffer,
+                          void* outputBuffer,
                           unsigned long framesPerBuffer,
                           [[maybe_unused]] const PaStreamCallbackTimeInfo* timeInfo,
                           [[maybe_unused]] PaStreamCallbackFlags statusFlags,
-                          void *userData) {
+                          void* userData) {
+        auto data = static_cast<impl*>(userData);
+        auto out = static_cast<float*>(outputBuffer);
 
-            auto data = static_cast<impl*>(userData);
-            auto out = static_cast<float*>(outputBuffer);
+        for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
+            auto sample = data->nextSample();
+            data->_lastOutputBuffer[frame] = sample;
 
-            for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
-                auto sample = data->nextSample();
-                data->_lastOutputBuffer[frame] = sample;
-
-                for (std::size_t channel = 0; channel < 2; ++channel) {
-                    *out++ = sample;
-                }
+            for (std::size_t channel = 0; channel < 2; ++channel) {
+                *out++ = sample;
             }
+        }
 
-            data->_onOutputFn(data->_lastOutputBuffer);
+        data->_onOutputFn(data->_lastOutputBuffer);
 
-            return paContinue;
+        return paContinue;
     }
 
     float nextSample() {
@@ -162,14 +160,14 @@ public:
         _weightedWaveTables = weightedWaveTables;
     }
 
-    void setEnvelope(const Envelope &envelope) {
+    void setEnvelope(const Envelope& envelope) {
         auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         for (auto& voice : _voices) {
             voice.setEnvelope(envelope);
         }
     }
 
-    void setFilter(const Filter &filter) {
+    void setFilter(const Filter& filter) {
         auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
         for (auto& voice : _voices) {
             voice.setFilter(filter);
@@ -221,7 +219,7 @@ public:
     PaStream* _portAudioStream;
     std::mutex _mutex;
     std::vector<WeightedWaveTable> _weightedWaveTables;
-    AudioBuffer _lastOutputBuffer; // Forwarded to onOutputFn()
+    AudioBuffer _lastOutputBuffer;// Forwarded to onOutputFn()
     std::unordered_set<int> _activeVoices;
     std::unordered_set<int> _sustainedVoices;
     std::vector<SynthesizerVoice> _voices;
@@ -258,15 +256,15 @@ std::vector<WeightedWaveTable> Synthesizer::weightedWaveTables() const {
     return _impl->weightedWaveTables();
 }
 
-void Synthesizer::setWaveTables(const std::vector<WeightedWaveTable> &weightedWaveTables) {
+void Synthesizer::setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
     _impl->setWaveTables(weightedWaveTables);
 }
 
-void Synthesizer::setEnvelope(const Envelope &envelope) {
+void Synthesizer::setEnvelope(const Envelope& envelope) {
     _impl->setEnvelope(envelope);
 }
 
-void Synthesizer::setFilter(const Filter &filter) {
+void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 

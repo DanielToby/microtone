@@ -15,8 +15,8 @@
 
 #include <microtone/midi_input.hpp>
 
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 
 namespace asciiboard {
 
@@ -63,7 +63,6 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
         auto controls = SynthControls{initialControls};
 
@@ -71,14 +70,11 @@ public:
         auto showInstructions = true;
         auto closeInstructions = Button("Ok", [&showInstructions] { showInstructions = false; });
         auto instructions = Renderer(closeInstructions, [&closeInstructions] {
-            return vbox({
-                       text("Press <enter> to submit changes to the controls. Press 'q' to quit."),
-                         hbox({
-                           filler(),
-                           closeInstructions->Render(),
-                           filler()
-                         })
-                    }) | hcenter | border;
+            return vbox({text("Press <enter> to submit changes to the controls. Press 'q' to quit."),
+                         hbox({filler(),
+                               closeInstructions->Render(),
+                               filler()})}) |
+                   hcenter | border;
         });
 
         // =========== Oscillators tab ===========
@@ -92,21 +88,19 @@ public:
         auto triangleSlider = Slider("Triangle:", &triangle, 0, 100, 1);
 
         auto oscillatorControlsContainer = Container::Horizontal({
-                                              sineSlider,
-                                              squareSlider,
-                                              triangleSlider,
-                                              });
+            sineSlider,
+            squareSlider,
+            triangleSlider,
+        });
 
         auto oscillatorControls = Renderer(oscillatorControlsContainer,
-                                           [&sineSlider, &squareSlider, &triangleSlider] () {
-            return hbox({
-                sineSlider->Render(),
-                filler(),
-                squareSlider->Render(),
-                filler(),
-                triangleSlider->Render()
-            });
-        });
+                                           [&sineSlider, &squareSlider, &triangleSlider]() {
+                                               return hbox({sineSlider->Render(),
+                                                            filler(),
+                                                            squareSlider->Render(),
+                                                            filler(),
+                                                            triangleSlider->Render()});
+                                           });
 
         // Oscilloscope
         auto scaleFactor = 0.5;
@@ -137,12 +131,9 @@ public:
 
         auto oscillators = Renderer(oscillatorsContainer, [&] {
             return vbox({
-                oscillatorControls->Render() | borderRounded,
-                oscilloscope->Render()
-                        | size(HEIGHT, LESS_THAN, graphHeight)
-                        | hcenter
-                        | borderRounded
-            });
+                oscilloscope->Render() | size(HEIGHT, LESS_THAN, graphHeight),
+                oscillatorControls->Render(),
+            }) | size(WIDTH, EQUAL, 66) | borderRounded | hcenter;
         });
 
         // =========== Envelope tab ===========
@@ -214,9 +205,9 @@ public:
 
         auto envelope = Renderer(envelopeContainer, [&] {
             return vbox({
-                envelopeControls->Render(),
-                envelopeGraph->Render()
-            }) | borderRounded;
+                envelopeGraph->Render() | size(HEIGHT, LESS_THAN, graphHeight),
+                envelopeControls->Render()
+            }) | size(WIDTH, EQUAL, 66) | borderRounded | hcenter;
         });
 
         auto tab_index = 0;
@@ -248,30 +239,18 @@ public:
             return output;
         };
 
-        auto pianoRoll = Renderer([&activeNotes, &keyboard](){
+        auto pianoRoll = Renderer([&activeNotes, &keyboard]() {
             return vbox({
-                hbox({
-                    filler(),
-                    graph(std::ref(activeNotes))
-                        | size(WIDTH, EQUAL, 66)
-                        | size(HEIGHT, EQUAL, 2)
-                        | color(Color::GreenLight),
-                    filler()
-                }),
-                hbox({
-                    filler(),
-                    graph(std::ref(keyboard))
-                        | size(WIDTH, EQUAL, 66)
-                        | size(HEIGHT, EQUAL, 2),
-                    filler()
-                })
-            });
+                         graph(std::ref(activeNotes)) | size(HEIGHT, EQUAL, 2) | color(Color::GreenLight),
+                         graph(std::ref(keyboard)) | size(HEIGHT, EQUAL, 2)
+                        }) | size(WIDTH, EQUAL, 66) | borderRounded | hcenter;
         });
 
         auto mainContents = Container::Vertical({
             instructions,
             selectedTab,
-            tabContent
+            tabContent,
+            pianoRoll
         });
 
         auto mainRenderer = Renderer(mainContents, [&] {
@@ -279,7 +258,7 @@ public:
                 text("microtone") | bold | hcenter,
                 selectedTab->Render(),
                 tabContent->Render(),
-                pianoRoll->Render() | borderRounded
+                pianoRoll->Render()
             });
 
             if (showInstructions) {
@@ -291,7 +270,7 @@ public:
             return document;
         });
 
-        auto eventListener = CatchEvent(mainRenderer, [&] (Event event) {
+        auto eventListener = CatchEvent(mainRenderer, [&](Event event) {
             if (event == Event::Character('q')) {
                 _screen.ExitLoopClosure()();
                 return true;
