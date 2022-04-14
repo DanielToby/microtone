@@ -81,6 +81,8 @@ public:
                     }) | hcenter | border;
         });
 
+        // =========== Oscillators tab ===========
+
         // Oscillator Controls
         auto sine = static_cast<int>(controls.sineWeight * 100);
         auto square = static_cast<int>(controls.squareWeight * 100);
@@ -106,6 +108,45 @@ public:
             });
         });
 
+        // Oscilloscope
+        auto scaleFactor = 0.5;
+        auto graphHeight = 60;
+        auto oscilloscope = Renderer([&] {
+            auto width = 200;
+            auto c = Canvas(width, graphHeight);
+            for (auto i = 0; i < width - 1; ++i) {
+                if (i < static_cast<int>(_lastOutputBuffer.size())) {
+                    c.DrawPointLine(i,
+                                    (_lastOutputBuffer[i] * graphHeight * scaleFactor) + (graphHeight / 2),
+                                    i + 1,
+                                    (_lastOutputBuffer[i + 1] * graphHeight * scaleFactor) + (graphHeight / 2));
+                } else {
+                    c.DrawPointLine(i, graphHeight / 2, i + 1, graphHeight / 2);
+                }
+            }
+
+            return vbox({
+                text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
+                canvas(std::move(c))
+            });
+        });
+
+        auto oscillatorsContainer = Container::Vertical({
+                                                  oscillatorControls,
+                                                  oscilloscope});
+
+        auto oscillators = Renderer(oscillatorsContainer, [&] {
+            return vbox({
+                oscillatorControls->Render() | borderRounded,
+                oscilloscope->Render()
+                        | size(HEIGHT, LESS_THAN, graphHeight)
+                        | hcenter
+                        | borderRounded
+            });
+        });
+
+        // =========== Envelope tab ===========
+
         // Envelope Controls
         auto attack = static_cast<int>(controls.attack * 100);
         auto decay = static_cast<int>(controls.decay * 100);
@@ -121,43 +162,67 @@ public:
             decaySlider,
             sustainSlider,
             releaseSlider
-            });
+        });
 
         auto envelopeControls = Renderer(envelopeControlsContainer,
-                                           [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider] () {
-                                               return hbox({
-                                                   attackSlider->Render(),
-                                                   filler(),
-                                                   decaySlider->Render(),
-                                                   filler(),
-                                                   sustainSlider->Render(),
+                                         [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider] () {
+                                             return hbox({
+                                                 attackSlider->Render(),
                                                  filler(),
-                                                     releaseSlider->Render()
-                                               });
-                                           });
+                                                 decaySlider->Render(),
+                                                 filler(),
+                                                 sustainSlider->Render(),
+                                                 filler(),
+                                                 releaseSlider->Render()
+                                             });
+                                         });
 
-        // Oscilloscope
-        auto scaleFactor = 0.5;
-        auto oscilloscopeHeight = 60;
-        auto oscilloscope = Renderer([&] {
+        auto envelopeGraph = Renderer([&] {
             auto width = 200;
-            auto c = Canvas(width, oscilloscopeHeight);
-            for (auto i = 0; i < width - 1; ++i) {
-                if (i < static_cast<int>(_lastOutputBuffer.size())) {
-                    c.DrawPointLine(i,
-                                    (_lastOutputBuffer[i] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2),
-                                    i + 1,
-                                    (_lastOutputBuffer[i + 1] * oscilloscopeHeight * scaleFactor) + (oscilloscopeHeight / 2));
-                } else {
-                    c.DrawPointLine(i, oscilloscopeHeight / 2, i + 1, oscilloscopeHeight / 2);
-                }
-            }
+            auto c = Canvas(width, graphHeight);
+             /*
+             *           / \
+             *         /    \
+             *       /       \___________
+             *     /                     \
+             *     0     x1  x2          x3
+             *     a     d   s           r
+             */
 
-            return vbox({
-                text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
-                canvas(std::move(c))
-            });
+            // The "sustain" phase always has a width of w/4.
+            auto sustainWidth = width / 4;
+
+            // The remaining width is split among the other phases.
+            auto remainingWidth = (width - sustainWidth);
+
+            auto totalTime = attack + decay + release;
+            auto x1 = (static_cast<double>(attack) / totalTime) * remainingWidth;
+            auto x2 = ((static_cast<double>(attack) + decay) / totalTime) * remainingWidth;
+            auto x3 = x2 + sustainWidth;
+
+            auto sustainHeight = graphHeight - (graphHeight * (static_cast<double>(sustain) / 100));
+
+            c.DrawPointLine(0, graphHeight, x1, 0);
+            c.DrawPointLine(x1, 0, x2, sustainHeight);
+            c.DrawPointLine(x2, sustainHeight, x3, sustainHeight);
+            c.DrawPointLine(x3, sustainHeight, width, graphHeight);
+
+            return canvas(std::move(c));
         });
+
+        auto envelopeContainer = Container::Vertical({ envelopeControls });
+
+        auto envelope = Renderer(envelopeContainer, [&] {
+            return vbox({
+                envelopeControls->Render(),
+                envelopeGraph->Render()
+            }) | borderRounded;
+        });
+
+        auto tab_index = 0;
+        auto tab_entries = std::vector<std::string>{ "oscillators", "envelope" };
+        auto selectedTab = Menu(&tab_entries, &tab_index, MenuOption::HorizontalAnimated());
+        auto tabContent = Container::Tab({ oscillators, envelope }, &tab_index);
 
         // Piano roll
         auto keyboard = [](int width, int height) {
@@ -176,7 +241,7 @@ public:
             std::vector<int> output(width, -1);
             for (auto i = 0; i < width; ++i) {
                 if (_activeMidiNotes.find(i) != _activeMidiNotes.end() ||
-                        _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
+                    _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
                     output[i] = 1;
                 }
             }
@@ -203,38 +268,24 @@ public:
             });
         });
 
-        auto synthesizerContainer = Container::Vertical({
-                                                  oscillatorControls,
-                                                  envelopeControls,
-                                                  oscilloscope,
-                                                  pianoRoll});
-
-        auto synthesizer = Renderer(synthesizerContainer, [&] {
-            return vbox({
-                oscillatorControls->Render() | borderRounded,
-                envelopeControls->Render() | borderRounded,
-                vbox({
-                    oscilloscope->Render()
-                        | size(HEIGHT, LESS_THAN, oscilloscopeHeight)
-                        | hcenter
-                        | borderRounded,
-                    pianoRoll->Render() | borderRounded
-                 })
-            });
-        });
-
         auto mainContents = Container::Vertical({
             instructions,
-            synthesizer
+            selectedTab,
+            tabContent
         });
 
-        auto mainRenderer = Renderer(mainContents, [&showInstructions, &synthesizer, &instructions] {
-            Element document = synthesizer->Render();
+        auto mainRenderer = Renderer(mainContents, [&] {
+            Element document = vbox({
+                text("microtone") | bold | hcenter,
+                selectedTab->Render(),
+                tabContent->Render(),
+                pianoRoll->Render() | borderRounded
+            });
 
             if (showInstructions) {
             document = dbox({
                              document,
-                    instructions->Render() | clear_under | center,
+                             instructions->Render() | clear_under | center,
                              });
             }
             return document;
