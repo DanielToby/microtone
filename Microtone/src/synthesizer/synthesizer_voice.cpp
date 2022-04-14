@@ -12,6 +12,7 @@ public:
     impl(double frequency,
          const Envelope& envelope,
          const Oscillator& oscillator,
+         const LowFrequencyOscillator& lfo,
          const Filter& filter) :
         _frequency{frequency},
         _velocity(0),
@@ -52,7 +53,7 @@ public:
     }
 
     float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-        auto nextSample = _oscillator.nextSample(weightedWaveTables);
+        auto nextSample = _oscillator.nextSample(weightedWaveTables);  // _lfo.nextSample();
         return _filter.nextSample(_envelope.nextSample() * _velocity * nextSample);
     }
 
@@ -60,14 +61,16 @@ public:
     double _velocity;
     Envelope _envelope;
     Oscillator _oscillator;
+    LowFrequencyOscillator _lfo;
     Filter _filter;
 };
 
 SynthesizerVoice::SynthesizerVoice(double frequency,
-                                   const Oscillator& oscillator,
                                    const Envelope& envelope,
+                                   const Oscillator& oscillator,
+                                   const LowFrequencyOscillator& lfo,
                                    const Filter& filter) :
-    _impl{new impl{frequency, envelope, oscillator, filter}} {
+    _impl{new impl{frequency, envelope, oscillator, lfo, filter}} {
 }
 
 SynthesizerVoice::SynthesizerVoice(SynthesizerVoice&& other) noexcept :

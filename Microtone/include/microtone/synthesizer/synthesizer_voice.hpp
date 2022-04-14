@@ -5,6 +5,7 @@
 #include <microtone/synthesizer/envelope.hpp>
 #include <microtone/synthesizer/filter.hpp>
 #include <microtone/synthesizer/oscillator.hpp>
+#include <microtone/synthesizer/low_frequency_oscillator.hpp>
 #include <microtone/synthesizer/weighted_wavetable.hpp>
 
 #include <memory>
@@ -14,8 +15,9 @@ namespace microtone {
 class SynthesizerVoice {
 public:
     explicit SynthesizerVoice(double frequency,
-                              const Oscillator& oscillator,
                               const Envelope& envelope,
+                              const Oscillator& oscillator,
+                              const LowFrequencyOscillator& lfo,
                               const Filter& filter);
     SynthesizerVoice(const SynthesizerVoice&) = delete;
     SynthesizerVoice& operator=(const SynthesizerVoice&) = delete;

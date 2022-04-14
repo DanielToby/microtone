@@ -23,6 +23,7 @@ HEADERS += \
     include/microtone/synthesizer/audio_buffer.hpp \
     include/microtone/synthesizer/envelope.hpp \
     include/microtone/synthesizer/filter.hpp \
+    include/microtone/synthesizer/low_frequency_oscillator.hpp \
     include/microtone/synthesizer/oscillator.hpp \
     include/microtone/synthesizer/synthesizer.hpp \
     include/microtone/synthesizer/synthesizer_voice.hpp \
@@ -39,6 +40,7 @@ SOURCES += \
     src/midi_input.cpp \
     src/synthesizer/envelope.cpp \
     src/synthesizer/filter.cpp \
+    src/synthesizer/low_frequency_oscillator.cpp \
     src/synthesizer/oscillator.cpp \
     src/synthesizer/synthesizer.cpp \
     src/synthesizer/synthesizer_voice.cpp

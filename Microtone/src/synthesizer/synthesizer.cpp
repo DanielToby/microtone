@@ -2,6 +2,7 @@
 #include <microtone/synthesizer/envelope.hpp>
 #include <microtone/synthesizer/filter.hpp>
 #include <microtone/synthesizer/synthesizer_voice.hpp>
+#include <microtone/synthesizer/low_frequency_oscillator.hpp>
 #include <microtone/synthesizer/oscillator.hpp>
 #include <microtone/midi_input.hpp>
 #include <microtone/exception.hpp>
@@ -74,8 +75,9 @@ public:
 
         for (auto i = 0; i < 127; ++i) {
             _voices.emplace_back(noteToFrequencyHertz(i),
-                                 Oscillator{noteToFrequencyHertz(i), _sampleRate},
                                  Envelope{0.01, 0.1, .8, 0.01, _sampleRate},
+                                 Oscillator{noteToFrequencyHertz(i), _sampleRate},
+                                 LowFrequencyOscillator{0.25, _sampleRate},
                                  Filter{});
         }
 
@@ -145,6 +147,7 @@ public:
             for (auto& id : _activeVoices) {
                 nextSample += _voices[id].nextSample(_weightedWaveTables);
             }
+
             _mutex.unlock();
         }
         return nextSample;
