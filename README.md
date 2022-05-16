@@ -1,6 +1,10 @@
 # microtone
 A tiny cross-platform polyphonic synthesis library with MIDI support.
 
+<p align="center">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3SpMUx2KE4o" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</p>
+
 I've been fascinated with digital signal processing and real-time audio for a long time. I'm a musician, and wanted to combine my love of the piano with my understanding of C++. I'd heard of frameworks like JUCE, but wanted to try my hand at a lower level approach. I owe the foundation of my ideas to this [fantastic C++Now presentation by Timur Doumler](https://www.youtube.com/watch?v=jNSiZqSQis4).
 
 Unfortunately std::audio is still in early stages, so I looked to [portaudio](http://www.portaudio.com/) for a more robust real-time audio callback.
