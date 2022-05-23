@@ -14,7 +14,7 @@ namespace microtone {
 
 class SynthesizerVoice {
 public:
-    explicit SynthesizerVoice(double frequency,
+    SynthesizerVoice(double frequency,
                               const Envelope& envelope,
                               const Oscillator& oscillator,
                               const LowFrequencyOscillator& lfo,

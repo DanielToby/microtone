@@ -16,7 +16,7 @@ enum class EnvelopeState {
 
 class Envelope {
 public:
-    explicit Envelope(double attack, double decay, double sustain, double release, double sampleRate);
+    Envelope(double attack, double decay, double sustain, double release, double sampleRate);
     Envelope(const Envelope&);
     Envelope& operator=(const Envelope&) noexcept;
     Envelope(Envelope&&) noexcept;

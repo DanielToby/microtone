@@ -181,18 +181,19 @@ public:
 
     void addMidiData(int status, int note, int velocity) {
         auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-        // auto midiStatus = static_cast<MidiStatusMessage>(status);
-        if (status == 0b10010000) {
+        auto midiStatus = MidiStatusMessage(status);
+
+        if (midiStatus == MidiStatusMessage::NoteOn) {
             _voices[note].setVelocity(velocity);
             _voices[note].triggerOn();
             _activeVoices.insert(note);
-        } else if (status == 0b10000000) {
+        } else if (midiStatus == MidiStatusMessage::NoteOff) {
             if (_sustainPedalOn) {
                 _sustainedVoices.insert(note);
             } else {
                 _voices[note].triggerOff();
             }
-        } else if (status == 0b10110000) {
+        } else if (midiStatus == MidiStatusMessage::ControlChange) {
             if (note == 64) {
                 _sustainPedalOn = velocity > 64;
                 if (!_sustainPedalOn) {
@@ -216,10 +217,10 @@ public:
     }
 
     OnOutputFn _onOutputFn;
-    PaStream* _portAudioStream;
+    PaStream* _portAudioStream;    // Owned by port audio, cleaned up by Pa_Terminate().
     std::mutex _mutex;
     std::vector<WeightedWaveTable> _weightedWaveTables;
-    AudioBuffer _lastOutputBuffer;// Forwarded to onOutputFn()
+    AudioBuffer _lastOutputBuffer;  // Forwarded to onOutputFn()
     std::unordered_set<int> _activeVoices;
     std::unordered_set<int> _sustainedVoices;
     std::vector<SynthesizerVoice> _voices;

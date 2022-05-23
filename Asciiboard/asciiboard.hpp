@@ -15,7 +15,7 @@ using OnControlsChangedFn = std::function<void(const SynthControls&)>;
 
 class Asciiboard {
 public:
-    explicit Asciiboard();
+    Asciiboard();
     Asciiboard(const Asciiboard&) = delete;
     Asciiboard& operator=(const Asciiboard&) = delete;
     Asciiboard(Asciiboard&&) noexcept;

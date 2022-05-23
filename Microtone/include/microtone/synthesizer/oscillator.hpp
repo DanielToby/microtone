@@ -10,7 +10,7 @@ namespace microtone {
 
 class Oscillator {
 public:
-    explicit Oscillator(double frequency, double sampleRate);
+    Oscillator(double frequency, double sampleRate);
     Oscillator(const Oscillator&);
     Oscillator& operator=(const Oscillator&);
     Oscillator(Oscillator&&) noexcept;

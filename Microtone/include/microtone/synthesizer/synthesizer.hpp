@@ -16,7 +16,7 @@ using OnOutputFn = std::function<void(const AudioBuffer&)>;
 
 class Synthesizer {
 public:
-    explicit Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
+    Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;

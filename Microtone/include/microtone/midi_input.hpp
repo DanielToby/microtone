@@ -9,17 +9,17 @@
 
 namespace microtone {
 
-//enum class MidiStatusMessage {
-//    NoteOn = 0b10010000,
-//    NoteOff = 0b10000000,
-//    ControlChange = 0b10110000
-//};
+enum class MidiStatusMessage {
+    NoteOn = 0b10010000,
+    NoteOff = 0b10000000,
+    ControlChange = 0b10110000
+};
 
 using OnMidiDataFn = std::function<void(int status, int note, int velocity)>;
 
 class MidiInput {
 public:
-    explicit MidiInput();
+    MidiInput();
     MidiInput(const MidiInput&) = delete;
     MidiInput& operator=(const MidiInput&) = delete;
     MidiInput(MidiInput&&) noexcept;

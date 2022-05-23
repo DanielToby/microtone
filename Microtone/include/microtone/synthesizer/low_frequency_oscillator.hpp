@@ -10,7 +10,7 @@ namespace microtone {
 
 class LowFrequencyOscillator {
 public:
-    explicit LowFrequencyOscillator(double frequency = 0, double sampleRate = -1);
+    LowFrequencyOscillator(double frequency = 0, double sampleRate = -1);
     LowFrequencyOscillator(const LowFrequencyOscillator&);
     LowFrequencyOscillator(LowFrequencyOscillator&&) noexcept;
     LowFrequencyOscillator& operator=(const LowFrequencyOscillator&) noexcept;

@@ -8,7 +8,7 @@ namespace microtone {
 
 class Filter {
 public:
-    explicit Filter();
+    Filter();
     Filter(const Filter&);
     Filter(Filter&&) noexcept;
     Filter& operator=(const Filter&) noexcept;

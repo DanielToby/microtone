@@ -48,9 +48,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Initial GUI / synthesizer values
         auto initialControls = asciiboard::SynthControls{};
-        initialControls.sineWeight = 0.9;
-        initialControls.squareWeight = 0.1;
-        initialControls.triangleWeight = 0;
+        initialControls.sineWeight = 0.8;
+        initialControls.squareWeight = 0;
+        initialControls.triangleWeight = 0.2;
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
