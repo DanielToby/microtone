@@ -66,12 +66,12 @@ public:
 
     void triggerOn() {
         _state = EnvelopeState::Attack;
-        rampTo(1.0, _attack); // perform attack
+        rampTo(1.0, _attack);                                   // perform attack
     }
 
     void triggerOff() {
         _state = EnvelopeState::Release;
-        rampTo(0, _release); // perform release
+        rampTo(0, _release);                                    // perform release
     }
 
     void setValue(float value) {
@@ -95,7 +95,7 @@ public:
         if (_counter == 0) {
             if (_state == EnvelopeState::Attack) {
                 _state = EnvelopeState::Decay;
-                rampTo(_sustain, _decay);// perform decay
+                rampTo(_sustain, _decay);                       // perform decay
             } else if (_state == EnvelopeState::Decay) {
                 _state = EnvelopeState::Sustain;
             } else if (_state == EnvelopeState::Release) {
