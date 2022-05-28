@@ -3,6 +3,10 @@ A cross-platform polyphonic synthesis library with MIDI support.
 
 [![Watch the demo!](https://user-images.githubusercontent.com/41296254/170831269-3c965d7d-9fa6-4e9e-9729-c81c28f8a52b.png)](https://youtu.be/3SpMUx2KE4o)
 
+##Build (qmake) (MacOS / Windows)
+1. Open in Qt Creator (4 or higher)
+2. Build
+
 I've been fascinated with digital signal processing and real-time audio for a long time. I'm a musician, and wanted to combine my love of the piano with my understanding of C++. I'd heard of frameworks like JUCE, but wanted to try out a lower level approach. I owe the foundation of my ideas to this [fantastic C++Now presentation by Timur Doumler](https://www.youtube.com/watch?v=jNSiZqSQis4).
 
 Unfortunately std::audio is still in early stages, so I looked to [portaudio](http://www.portaudio.com/) for a more robust real-time audio callback.
