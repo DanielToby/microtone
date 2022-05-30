@@ -83,7 +83,7 @@ public:
     }
 
     ~impl() {
-        if (_portAudioStream && _portAudioStream) {
+        if (_portAudioStream) {
             Pa_StopStream(_portAudioStream);
         }
         Pa_Terminate();
