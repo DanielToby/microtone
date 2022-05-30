@@ -205,7 +205,8 @@ public:
             }
         }
 
-        for (const auto& id : _activeVoices) {
+        const auto activeVoices = _activeVoices;
+        for (const auto& id : activeVoices) {
             if (!_voices[id].isActive()) {
                 _activeVoices.erase(id);
             }
