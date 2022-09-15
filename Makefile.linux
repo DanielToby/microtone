@@ -1,0 +1,8 @@
+
+all: Asciiboard/Asciiboard
+
+Asciiboard/Asciiboard:
+	$(MAKE) -C Asciiboard -f Makefile.linux
+
+clean:
+	$(MAKE) -C Asciiboard clean -f Makefile.linux

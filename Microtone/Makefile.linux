@@ -1,0 +1,43 @@
+# /ftxui-2.0.0 ??
+
+# /portaudio-19.7.0
+# /rtmidi-5.0.0
+# /spdlog-1.9.0
+# /fmt-8.0.1
+
+# libfmt-dev/jammy 8.1.1+ds1-2 amd64
+# portaudio19-dev/jammy 19.6.0-1.1 amd64
+# librtmidi-dev/jammy 5.0.0-2 amd64
+# libspdlog-dev/jammy 1:1.9.2+ds-0.2 amd64
+
+# sudo apt install libfmt-dev portaudio19-dev librtmidi-dev libspdlog-dev
+
+all: libMicrotone.a
+
+AR:=ar
+
+SRC:=    src/microtone_platform.cpp \
+    src/exception.cpp \
+    src/log.cpp \
+    src/midi_input.cpp \
+    src/synthesizer/envelope.cpp \
+    src/synthesizer/filter.cpp \
+    src/synthesizer/low_frequency_oscillator.cpp \
+    src/synthesizer/oscillator.cpp \
+    src/synthesizer/synthesizer.cpp \
+    src/synthesizer/synthesizer_voice.cpp
+OBJ:=$(SRC:.cpp=.o)
+
+LIB:=libMicrotone.a
+
+CXXFLAGS:=-g -O0
+CXXFLAGS+=--std=c++17
+CXXFLAGS+=-I include
+CXXFLAGS+=-I vendor/portaudio-19.7.0/include
+#g++ -c src/microtone_platform.cpp -I include -I vendor/spdlog-1.9.0/include/
+
+$(LIB): $(OBJ)
+	$(AR) cr $@ $^
+
+clean:
+	$(RM) $(OBJ) $(LIB)
