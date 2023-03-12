@@ -7,6 +7,11 @@ A cross-platform polyphonic synthesis library with MIDI support.
 1. Open in Qt Creator (4 or higher)
 2. Build
 
+### Build (make) (Linux / Ubuntu)
+0. `sudo apt install libfmt-dev portaudio19-dev librtmidi-dev libspdlog-dev`
+1. `make -f Makefile.linux clean all`
+2. `Asciiboard/Asciiboard`
+
 ### About
 
 I've been fascinated with digital signal processing and real-time audio for a long time. I'm a musician, and wanted to combine my love of the piano with my understanding of C++. I'd heard of frameworks like JUCE, but wanted to try out a lower level approach. I owe the foundation of my ideas to this [fantastic C++Now presentation by Timur Doumler](https://www.youtube.com/watch?v=jNSiZqSQis4).
