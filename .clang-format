@@ -125,9 +125,6 @@ SpacesInContainerLiterals: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: Latest
-StatementMacros:
- - Q_UNUSED
- - QT_REQUIRE_VERSION
 TabWidth: 8
 UseCRLF: false
 UseTab: Never

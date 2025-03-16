@@ -1,4 +1,4 @@
-#include <asciiboard.hpp>
+#include <asciiboard/asciiboard.hpp>
 
 #include "ftxui/component/component.hpp"         // for Checkbox, Renderer, Horizontal, Vertical, Input, Menu, Radiobox, ResizableSplitLeft, Tab
 #include "ftxui/component/component_base.hpp"    // for ComponentBase

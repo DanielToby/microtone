@@ -1,4 +1,4 @@
-#include <asciiboard.hpp>
+#include <asciiboard/asciiboard.hpp>
 
 #include <microtone/exception.hpp>
 #include <microtone/midi_input.hpp>

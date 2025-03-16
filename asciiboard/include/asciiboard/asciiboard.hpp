@@ -1,6 +1,6 @@
 #pragma once
 
-#include <synth_controls.hpp>
+#include <asciiboard/synth_controls.hpp>
 
 #include <array>
 #include <functional>
