@@ -54,24 +54,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector<microtone::WeightedWaveTable>{};
-        auto sineWave = microtone::WaveTable{};
-        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
-            sineWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH);
-        }
 
-        auto squareWave = microtone::WaveTable{};
-        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
-            squareWave[i] = std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH) > 0 ? 1.0 : -1.0;
-        }
+        auto sineWaveTable = microtone::buildWaveTable(microtone::examples::sineWaveFill);
+        auto squareWaveTable = microtone::buildWaveTable(microtone::examples::squareWaveFill);
+        auto triangleWaveTable = microtone::buildWaveTable(microtone::examples::triangleWaveFill);
 
-        auto triangleWave = microtone::WaveTable{};
-        for (auto i = 0; i < microtone::WAVETABLE_LENGTH; ++i) {
-            triangleWave[i] = std::asin(std::sin(2.0 * M_PI * i / microtone::WAVETABLE_LENGTH)) * (2.0 / M_PI);
-        }
-
-        weightedWaveTables.emplace_back(sineWave, initialControls.sineWeight);
-        weightedWaveTables.emplace_back(squareWave, initialControls.squareWeight);
-        weightedWaveTables.emplace_back(triangleWave, initialControls.triangleWeight);
+        weightedWaveTables.emplace_back(sineWaveTable, initialControls.sineWeight);
+        weightedWaveTables.emplace_back(squareWaveTable, initialControls.squareWeight);
+        weightedWaveTables.emplace_back(triangleWaveTable, initialControls.triangleWeight);
 
         // This callback is invoked on every audio frame. Don't do anything blocking here!
         auto onOutputFn = [&asciiboard](const microtone::AudioBuffer& outputData) {
