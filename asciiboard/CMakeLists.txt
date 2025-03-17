@@ -12,17 +12,17 @@ set_target_properties(asciiboard PROPERTIES
 )
 
 target_include_directories(asciiboard PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 set(HEADERS
-    include/asciiboard/asciiboard.hpp
-    include/asciiboard/synth_controls.hpp
+    src/asciiboard/asciiboard.hpp
+    src/asciiboard/synth_controls.hpp
 )
 
 set(SOURCES
-    src/asciiboard.cpp
-    src/main.cpp
+    src/asciiboard/asciiboard.cpp
+    src/asciiboard/main.cpp
 )
 
 target_sources(asciiboard PRIVATE ${HEADERS} ${SOURCES})
@@ -34,4 +34,3 @@ target_link_libraries(asciiboard PRIVATE
     ftxui::dom
     ftxui::screen
 )
-
