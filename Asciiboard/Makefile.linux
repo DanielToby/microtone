@@ -1,0 +1,32 @@
+MAIN:=Asciiboard
+MICROTONE:=$$PWD/../Microtone
+LIB:=$(MICROTONE)/libMicrotone.a
+
+all: $(MAIN)
+
+CXX:=g++
+
+SRC:= asciiboard.cpp main.cpp
+OBJ:=$(SRC:.cpp=.o)
+
+CXXFLAGS:=-g -O0
+CXXFLAGS+=-DFMT_HEADER_ONLY
+CXXFLAGS+=--std=c++17
+CXXFLAGS+=-I .
+CXXFLAGS+=-I ../Microtone/include
+CXXFLAGS+=-I vendor/ftxui-2.0.0/include/macos
+
+LDLIBS:=     -L$$PWD/vendor/ftxui-2.0.0/lib/linux -lftxui-component -lftxui-dom -lftxui-screen \
+    -L$(MICROTONE) -lMicrotone \
+    -lrtmidi \
+    -lportaudio
+
+$(LIB):
+	$(MAKE) -C $(MICROTONE) -f Makefile.linux
+
+$(MAIN): $(OBJ) | $(LIB)
+	$(CXX) -o $@ $^ $(LDLIBS)
+
+clean:
+	$(RM) $(OBJ) $(MAIN)
+	$(MAKE) -C $(MICROTONE) clean -f Makefile.linux
