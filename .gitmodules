@@ -1,0 +1,3 @@
+[submodule "microtone/vendor/rtmidi/rtmidi"]
+	path = microtone/vendor/rtmidi/rtmidi
+	url = https://github.com/thestk/rtmidi.git

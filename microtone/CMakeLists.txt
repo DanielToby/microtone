@@ -3,6 +3,8 @@ project(microtone LANGUAGES CXX)
 
 add_library(microtone STATIC)
 
+add_subdirectory(vendor/rtmidi/rtmidi) #< It's nested like this because rtmidi has no 'include' dir...
+
 set_target_properties(microtone PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
@@ -17,7 +19,7 @@ target_compile_definitions(microtone PUBLIC
 target_include_directories(microtone PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi #< No include dir.
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog-1.9.0/include
     ${CMAKE_SOURCE_DIR}/vendor/fmt-8.0.1/include
 )
@@ -69,7 +71,7 @@ elseif(WIN32)
 endif()
 
 target_link_libraries(microtone PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/${PLATFORM}/librtmidi.dylib
+    rtmidi
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/${PLATFORM}/libportaudio.a
     ${PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES}
 )
