@@ -22,19 +22,23 @@ public:
         stop();
     }
 
-    int portCount() {
+    [[nodiscard]] uint8_t portCount() const {
         return _rtMidiConnection->getPortCount();
     }
 
-    std::string portName(int portNumber) {
+    [[nodiscard]] std::string portName(int portNumber) const {
         return _rtMidiConnection->getPortName(portNumber);
+    }
+
+    [[nodiscard]] bool isOpen() const {
+        return _rtMidiConnection->isPortOpen();
     }
 
     void openPort(int portNumber) {
         _rtMidiConnection->openPort(portNumber);
     }
 
-    void start(OnMidiDataFn onReceivedDataFn) {
+    void start(const OnMidiDataFn& onReceivedDataFn) {
         if (!_rtMidiConnection->isPortOpen()) {
             throw MicrotoneException("A port must be open to read midi input data.");
         }
@@ -96,11 +100,15 @@ std::string MidiInput::portName(int portNumber) const {
     return _impl->portName(portNumber);
 }
 
+bool MidiInput::isOpen() const {
+    return _impl->isOpen();
+}
+
 void MidiInput::openPort(int portNumber) {
     _impl->openPort(portNumber);
 }
 
-void MidiInput::start(OnMidiDataFn fn) {
+void MidiInput::start(const OnMidiDataFn& fn) {
     _impl->start(fn);
 }
 

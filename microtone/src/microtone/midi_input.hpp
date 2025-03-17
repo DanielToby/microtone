@@ -26,10 +26,11 @@ public:
     MidiInput& operator=(MidiInput&&) noexcept;
     ~MidiInput();
 
-    int portCount() const;
-    std::string portName(int portNumber) const;
+    [[nodiscard]] int portCount() const;
+    [[nodiscard]] std::string portName(int portNumber) const;
+    [[nodiscard]] bool isOpen() const;
     void openPort(int portNumber);
-    void start(OnMidiDataFn onReceivedDataFn);
+    void start(const OnMidiDataFn& onReceivedDataFn);
     void stop();
 
 private:

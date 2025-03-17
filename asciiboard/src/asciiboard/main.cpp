@@ -11,32 +11,45 @@
 #include <iostream>
 #include <string>
 
-void selectPort(microtone::MidiInput& midiInput) {
-    auto selectedPort = -1;
-    auto numPorts = midiInput.portCount();
-    while (numPorts == 0) {
-        std::cout << "No midi ports are available. Press <enter> to retry." << std::endl;
-        std::cin.get();
-    }
-    if (numPorts == 1) {
-        selectedPort = 0;
-    } else {
-        while (selectedPort < 0 || selectedPort > numPorts - 1) {
-            std::cout << fmt::format("Please choose a port between 1 and {}.", numPorts) << std::endl;
-            for (auto i = 0; i < numPorts; ++i) {
-                std::cout << fmt::format("{0}. {1}", i + 1, midiInput.portName(i)) << std::endl;
-            }
+namespace {
 
-            auto input = std::string{};
-            std::getline(std::cin, input);
-            try {
-                selectedPort = std::stoi(input) - 1;
-            } catch (...) {
-                std::cout << "Enter a number." << std::endl;
-            }
+//! Reads a port from standard in.
+[[nodiscard]] int getUserMidiPortPreference(const microtone::MidiInput& midiInput) {
+    int selectedPort = -1;
+    while (selectedPort < 0 || selectedPort >= midiInput.portCount()) {
+        std::cout << fmt::format("Please choose a port between 0 and {}.", midiInput.portCount() - 1) << std::endl;
+        for (auto i = 0; i < midiInput.portCount(); ++i) {
+            std::cout << fmt::format("{0}. {1}", i, midiInput.portName(i)) << std::endl;
+        }
+
+        auto input = std::string{};
+        std::getline(std::cin, input);
+        try {
+            selectedPort = std::stoi(input);
+        } catch (...) {
+            std::cout << "Enter a number." << std::endl;
         }
     }
-    midiInput.openPort(selectedPort);
+    return selectedPort;
+}
+
+//! Selects a midi port automatically, if possible. Awaits user input if there are multiple ports available.
+void trySelectPort(microtone::MidiInput& midiInput) {
+    switch (midiInput.portCount()) {
+    case 0:
+        std::cout << "No midi ports are available. Continuing without midi..." << std::endl;
+        break;
+    case 1:
+        std::cout << "Using midi port 0 (the only one available)." << std::endl;
+        midiInput.openPort(0);
+        break;
+    default:
+        auto userPreference = getUserMidiPortPreference(midiInput);
+        midiInput.openPort(userPreference);
+        break;
+    }
+}
+
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
@@ -73,13 +86,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Listen to midi input
         auto midiInput = microtone::MidiInput();
-        selectPort(midiInput);
+        trySelectPort(midiInput);
 
-        // Start midi input, update UI and synth when midi data changes
-        midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
-            synth.addMidiData(status, note, velocity);
-            asciiboard.addMidiData(status, note, velocity);
-        });
+        if (midiInput.isOpen()) {
+            // Start midi input, update UI and synth when midi data changes
+            midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
+                synth.addMidiData(status, note, velocity);
+                asciiboard.addMidiData(status, note, velocity);
+            });
+        }
 
         // Set up envelope controls (must be done after synth is started, for sample rate).
         initialControls.attack = 0.01;
