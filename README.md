@@ -12,7 +12,7 @@ A cross-platform polyphonic synthesis library and MIDI player.
 ```sh
 git clone git@github.com:DanielToby/microtone.git
 mkdir build-microtone-release && cd build-microtone-release
-cmake ../microtone -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+cmake ../microtone -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
 ./Asciiboard/asciiboard
 ```

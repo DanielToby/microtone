@@ -69,7 +69,7 @@ elseif(WIN32)
 endif()
 
 target_link_libraries(microtone PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/${PLATFORM}/librtmidi.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/${PLATFORM}/librtmidi.dylib
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/${PLATFORM}/libportaudio.a
     ${PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES}
 )
