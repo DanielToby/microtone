@@ -300,9 +300,7 @@ public:
     bool _sustainPedalOn;
 };
 
-Asciiboard::Asciiboard() :
-    _impl{new impl{}} {
-}
+Asciiboard::Asciiboard() : _impl{std::make_unique<impl>()} {};
 
 Asciiboard::Asciiboard(Asciiboard&& other) noexcept :
     _impl{std::move(other._impl)} {

@@ -72,7 +72,7 @@ public:
 };
 
 MidiInput::MidiInput() :
-    _impl{new impl{}} {
+    _impl{std::make_unique<impl>()} {
 }
 
 MidiInput::MidiInput(MidiInput&& other) noexcept :

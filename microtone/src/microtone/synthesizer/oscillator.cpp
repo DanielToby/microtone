@@ -42,11 +42,11 @@ public:
 };
 
 Oscillator::Oscillator(double frequency, double sampleRate) :
-    _impl{new impl{frequency, sampleRate}} {
+    _impl{std::make_unique<impl>(frequency, sampleRate)} {
 }
 
 Oscillator::Oscillator(const Oscillator& other) :
-    _impl{new impl{*other._impl}} {
+    _impl{std::make_unique<impl>(*other._impl)} {
 }
 
 Oscillator::Oscillator(Oscillator&& other) noexcept :

@@ -22,12 +22,10 @@ public:
     double _alpha;
 };
 
-Filter::Filter() :
-    _impl{new impl{}} {
-}
+Filter::Filter() : _impl{std::make_unique<impl>()} {};
 
 Filter::Filter(const Filter& other) :
-    _impl{new impl{*other._impl}} {
+    _impl{std::make_unique<impl>(*other._impl)} {
 }
 
 Filter::Filter(Filter&& other) noexcept :

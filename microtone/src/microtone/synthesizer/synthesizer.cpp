@@ -230,7 +230,7 @@ public:
 };
 
 Synthesizer::Synthesizer(const std::vector<WeightedWaveTable>& weightedWaveTables, OnOutputFn fn) :
-    _impl{new impl{weightedWaveTables, fn}} {
+    _impl{std::make_unique<impl>(weightedWaveTables, fn)} {
 }
 
 Synthesizer::Synthesizer(Synthesizer&& other) noexcept :

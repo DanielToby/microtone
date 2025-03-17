@@ -30,11 +30,11 @@ public:
 };
 
 LowFrequencyOscillator::LowFrequencyOscillator(double frequency, double sampleRate) :
-    _impl{new impl{frequency, sampleRate}} {
+    _impl{std::make_unique<impl>(frequency, sampleRate)} {
 }
 
 LowFrequencyOscillator::LowFrequencyOscillator(const LowFrequencyOscillator& other) :
-    _impl{new impl{*other._impl}} {
+    _impl{std::make_unique<impl>(*other._impl)} {
 }
 
 LowFrequencyOscillator::LowFrequencyOscillator(LowFrequencyOscillator&& other) noexcept :

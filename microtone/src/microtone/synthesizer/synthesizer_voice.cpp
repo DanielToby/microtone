@@ -71,7 +71,7 @@ SynthesizerVoice::SynthesizerVoice(double frequency,
                                    const Oscillator& oscillator,
                                    const LowFrequencyOscillator& lfo,
                                    const Filter& filter) :
-    _impl{new impl{frequency, envelope, oscillator, lfo, filter}} {
+    _impl{std::make_unique<impl>(frequency, envelope, oscillator, lfo, filter)} {
 }
 
 SynthesizerVoice::SynthesizerVoice(SynthesizerVoice&& other) noexcept :

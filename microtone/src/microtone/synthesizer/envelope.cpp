@@ -118,11 +118,11 @@ public:
 };
 
 Envelope::Envelope(double attack, double decay, double sustain, double release, double sampleRate) :
-    _impl{new impl{attack, decay, sustain, release, sampleRate}} {
+    _impl{std::make_unique<impl>(attack, decay, sustain, release, sampleRate)} {
 }
 
 Envelope::Envelope(const Envelope& other) :
-    _impl{new impl{*other._impl}} {
+    _impl{std::make_unique<impl>(*other._impl)} {
 }
 
 Envelope::Envelope(Envelope&& other) noexcept :
