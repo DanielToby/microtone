@@ -2,8 +2,8 @@
 
 #include <microtone/microtone_platform.hpp>
 #include <microtone/synthesizer/audio_buffer.hpp>
-#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/synthesizer/filter.hpp>
+#include <microtone/synthesizer/envelope.hpp>
 #include <microtone/synthesizer/weighted_wavetable.hpp>
 
 #include <array>

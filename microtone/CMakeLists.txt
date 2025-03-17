@@ -17,36 +17,36 @@ target_compile_definitions(microtone PUBLIC
 )
 
 target_include_directories(microtone PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 set(HEADERS
-    include/microtone/microtone_platform.hpp
-    include/microtone/exception.hpp
-    include/microtone/midi_input.hpp
-    include/microtone/synthesizer/audio_buffer.hpp
-    include/microtone/synthesizer/envelope.hpp
-    include/microtone/synthesizer/filter.hpp
-    include/microtone/synthesizer/low_frequency_oscillator.hpp
-    include/microtone/synthesizer/oscillator.hpp
-    include/microtone/synthesizer/synthesizer.hpp
-    include/microtone/synthesizer/synthesizer_voice.hpp
-    include/microtone/synthesizer/wavetable.hpp
-    include/microtone/synthesizer/weighted_wavetable.hpp
-    src/log.hpp
+    src/microtone/microtone_platform.hpp
+    src/microtone/exception.hpp
+    src/microtone/midi_input.hpp
+    src/microtone/synthesizer/audio_buffer.hpp
+    src/microtone/synthesizer/envelope.hpp
+    src/microtone/synthesizer/filter.hpp
+    src/microtone/synthesizer/low_frequency_oscillator.hpp
+    src/microtone/synthesizer/oscillator.hpp
+    src/microtone/synthesizer/synthesizer.hpp
+    src/microtone/synthesizer/synthesizer_voice.hpp
+    src/microtone/synthesizer/wavetable.hpp
+    src/microtone/synthesizer/weighted_wavetable.hpp
+    src/microtone/log.hpp
 )
 
 set(SOURCES
-    src/microtone_platform.cpp
-    src/exception.cpp
-    src/log.cpp
-    src/midi_input.cpp
-    src/synthesizer/envelope.cpp
-    src/synthesizer/filter.cpp
-    src/synthesizer/low_frequency_oscillator.cpp
-    src/synthesizer/oscillator.cpp
-    src/synthesizer/synthesizer.cpp
-    src/synthesizer/synthesizer_voice.cpp
+    src/microtone/microtone_platform.cpp
+    src/microtone/exception.cpp
+    src/microtone/log.cpp
+    src/microtone/midi_input.cpp
+    src/microtone/synthesizer/envelope.cpp
+    src/microtone/synthesizer/filter.cpp
+    src/microtone/synthesizer/low_frequency_oscillator.cpp
+    src/microtone/synthesizer/oscillator.cpp
+    src/microtone/synthesizer/synthesizer.cpp
+    src/microtone/synthesizer/synthesizer_voice.cpp
 )
 
 target_sources(microtone PUBLIC ${HEADERS} ${SOURCES})

@@ -1,6 +1,6 @@
 #include <microtone/exception.hpp>
-#include <microtone/log.hpp>
 #include <microtone/synthesizer/envelope.hpp>
+#include <microtone/log.hpp>
 #include <microtone/synthesizer/synthesizer_voice.hpp>
 
 #include <cmath>

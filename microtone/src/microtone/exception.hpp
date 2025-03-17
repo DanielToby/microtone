@@ -1,6 +1,6 @@
 #pragma once
 
-#include <microtone/microtone_platform.hpp>
+#include "microtone/microtone_platform.hpp"
 
 #include <stdexcept>
 
