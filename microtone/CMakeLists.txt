@@ -9,17 +9,17 @@ set_target_properties(microtone PROPERTIES
     CXX_EXTENSIONS NO
 )
 
-target_compile_definitions(microtone PRIVATE
+target_compile_definitions(microtone PUBLIC
     FMT_HEADER_ONLY
     SPDLOG_FMT_EXTERNAL
 )
 
-target_include_directories(microtone PRIVATE
+target_include_directories(microtone PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/fmt-8.0.1/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/include
     ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog-1.9.0/include
+    ${CMAKE_SOURCE_DIR}/vendor/fmt-8.0.1/include
 )
 
 set(HEADERS
@@ -51,13 +51,11 @@ set(SOURCES
     src/synthesizer/synthesizer_voice.cpp
 )
 
-target_sources(microtone PRIVATE ${HEADERS} ${SOURCES})
+target_sources(microtone PUBLIC ${HEADERS} ${SOURCES})
 
 if(APPLE)
-    target_compile_definitions(microtone PRIVATE __MACOSX_CORE__)
-    target_link_libraries(microtone PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/macos/librtmidi.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/macos/libportaudio.a
+    target_compile_definitions(microtone PUBLIC __MACOSX_CORE__) # < Required by portaudio.
+    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES
         "-framework AudioToolbox"
         "-framework Carbon"
         "-framework CoreAudio"
@@ -66,9 +64,12 @@ if(APPLE)
         "-framework CoreMIDI"
     )
 elseif(WIN32)
-    target_compile_definitions(microtone PRIVATE __WINDOWS_MM__)
-    target_link_libraries(microtone PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/windows/librtmidi.lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/windows/portaudio_x64.lib
-    )
+    target_compile_definitions(microtone PUBLIC __WINDOWS_MM__) # < Required by portaudio.
+    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES "")
 endif()
+
+target_link_libraries(microtone PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi-5.0.0/lib/${PLATFORM}/librtmidi.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/${PLATFORM}/libportaudio.a
+    ${PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES}
+)
