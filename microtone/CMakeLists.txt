@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.29)
 project(microtone LANGUAGES CXX)
 
-add_library(microtone STATIC)
+add_subdirectory(vendor)
 
-add_subdirectory(vendor/rtmidi/rtmidi) #< It's nested like this because rtmidi has no 'include' dir...
+add_library(microtone STATIC)
 
 set_target_properties(microtone PROPERTIES
     CXX_STANDARD 17
@@ -18,10 +18,6 @@ target_compile_definitions(microtone PUBLIC
 
 target_include_directories(microtone PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi #< No include dir.
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog-1.9.0/include
-    ${CMAKE_SOURCE_DIR}/vendor/fmt-8.0.1/include
 )
 
 set(HEADERS
@@ -56,7 +52,6 @@ set(SOURCES
 target_sources(microtone PUBLIC ${HEADERS} ${SOURCES})
 
 if(APPLE)
-    target_compile_definitions(microtone PUBLIC __MACOSX_CORE__) # < Required by portaudio.
     set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES
         "-framework AudioToolbox"
         "-framework Carbon"
@@ -66,12 +61,13 @@ if(APPLE)
         "-framework CoreMIDI"
     )
 elseif(WIN32)
-    target_compile_definitions(microtone PUBLIC __WINDOWS_MM__) # < Required by portaudio.
     set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES "")
 endif()
 
 target_link_libraries(microtone PUBLIC
+    fmt
+    portaudio
     rtmidi
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio-19.7.0/lib/${PLATFORM}/libportaudio.a
+    spdlog
     ${PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES}
 )

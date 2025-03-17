@@ -8,8 +8,8 @@
 #include <microtone/synthesizer/synthesizer.hpp>
 #include <microtone/synthesizer/synthesizer_voice.hpp>
 
-#include <portaudio/portaudio.h>
-#include <rtmidi/RtMidi.h>
+#include <portaudio.h>
+#include <RtMidi.h>
 
 #include <cmath>
 #include <mutex>

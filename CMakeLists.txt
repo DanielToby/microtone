@@ -7,6 +7,7 @@ elseif(WIN32)
     set (PLATFORM "windows")
 endif()
 
-# Add subdirectories
+add_subdirectory(vendor)
+
 add_subdirectory(microtone)
 add_subdirectory(asciiboard)

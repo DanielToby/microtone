@@ -2,7 +2,7 @@
 #include <microtone/log.hpp>
 #include <microtone/midi_input.hpp>
 
-#include <rtmidi/RtMidi.h>
+#include <RtMidi.h>
 
 #include <atomic>
 #include <chrono>

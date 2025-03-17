@@ -1,3 +1,15 @@
-[submodule "microtone/vendor/rtmidi/rtmidi"]
-	path = microtone/vendor/rtmidi/rtmidi
+[submodule "vendor/fmt"]
+	path = vendor/fmt
+	url = git@github.com:fmtlib/fmt.git
+[submodule "microtone/vendor/portaudio"]
+	path = microtone/vendor/portaudio
+	url = git@github.com:PortAudio/portaudio.git
+[submodule "microtone/vendor/rtmidi"]
+	path = microtone/vendor/rtmidi
 	url = https://github.com/thestk/rtmidi.git
+[submodule "microtone/vendor/spdlog"]
+	path = microtone/vendor/spdlog
+	url = git@github.com:gabime/spdlog.git
+[submodule "asciiboard/vendor/ftxui"]
+	path = asciiboard/vendor/ftxui
+	url = git@github.com:ArthurSonzogni/FTXUI.git
