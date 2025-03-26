@@ -17,6 +17,11 @@ cmake --build . --config Release
 ./Asciiboard/asciiboard
 ```
 
+### Build (make) (Linux / Ubuntu)
+0. `sudo apt install libfmt-dev portaudio19-dev librtmidi-dev libspdlog-dev`
+1. `make -f Makefile.linux clean all`
+2. `Asciiboard/Asciiboard`
+
 ### About
 
 This is a lightweight wavetable synthesizer with a few extra DSP features. I wanted a zippy synth that I could spin up for fun, or use as a building block for other stuff.
