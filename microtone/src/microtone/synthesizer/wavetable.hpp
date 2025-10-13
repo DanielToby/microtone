@@ -3,6 +3,9 @@
 #include <array>
 #include <functional>
 
+
+#define M_PI 3.14159265358979323846
+
 namespace microtone {
 
 const std::size_t WAVETABLE_LENGTH = 512;

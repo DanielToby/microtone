@@ -11,11 +11,6 @@ set_target_properties(microtone PROPERTIES
     CXX_EXTENSIONS NO
 )
 
-target_compile_definitions(microtone PUBLIC
-    FMT_HEADER_ONLY
-    SPDLOG_FMT_EXTERNAL
-)
-
 target_include_directories(microtone PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
