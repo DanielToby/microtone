@@ -1,6 +1,6 @@
 [submodule "common/vendor/fmt"]
 	path = common/vendor/fmt
-	url = git@github.com:fmtlib/fmt.git
+	url = https://github.com/fmtlib/fmt.git
 [submodule "common/vendor/spdlog"]
 	path = common/vendor/spdlog
 	url = git@github.com:gabime/spdlog.git
