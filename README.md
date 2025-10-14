@@ -28,11 +28,11 @@ The audio synthesis techniques demonstrated in this project can be attributed to
 Midi input is handled by the [RtMidi library](https://www.music.mcgill.ca/~gary/rtmidi/).
 
 ### Features
-- Wavetable oscillation that supports fill functions as lambdas. Wavetables are passed into the microtone::Synthesizer constructor with adjustable weights. This data is shared between the oscillators.
+- Wavetable oscillation that supports fill functions as lambdas. Wavetables are passed into the synth::Synthesizer constructor with adjustable weights. This data is shared between the oscillators.
 - Polyphony -- 127 voices, each wrapping an oscillator. This is probably overkill (try playing 127 notes at the same time!), but only active notes on the midi keyboard will trigger the voices
 - Envelopes (Attack, Decay, Sustain, Release): The oscillators belonging to each voice conform to configurable envelopes. Without this, you'd hear clicks and pops when notes are released or pressed in rapid succession -- at least in continuous functions like sine waves. This also adds richness and character to the sound.
 - Filters (low-pass, high-pass, etc).
-- Forwarded audio buffers -- update your UI with live audio data by passing a lambda to the microtone::Synthesizer constructor.
+- Forwarded audio buffers -- update your UI with live audio data by passing a lambda to the synth::Synthesizer constructor.
 - Midi input, including the sustain pedal.
 
 Another dream of mine was to write a tiny synthesizer for use in the terminal. I thought it'd be neat to spin up a little executable instead of waiting on some heavy-weight DAW every time I wanted to play the piano.
