@@ -14,15 +14,12 @@ target_include_directories(io PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set(HEADERS
+set(SOURCES
+    src/io/midi_input.cpp
     src/io/midi_input.hpp
 )
 
-set(SOURCES
-    src/io/midi_input.cpp
-)
-
-target_sources(io PUBLIC ${HEADERS} ${SOURCES})
+target_sources(io PUBLIC ${SOURCES})
 
 target_link_libraries(io PUBLIC
     common

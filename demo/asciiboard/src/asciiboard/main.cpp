@@ -85,7 +85,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         if (midiInput.isOpen()) {
             // Start midi input, update UI and synth when midi data changes
             midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
-                synth.addMidiData(status, note, velocity);
+                synth.submitMidiMessage(status, note, velocity);
                 asciiboard.addMidiData(status, note, velocity);
             });
         }

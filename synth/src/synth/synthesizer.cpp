@@ -1,12 +1,13 @@
 #include <common/exception.hpp>
+#include <common/log.hpp>
 #include <io/midi_input.hpp>
 #include <synth/envelope.hpp>
-#include <common/log.hpp>
 #include <synth/filter.hpp>
 #include <synth/low_frequency_oscillator.hpp>
+#include <synth/midi_device.hpp>
 #include <synth/oscillator.hpp>
-#include <synth/synthesizer_voice.hpp>
 #include <synth/synthesizer.hpp>
+#include <synth/voice.hpp>
 
 #include <portaudio.h>
 #include <RtMidi.h>
@@ -23,10 +24,6 @@ public:
     impl(const std::vector<WeightedWaveTable>& weightedWaveTables, OnOutputFn fn) :
         _onOutputFn{fn},
         _weightedWaveTables{weightedWaveTables},
-        _activeVoices{},
-        _sustainedVoices{},
-        _voices{},
-        _sustainPedalOn{false},
         _sampleRate{0} {
         // Initialize portaudio
         auto portAudioInitResult = Pa_Initialize();
@@ -73,13 +70,17 @@ public:
                                                  Pa_GetErrorText(openStreamResult)));
         }
 
+        auto voices = std::vector<Voice>{};
         for (auto i = 0; i < 127; ++i) {
-            _voices.emplace_back(noteToFrequencyHertz(i),
-                                 Envelope{ADSR{0.01, 0.1, .8, 0.01}, _sampleRate},
-                                 Oscillator{noteToFrequencyHertz(i), _sampleRate},
-                                 LowFrequencyOscillator{0.25, _sampleRate},
-                                 Filter{});
+            voices.emplace_back(
+                noteToFrequencyHertz(i),
+                Envelope{ADSR{0.01, 0.1, .8, 0.01}, _sampleRate},
+                Oscillator{noteToFrequencyHertz(i), _sampleRate},
+                LowFrequencyOscillator{0.25, _sampleRate},
+                Filter{}
+            );
         }
+
     }
 
     ~impl() {
@@ -137,18 +138,14 @@ public:
     }
 
     float nextSample() {
-        auto nextSample = 0.0;
+        auto nextSample = 0.f;
         if (_mutex.try_lock()) {
-            if (_voices.empty()) {
-                return 0;
+            for (auto& id : _device.activeVoices) {
+                nextSample += _device.voices[id].nextSample(_weightedWaveTables);
             }
-            for (auto& id : _activeVoices) {
-                nextSample += _voices[id].nextSample(_weightedWaveTables);
-            }
-
             _mutex.unlock();
         }
-        return nextSample;
+        return .0;
     }
 
     std::vector<WeightedWaveTable> weightedWaveTables() const {
@@ -156,20 +153,20 @@ public:
     }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
         _weightedWaveTables = weightedWaveTables;
     }
 
     void setEnvelope(const Envelope& envelope) {
-        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _voices) {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        for (auto& voice : _device.voices) {
             voice.setEnvelope(envelope);
         }
     }
 
     void setFilter(const Filter& filter) {
-        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _voices) {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        for (auto& voice : _device.voices) {
             voice.setFilter(filter);
         }
     }
@@ -179,36 +176,25 @@ public:
         return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
     }
 
-    void addMidiData(int status, int note, int velocity) {
-        auto lockGaurd = std::unique_lock<std::mutex>{_mutex};
-        auto midiStatus = io::MidiStatusMessage(status);
-
-        if (midiStatus == io::MidiStatusMessage::NoteOn) {
-            _voices[note].setVelocity(velocity);
-            _voices[note].triggerOn();
-            _activeVoices.insert(note);
-        } else if (midiStatus == io::MidiStatusMessage::NoteOff) {
-            if (_sustainPedalOn) {
-                _sustainedVoices.insert(note);
-            } else {
-                _voices[note].triggerOff();
-            }
-        } else if (midiStatus == io::MidiStatusMessage::ControlChange) {
-            if (note == 64) {
-                _sustainPedalOn = velocity > 64;
-                if (!_sustainPedalOn) {
-                    for (const auto& id : _sustainedVoices) {
-                        _voices[id].triggerOff();
+    void submitMidiMessage(const MidiMessage& midiMessage) {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        switch (static_cast<io::MidiStatusMessage>(midiMessage.status)) {
+            case io::MidiStatusMessage::NoteOn:
+                _device.noteOn(midiMessage.note, midiMessage.velocity);
+            case io::MidiStatusMessage::NoteOff:
+                _device.noteOff(midiMessage.note);
+            case io::MidiStatusMessage::ControlChange: {
+                switch (static_cast<io::MidiNoteMessage>(midiMessage.note)) {
+                    case io::MidiNoteMessage::SustainPedal: {
+                        _device.setSustain(midiMessage.velocity > static_cast<int>(io::MidiVelocityMessage::SustainPedalOnThreshold));
                     }
-                    _sustainedVoices.clear();
                 }
             }
         }
-
-        const auto activeVoices = _activeVoices;
+        const auto activeVoices = _device.activeVoices;
         for (const auto& id : activeVoices) {
-            if (!_voices[id].isActive()) {
-                _activeVoices.erase(id);
+            if (!_device.voices[id].isActive()) {
+                _device.activeVoices.erase(id);
             }
         }
     }
@@ -221,11 +207,8 @@ public:
     PaStream* _portAudioStream;    // Owned by port audio, cleaned up by Pa_Terminate().
     std::mutex _mutex;
     std::vector<WeightedWaveTable> _weightedWaveTables;
+    MidiDevice _device;
     AudioBuffer _lastOutputBuffer;  // Forwarded to onOutputFn()
-    std::unordered_set<int> _activeVoices;
-    std::unordered_set<int> _sustainedVoices;
-    std::vector<SynthesizerVoice> _voices;
-    bool _sustainPedalOn;
     double _sampleRate;
 };
 
@@ -270,8 +253,8 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-void Synthesizer::addMidiData(int status, int note, int velocity) {
-    _impl->addMidiData(status, note, velocity);
+void Synthesizer::submitMidiMessage(int status, int note, int velocity) {
+    _impl->submitMidiMessage(MidiMessage{status, note, velocity});
 }
 
 double Synthesizer::sampleRate() {

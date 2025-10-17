@@ -30,7 +30,7 @@ public:
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
 
-    void addMidiData(int status, int note, int velocity);
+    void submitMidiMessage(int status, int note, int velocity);
     double sampleRate();
 
     std::vector<WeightedWaveTable>& getWaveTables() const;

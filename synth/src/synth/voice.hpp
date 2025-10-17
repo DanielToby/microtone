@@ -6,23 +6,21 @@
 #include <synth/oscillator.hpp>
 #include <synth/wave_table.hpp>
 
-#include <memory>
-
 namespace synth {
 
-class SynthesizerVoice {
+class Voice {
 public:
-    SynthesizerVoice(double frequency,
-         const Envelope& envelope,
-         const Oscillator& oscillator,
-         const LowFrequencyOscillator& lfo,
-         const Filter& filter) :
-        _frequency{frequency},
-        _velocity(0),
-        _envelope{envelope},
-        _oscillator{oscillator},
-        _lfo{lfo},
-        _filter{filter} {
+    Voice(double frequency,
+          const Envelope& envelope,
+          const Oscillator& oscillator,
+          const LowFrequencyOscillator& lfo,
+          const Filter& filter) :
+          _frequency{frequency},
+          _velocity(0),
+          _envelope{envelope},
+          _oscillator{oscillator},
+          _lfo{lfo},
+          _filter{filter} {
     }
 
     void setOscillators(const Oscillator& oscillator) {

@@ -20,10 +20,11 @@ set(SOURCES
     src/synth/envelope.hpp
     src/synth/filter.hpp
     src/synth/low_frequency_oscillator.hpp
+    src/synth/midi_device.hpp
     src/synth/oscillator.hpp
     src/synth/synthesizer.cpp
     src/synth/synthesizer.hpp
-    src/synth/synthesizer_voice.hpp
+    src/synth/voice.hpp
     src/synth/wave_table.hpp
 )
 
