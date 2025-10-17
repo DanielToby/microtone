@@ -131,10 +131,10 @@ public:
         // =========== Envelope tab ===========
 
         // Envelope Controls
-        auto attack = static_cast<int>(controls.attack * 100);
-        auto decay = static_cast<int>(controls.decay * 100);
-        auto sustain = static_cast<int>(controls.sustain * 100);
-        auto release = static_cast<int>(controls.release * 100);
+        auto attack = static_cast<int>(controls.adsr.attack * 100);
+        auto decay = static_cast<int>(controls.adsr.decay * 100);
+        auto sustain = static_cast<int>(controls.adsr.sustain * 100);
+        auto release = static_cast<int>(controls.adsr.release * 100);
         auto attackSlider = Slider("Attack:", &attack, 1, 100, 1);
         auto decaySlider = Slider(" Decay:", &decay, 1, 100, 1);
         auto sustainSlider = Slider(" Sustain:", &sustain, 0, 100, 1);
@@ -276,14 +276,10 @@ public:
                 _screen.ExitLoopClosure()();
                 return true;
             } else if (event == Event::Return) {
-                controls.sineWeight = static_cast<double>(sine) / 100;
-                controls.squareWeight = static_cast<double>(square) / 100;
-                controls.triangleWeight = static_cast<double>(triangle) / 100;
-
-                controls.attack = static_cast<double>(attack) / 100;
-                controls.decay = static_cast<double>(decay) / 100;
-                controls.sustain = static_cast<double>(sustain) / 100;
-                controls.release = static_cast<double>(release) / 100;
+                controls.sineWeight = sine / 100.;
+                controls.squareWeight = square / 100.;
+                controls.triangleWeight = triangle / 100.;
+                controls.adsr = {attack / 100., decay / 100., sustain / 100., release / 100.};
 
                 onControlsChangedFn(controls);
             }

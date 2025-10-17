@@ -11,6 +11,11 @@ namespace synth {
 const std::size_t WAVETABLE_LENGTH = 512;
 using WaveTable = std::array<float, WAVETABLE_LENGTH>;
 
+struct WeightedWaveTable {
+    WaveTable waveTable;
+    double weight;
+};
+
 //! Constructs the wave table using fillFn, fetching a value for each index i in WAVETABLE_LENGTH
 [[nodiscard]] inline WaveTable buildWaveTable(std::function<float(std::size_t i)>&& fillFn) {
     auto result = WaveTable{};

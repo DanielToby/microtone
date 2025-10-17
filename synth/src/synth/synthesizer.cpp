@@ -75,7 +75,7 @@ public:
 
         for (auto i = 0; i < 127; ++i) {
             _voices.emplace_back(noteToFrequencyHertz(i),
-                                 Envelope{0.01, 0.1, .8, 0.01, _sampleRate},
+                                 Envelope{ADSR{0.01, 0.1, .8, 0.01}, _sampleRate},
                                  Oscillator{noteToFrequencyHertz(i), _sampleRate},
                                  LowFrequencyOscillator{0.25, _sampleRate},
                                  Filter{});

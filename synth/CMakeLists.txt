@@ -14,28 +14,20 @@ target_include_directories(synth PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-set(HEADERS
+set(SOURCES
+    src/synth/adsr.hpp
     src/synth/audio_buffer.hpp
     src/synth/envelope.hpp
     src/synth/filter.hpp
     src/synth/low_frequency_oscillator.hpp
     src/synth/oscillator.hpp
+    src/synth/synthesizer.cpp
     src/synth/synthesizer.hpp
     src/synth/synthesizer_voice.hpp
-    src/synth/wavetable.hpp
-    src/synth/weighted_wavetable.hpp
+    src/synth/wave_table.hpp
 )
 
-set(SOURCES
-    src/synth/envelope.cpp
-    src/synth/filter.cpp
-    src/synth/low_frequency_oscillator.cpp
-    src/synth/oscillator.cpp
-    src/synth/synthesizer.cpp
-    src/synth/synthesizer_voice.cpp
-)
-
-target_sources(synth PUBLIC ${HEADERS} ${SOURCES})
+target_sources(synth PUBLIC ${SOURCES})
 
 if(APPLE)
     set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES

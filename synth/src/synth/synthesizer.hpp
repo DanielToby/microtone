@@ -3,7 +3,7 @@
 #include <synth/audio_buffer.hpp>
 #include <synth/filter.hpp>
 #include <synth/envelope.hpp>
-#include <synth/weighted_wavetable.hpp>
+#include <synth/wave_table.hpp>
 
 #include <array>
 #include <functional>

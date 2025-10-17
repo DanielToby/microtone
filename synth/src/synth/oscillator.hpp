@@ -1,6 +1,6 @@
 #pragma once
 
-#include <synth/weighted_wavetable.hpp>
+#include <synth/wave_table.hpp>
 
 #include <functional>
 #include <memory>
@@ -9,18 +9,36 @@ namespace synth {
 
 class Oscillator {
 public:
-    Oscillator(double frequency, double sampleRate);
-    Oscillator(const Oscillator&);
-    Oscillator& operator=(const Oscillator&);
-    Oscillator(Oscillator&&) noexcept;
-    Oscillator& operator=(Oscillator&&) noexcept;
-    ~Oscillator();
+    Oscillator(double frequency, double sampleRate) :
+        _frequency{frequency},
+        _sampleRate{sampleRate},
+        _currentIndex{0} {}
 
-    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables);
+    Oscillator(const Oscillator& other) :
+        _frequency{other._frequency},
+        _sampleRate{other._sampleRate},
+        _currentIndex{0} {
+    }
 
-private:
-    class impl;
-    std::unique_ptr<impl> _impl;
+    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+        // Linear interpolation improves the signal approximation accuracy at discrete index.
+        auto indexBelow = static_cast<int>(floor(_currentIndex));
+        auto indexAbove = (indexBelow + 1) % WAVETABLE_LENGTH;
+        auto fractionAbove = _currentIndex - indexBelow;
+        auto fractionBelow = 1.0 - fractionAbove;
+        _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
+
+        auto nextSample = 0.0f;
+        for (const auto& weightedWaveTable : weightedWaveTables) {
+            auto value = fractionBelow * weightedWaveTable.waveTable[indexBelow] + fractionAbove * weightedWaveTable.waveTable[indexAbove];
+            nextSample += static_cast<float>(value * weightedWaveTable.weight);
+        }
+
+        return nextSample;
+    }
+
+    double _frequency;
+    double _sampleRate;
+    double _currentIndex;
 };
-
 }

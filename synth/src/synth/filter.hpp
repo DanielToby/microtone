@@ -6,18 +6,21 @@ namespace synth {
 
 class Filter {
 public:
-    Filter();
-    Filter(const Filter&);
-    Filter(Filter&&) noexcept;
-    Filter& operator=(const Filter&) noexcept;
-    Filter& operator=(Filter&&) noexcept;
-    ~Filter();
+    Filter() :
+        _lastSample{0},
+        _alpha{0.5} {}
 
-    float nextSample(float in);
+    Filter(const Filter& other) = default;
+
+    float nextSample(float in) {
+        auto out = static_cast<float>(_alpha * _lastSample + (1.0 - _alpha) * in);
+        _lastSample = out;
+        return out;
+    }
 
 private:
-    class impl;
-    std::unique_ptr<impl> _impl;
+    float _lastSample;
+    double _alpha;
 };
 
 }

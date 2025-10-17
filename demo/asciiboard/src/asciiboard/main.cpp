@@ -5,7 +5,7 @@
 #include <io/midi_input.hpp>
 #include <synth/audio_buffer.hpp>
 #include <synth/synthesizer.hpp>
-#include <synth/weighted_wavetable.hpp>
+#include <synth/wave_table.hpp>
 
 #include <fmt/format.h>
 
@@ -61,21 +61,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto asciiboard = asciiboard::Asciiboard();
 
         // Initial GUI / synthesizer values
-        auto initialControls = asciiboard::SynthControls{};
-        initialControls.sineWeight = 0.8;
-        initialControls.squareWeight = 0;
-        initialControls.triangleWeight = 0.2;
+        auto initialControls = asciiboard::SynthControls{synth::ADSR{.01, .1, .8, .01}, .8, 0, .2};
 
         // These wave tables are sampled by the synthesizers oscillators.
-        auto weightedWaveTables = std::vector<synth::WeightedWaveTable>{};
-
-        auto sineWaveTable = synth::buildWaveTable(synth::examples::sineWaveFill);
-        auto squareWaveTable = synth::buildWaveTable(synth::examples::squareWaveFill);
-        auto triangleWaveTable = synth::buildWaveTable(synth::examples::triangleWaveFill);
-
-        weightedWaveTables.emplace_back(sineWaveTable, initialControls.sineWeight);
-        weightedWaveTables.emplace_back(squareWaveTable, initialControls.squareWeight);
-        weightedWaveTables.emplace_back(triangleWaveTable, initialControls.triangleWeight);
+        auto weightedWaveTables = std::vector{
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), initialControls.sineWeight},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), initialControls.squareWeight},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), initialControls.triangleWeight}
+        };
 
         // This callback is invoked on every audio frame. Don't do anything blocking here!
         auto onOutputFn = [&asciiboard](const synth::AudioBuffer& outputData) {
@@ -97,16 +90,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             });
         }
 
-        // Set up envelope controls (must be done after synth is started, for sample rate).
-        initialControls.attack = 0.01;
-        initialControls.decay = 0.1;
-        initialControls.sustain = 0.8;
-        initialControls.release = 0.01;
-        auto envelope = synth::Envelope(initialControls.attack,
-                                            initialControls.decay,
-                                            initialControls.sustain,
-                                            initialControls.release,
-                                            synth.sampleRate());
+        auto envelope = synth::Envelope(initialControls.adsr, synth.sampleRate());
 
         // Callback invoked when asciiboard controls are changed
         auto onControlsChangedFn = [&synth, &weightedWaveTables, &envelope](const asciiboard::SynthControls& controls) {
@@ -127,24 +111,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 synth.setWaveTables(weightedWaveTables);
             }
 
-            auto shouldUpdateEnvelope = false;
-            if (controls.attack != envelope.attack()) {
-                envelope.setAttack(controls.attack);
-                shouldUpdateEnvelope = true;
-            }
-            if (controls.decay != envelope.decay()) {
-                envelope.setDecay(controls.decay);
-                shouldUpdateEnvelope = true;
-            }
-            if (controls.sustain != envelope.sustain()) {
-                envelope.setSustain(controls.sustain);
-                shouldUpdateEnvelope = true;
-            }
-            if (controls.release != envelope.release()) {
-                envelope.setRelease(controls.release);
-                shouldUpdateEnvelope = true;
-            }
-            if (shouldUpdateEnvelope) {
+            if (controls.adsr != envelope.adsr()) {
+                envelope.setAdsr(controls.adsr);
                 synth.setEnvelope(envelope);
             }
         };

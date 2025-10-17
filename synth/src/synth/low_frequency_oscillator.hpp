@@ -1,6 +1,7 @@
 #pragma once
 
-#include <memory>
+#include <synth/oscillator.hpp>
+#include <synth/wave_table.hpp>
 
 namespace synth {
 
@@ -8,18 +9,23 @@ namespace synth {
 
 class LowFrequencyOscillator {
 public:
-    LowFrequencyOscillator(double frequency = 0, double sampleRate = -1);
-    LowFrequencyOscillator(const LowFrequencyOscillator&);
-    LowFrequencyOscillator(LowFrequencyOscillator&&) noexcept;
-    LowFrequencyOscillator& operator=(const LowFrequencyOscillator&) noexcept;
-    LowFrequencyOscillator& operator=(LowFrequencyOscillator&&) noexcept;
-    ~LowFrequencyOscillator();
+    LowFrequencyOscillator(double frequency, double sampleRate) :
+        _oscillator{frequency, sampleRate},
+        _waveTable{} {
+        for (auto i = 0; i < synth::WAVETABLE_LENGTH; ++i) {
+            _waveTable[i] = static_cast<float>(std::sin(2.0 * M_PI * i / synth::WAVETABLE_LENGTH));
+        }
+    }
 
-    float nextSample();
+    LowFrequencyOscillator(const LowFrequencyOscillator& other) = default;
+
+    float nextSample() {
+        return _oscillator.nextSample({{_waveTable, 1.0}});
+    }
 
 private:
-    class impl;
-    std::unique_ptr<impl> _impl;
+    Oscillator _oscillator;
+    WaveTable _waveTable;
 };
 
 }
