@@ -1,10 +1,12 @@
+#include <synth/synthesizer.hpp>
+
 #include <common/exception.hpp>
 #include <common/log.hpp>
+#include <common/mutex_protected.hpp>
 #include <synth/envelope.hpp>
 #include <synth/filter.hpp>
 #include <synth/low_frequency_oscillator.hpp>
 #include <synth/oscillator.hpp>
-#include <synth/synthesizer.hpp>
 #include <synth/voice.hpp>
 
 #include <portaudio.h>
@@ -142,7 +144,7 @@ public:
         }
 
         // This can move into the initializer list when sample rate is passed.
-        _state = SynthesizerState{weightedWaveTables, buildVoices(_sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)};
+        _state = common::MutexProtected{SynthesizerState{weightedWaveTables, buildVoices(_sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)}};
     }
 
     ~impl() {
@@ -187,6 +189,7 @@ public:
 
         for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
             auto sample = data->nextSample();
+
             data->_lastOutputBuffer[frame] = sample;
 
             for (std::size_t channel = 0; channel < 2; ++channel) {
@@ -194,6 +197,7 @@ public:
             }
         }
 
+        // TODO: expose this in a way that doesn't block the audio thread.
         data->_onOutputFn(data->_lastOutputBuffer);
 
         return paContinue;
@@ -201,36 +205,41 @@ public:
 
     float nextSample() {
         auto nextSample = 0.f;
-        if (_mutex.try_lock()) {
-            for (auto& id : _state.activeVoices) {
-                nextSample += _state.voices[id].nextSample(_state.weightedWaveTables);
+        // Drops the sample instead of blocking for access to state.
+        _state.getIfAvailable([&nextSample](SynthesizerState& state) {
+            for (auto& id : state.activeVoices) {
+                nextSample += state.voices.at(id).nextSample(state.weightedWaveTables);
             }
-            _mutex.unlock();
-        }
-        return .0;
+        });
+        return nextSample;
     }
 
     std::vector<WeightedWaveTable> weightedWaveTables() const {
-        return _state.weightedWaveTables;
+        return _state.get([](const SynthesizerState& state) {
+            return state.weightedWaveTables;
+        });
     }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _state.weightedWaveTables = weightedWaveTables;
+        _state.get([&](SynthesizerState& state) {
+            state.weightedWaveTables = weightedWaveTables;
+        });
     }
 
     void setEnvelope(const Envelope& envelope) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _state.voices) {
-            voice.setEnvelope(envelope);
-        }
+        _state.get([&](SynthesizerState& state) {
+            for (auto& voice : state.voices) {
+                voice.setEnvelope(envelope);
+            }
+        });
     }
 
     void setFilter(const Filter& filter) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _state.voices) {
-            voice.setFilter(filter);
-        }
+        _state.get([&](SynthesizerState& state) {
+            for (auto& voice : state.voices) {
+                voice.setFilter(filter);
+            }
+        });
     }
 
     double sampleRate() {
@@ -238,30 +247,34 @@ public:
     }
 
     void noteOn(int note, int velocity) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _state.noteOn(note, velocity);
+        _state.get([&](SynthesizerState& state) {
+            state.noteOn(note, velocity);
+        });
     }
 
     void noteOff(int note) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _state.noteOff(note);
+        _state.get([&](SynthesizerState& state) {
+            state.noteOff(note);
+        });
     }
 
     void sustainOn() {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _state.sustainOn();
+        _state.get([](SynthesizerState& state) {
+            state.sustainOn();
+        });
     }
 
     void sustainOff() {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _state.sustainOff();
+        _state.get([](SynthesizerState& state) {
+            state.sustainOff();
+        });
     }
+
+    AudioBuffer _lastOutputBuffer;
 
     OnOutputFn _onOutputFn;
     PaStream* _portAudioStream;    // Owned by port audio, cleaned up by Pa_Terminate().
-    std::mutex _mutex;
-    SynthesizerState _state;
-    AudioBuffer _lastOutputBuffer;  // Forwarded to onOutputFn()
+    common::MutexProtected<SynthesizerState> _state;
     double _sampleRate;
 };
 

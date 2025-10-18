@@ -19,6 +19,7 @@ set(SOURCES
     src/common/exception.hpp
     src/common/log.cpp
     src/common/log.hpp
+    src/common/mutex_protected.hpp
 )
 
 target_sources(common PUBLIC ${SOURCES})
