@@ -24,8 +24,13 @@ enum class MidiVelocityMessage {
     SustainPedalOnThreshold = 64
 };
 
+struct MidiMessage {
+    int status;
+    int note;
+    int velocity;
+};
 
-using OnMidiDataFn = std::function<void(int status, int note, int velocity)>;
+using OnMidiDataFn = std::function<void(MidiMessage message)>;
 
 class MidiInput {
 public:

@@ -1,16 +1,13 @@
 #include <common/exception.hpp>
 #include <common/log.hpp>
-#include <io/midi_input.hpp>
 #include <synth/envelope.hpp>
 #include <synth/filter.hpp>
 #include <synth/low_frequency_oscillator.hpp>
-#include <synth/midi_device.hpp>
 #include <synth/oscillator.hpp>
 #include <synth/synthesizer.hpp>
 #include <synth/voice.hpp>
 
 #include <portaudio.h>
-#include <RtMidi.h>
 
 #include <cmath>
 #include <mutex>
@@ -19,11 +16,85 @@
 
 namespace synth {
 
+namespace {
+
+//! TODO: break this up.
+struct SynthesizerState {
+    //! TODO: Remove this when sampleRate is passed to Synthesizer c'tor.
+    SynthesizerState() = default;
+
+    explicit SynthesizerState(const std::vector<WeightedWaveTable>& waveTables, const std::vector<Voice>& voices) :
+        weightedWaveTables(waveTables),
+        voices(voices),
+        sustainPedalOn(false) {}
+
+    void noteOn(int note, int velocity) {
+        voices[note].setVelocity(velocity);
+        voices[note].triggerOn();
+        activeVoices.insert(note);
+    }
+
+    void noteOff(int note) {
+        if (sustainPedalOn) {
+            sustainedVoices.insert(note);
+        } else {
+            voices[note].triggerOff();
+        }
+    }
+
+    void sustainOn() {
+        sustainPedalOn = true;
+    }
+
+    void sustainOff() {
+        sustainPedalOn = false;
+        for (const auto& id : sustainedVoices) {
+            voices[id].triggerOff();
+        }
+        sustainedVoices.clear();
+    }
+
+    void clearActiveVoices() {
+        for (const auto& id : activeVoices) {
+            if (!voices[id].isActive()) {
+                activeVoices.erase(id);
+            }
+        }
+    }
+
+    std::vector<WeightedWaveTable> weightedWaveTables;
+
+    // Controller state.
+    std::vector<Voice> voices;
+    std::unordered_set<int> activeVoices;
+    std::unordered_set<int> sustainedVoices;
+    bool sustainPedalOn;
+};
+
+[[nodiscard]] double noteToFrequencyHertz(int note) {
+    constexpr auto pitch = 440.0f;
+    return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
+}
+
+[[nodiscard]] std::vector<Voice> buildVoices(double sampleRate, const ADSR& adsr, double lfoFrequencyHertz) {
+    auto result = std::vector<Voice>{};
+    for (auto i = 0; i < 127; ++i) {
+        result.emplace_back(
+            noteToFrequencyHertz(i),
+            Envelope{adsr, sampleRate},
+            Oscillator{noteToFrequencyHertz(i), sampleRate},
+            LowFrequencyOscillator{lfoFrequencyHertz, sampleRate},
+            Filter{});
+    }
+    return result;
+}
+
+}
+
 class Synthesizer::impl {
 public:
     impl(const std::vector<WeightedWaveTable>& weightedWaveTables, OnOutputFn fn) :
         _onOutputFn{fn},
-        _weightedWaveTables{weightedWaveTables},
         _sampleRate{0} {
         // Initialize portaudio
         auto portAudioInitResult = Pa_Initialize();
@@ -70,17 +141,8 @@ public:
                                                  Pa_GetErrorText(openStreamResult)));
         }
 
-        auto voices = std::vector<Voice>{};
-        for (auto i = 0; i < 127; ++i) {
-            voices.emplace_back(
-                noteToFrequencyHertz(i),
-                Envelope{ADSR{0.01, 0.1, .8, 0.01}, _sampleRate},
-                Oscillator{noteToFrequencyHertz(i), _sampleRate},
-                LowFrequencyOscillator{0.25, _sampleRate},
-                Filter{}
-            );
-        }
-
+        // This can move into the initializer list when sample rate is passed.
+        _state = SynthesizerState{weightedWaveTables, buildVoices(_sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)};
     }
 
     ~impl() {
@@ -140,8 +202,8 @@ public:
     float nextSample() {
         auto nextSample = 0.f;
         if (_mutex.try_lock()) {
-            for (auto& id : _device.activeVoices) {
-                nextSample += _device.voices[id].nextSample(_weightedWaveTables);
+            for (auto& id : _state.activeVoices) {
+                nextSample += _state.voices[id].nextSample(_state.weightedWaveTables);
             }
             _mutex.unlock();
         }
@@ -149,53 +211,25 @@ public:
     }
 
     std::vector<WeightedWaveTable> weightedWaveTables() const {
-        return _weightedWaveTables;
+        return _state.weightedWaveTables;
     }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
         auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        _weightedWaveTables = weightedWaveTables;
+        _state.weightedWaveTables = weightedWaveTables;
     }
 
     void setEnvelope(const Envelope& envelope) {
         auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _device.voices) {
+        for (auto& voice : _state.voices) {
             voice.setEnvelope(envelope);
         }
     }
 
     void setFilter(const Filter& filter) {
         auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        for (auto& voice : _device.voices) {
+        for (auto& voice : _state.voices) {
             voice.setFilter(filter);
-        }
-    }
-
-    double noteToFrequencyHertz(int note) {
-        constexpr auto pitch = 440.0f;
-        return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
-    }
-
-    void submitMidiMessage(const MidiMessage& midiMessage) {
-        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
-        switch (static_cast<io::MidiStatusMessage>(midiMessage.status)) {
-            case io::MidiStatusMessage::NoteOn:
-                _device.noteOn(midiMessage.note, midiMessage.velocity);
-            case io::MidiStatusMessage::NoteOff:
-                _device.noteOff(midiMessage.note);
-            case io::MidiStatusMessage::ControlChange: {
-                switch (static_cast<io::MidiNoteMessage>(midiMessage.note)) {
-                    case io::MidiNoteMessage::SustainPedal: {
-                        _device.setSustain(midiMessage.velocity > static_cast<int>(io::MidiVelocityMessage::SustainPedalOnThreshold));
-                    }
-                }
-            }
-        }
-        const auto activeVoices = _device.activeVoices;
-        for (const auto& id : activeVoices) {
-            if (!_device.voices[id].isActive()) {
-                _device.activeVoices.erase(id);
-            }
         }
     }
 
@@ -203,11 +237,30 @@ public:
         return _sampleRate;
     }
 
+    void noteOn(int note, int velocity) {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        _state.noteOn(note, velocity);
+    }
+
+    void noteOff(int note) {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        _state.noteOff(note);
+    }
+
+    void sustainOn() {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        _state.sustainOn();
+    }
+
+    void sustainOff() {
+        auto lockGuard = std::unique_lock<std::mutex>{_mutex};
+        _state.sustainOff();
+    }
+
     OnOutputFn _onOutputFn;
     PaStream* _portAudioStream;    // Owned by port audio, cleaned up by Pa_Terminate().
     std::mutex _mutex;
-    std::vector<WeightedWaveTable> _weightedWaveTables;
-    MidiDevice _device;
+    SynthesizerState _state;
     AudioBuffer _lastOutputBuffer;  // Forwarded to onOutputFn()
     double _sampleRate;
 };
@@ -253,12 +306,24 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-void Synthesizer::submitMidiMessage(int status, int note, int velocity) {
-    _impl->submitMidiMessage(MidiMessage{status, note, velocity});
-}
-
 double Synthesizer::sampleRate() {
     return _impl->sampleRate();
+}
+
+void Synthesizer::noteOn(int note, int velocity) {
+    _impl->noteOn(note, velocity);
+}
+
+void Synthesizer::noteOff(int note) {
+    _impl->noteOff(note);
+}
+
+void Synthesizer::sustainOn() {
+    _impl->sustainOn();
+}
+
+void Synthesizer::sustainOff() {
+    _impl->sustainOff();
 }
 
 }

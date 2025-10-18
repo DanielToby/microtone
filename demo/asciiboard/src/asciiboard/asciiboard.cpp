@@ -34,21 +34,19 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-    void addMidiData(int status, int note, [[maybe_unused]] int velocity) {
-        // auto midiStatus = static_cast<synth::MidiStatusMessage>(status);
-
-        if (status == 0b10010000) {
-            _activeMidiNotes.insert(note);
-        } else if (status == 0b10000000) {
+    void addMidiData(const io::MidiMessage& message) {
+        if (message.status == 0b10010000) {
+            _activeMidiNotes.insert(message.note);
+        } else if (message.status == 0b10000000) {
             if (_sustainPedalOn) {
-                _sustainedMidiNotes.insert(note);
+                _sustainedMidiNotes.insert(message.note);
             } else {
-                _activeMidiNotes.erase(note);
+                _activeMidiNotes.erase(message.note);
             }
-        } else if (status == 0b10110000) {
+        } else if (message.status == 0b10110000) {
             // Control Change
-            if (note == 64) {
-                _sustainPedalOn = velocity > 64;
+            if (message.note == 64) {
+                _sustainPedalOn = message.velocity > 64;
                 if (!_sustainPedalOn) {
                     for (const auto& id : _sustainedMidiNotes) {
                         _activeMidiNotes.erase(id);
@@ -313,8 +311,8 @@ void Asciiboard::addOutputData(const synth::AudioBuffer& data) {
     _impl->addOutputData(data);
 }
 
-void Asciiboard::addMidiData(int status, int note, int velocity) {
-    _impl->addMidiData(status, note, velocity);
+void Asciiboard::addMidiData(const io::MidiMessage& message) {
+    _impl->addMidiData(message);
 }
 
 void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {

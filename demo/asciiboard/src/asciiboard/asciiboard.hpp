@@ -2,10 +2,10 @@
 
 #include <asciiboard/synth_controls.hpp>
 
-#include <array>
 #include <functional>
 #include <memory>
 
+#include <io/midi_input.hpp>
 #include <synth/audio_buffer.hpp>
 
 namespace asciiboard {
@@ -24,7 +24,7 @@ public:
 
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
     void addOutputData(const synth::AudioBuffer& data);
-    void addMidiData(int status, int note, int velocity);
+    void addMidiData(const io::MidiMessage& message);
 
 private:
     class impl;

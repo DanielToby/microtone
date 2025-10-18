@@ -1,8 +1,9 @@
 #pragma once
 
 #include <synth/audio_buffer.hpp>
-#include <synth/filter.hpp>
+#include <synth/controller.hpp>
 #include <synth/envelope.hpp>
+#include <synth/filter.hpp>
 #include <synth/wave_table.hpp>
 
 #include <array>
@@ -13,7 +14,7 @@ namespace synth {
 
 using OnOutputFn = std::function<void(const AudioBuffer&)>;
 
-class Synthesizer {
+class Synthesizer : public I_Controller {
 public:
     Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
     Synthesizer(const Synthesizer&) = delete;
@@ -29,11 +30,12 @@ public:
     void setWaveTables(const std::vector<WeightedWaveTable>& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
-
-    void submitMidiMessage(int status, int note, int velocity);
     double sampleRate();
 
-    std::vector<WeightedWaveTable>& getWaveTables() const;
+    void noteOn(int note, int velocity) override;
+    void noteOff(int note) override;
+    void sustainOn() override;
+    void sustainOff() override;
 
 private:
     class impl;

@@ -55,7 +55,7 @@ public:
                     auto note = static_cast<int>(message[1]);
                     auto velocity = static_cast<int>(message[2]);
 
-                    onReceivedDataFn(status, note, velocity);
+                    onReceivedDataFn(io::MidiMessage{status, note, velocity});
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));

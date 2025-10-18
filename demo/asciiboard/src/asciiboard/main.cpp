@@ -51,6 +51,24 @@ void trySelectPort(io::MidiInput& midiInput) {
     }
 }
 
+void handleMidiMessage(synth::Synthesizer& synth, const io::MidiMessage& midiMessage) {
+    switch (static_cast<io::MidiStatusMessage>(midiMessage.status)) {
+    case io::MidiStatusMessage::NoteOn:
+        synth.noteOn(midiMessage.note, midiMessage.velocity);
+    case io::MidiStatusMessage::NoteOff:
+        synth.noteOff(midiMessage.note);
+    case io::MidiStatusMessage::ControlChange:
+        switch (static_cast<io::MidiNoteMessage>(midiMessage.note)) {
+        case io::MidiNoteMessage::SustainPedal:
+            if (midiMessage.velocity > static_cast<int>(io::MidiVelocityMessage::SustainPedalOnThreshold)) {
+                synth.sustainOn();
+            } else {
+                synth.sustainOff();
+            }
+        }
+    }
+}
+
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
@@ -84,9 +102,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         if (midiInput.isOpen()) {
             // Start midi input, update UI and synth when midi data changes
-            midiInput.start([&synth, &asciiboard](int status, int note, int velocity) {
-                synth.submitMidiMessage(status, note, velocity);
-                asciiboard.addMidiData(status, note, velocity);
+            midiInput.start([&synth, &asciiboard](io::MidiMessage message) {
+                handleMidiMessage(synth, message);
+                asciiboard.addMidiData(message);
             });
         }
 

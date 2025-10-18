@@ -17,10 +17,10 @@ target_include_directories(synth PUBLIC
 set(SOURCES
     src/synth/adsr.hpp
     src/synth/audio_buffer.hpp
+    src/synth/controller.hpp
     src/synth/envelope.hpp
     src/synth/filter.hpp
     src/synth/low_frequency_oscillator.hpp
-    src/synth/midi_device.hpp
     src/synth/oscillator.hpp
     src/synth/synthesizer.cpp
     src/synth/synthesizer.hpp
@@ -45,6 +45,5 @@ endif()
 
 target_link_libraries(synth PUBLIC
     common
-    io
     portaudio
 )
