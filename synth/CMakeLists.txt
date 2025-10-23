@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
 
-add_subdirectory(vendor)
-
 add_library(synth STATIC)
 
 set_target_properties(synth PROPERTIES
@@ -30,20 +28,6 @@ set(SOURCES
 
 target_sources(synth PUBLIC ${SOURCES})
 
-if(APPLE)
-    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES
-        "-framework AudioToolbox"
-        "-framework Carbon"
-        "-framework CoreAudio"
-        "-framework CoreFoundation"
-        "-framework CoreServices"
-        "-framework CoreMIDI"
-    )
-elseif(WIN32)
-    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES "")
-endif()
-
 target_link_libraries(synth PUBLIC
     common
-    portaudio
 )

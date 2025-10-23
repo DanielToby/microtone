@@ -1,9 +1,10 @@
 #include <asciiboard/asciiboard.hpp>
+#include <asciiboard/processor.hpp>
 
 #include <common/exception.hpp>
 #include <common/log.hpp>
+#include <io/audio_output_stream.hpp>
 #include <io/midi_input.hpp>
-#include <synth/audio_buffer.hpp>
 #include <synth/synthesizer.hpp>
 #include <synth/wave_table.hpp>
 
@@ -88,13 +89,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), initialControls.triangleWeight}
         };
 
-        // This callback is invoked on every audio frame. Don't do anything blocking here!
-        auto onOutputFn = [&asciiboard](const synth::AudioBuffer& outputData) {
-            asciiboard.addOutputData(outputData);
-        };
+        // Create and start audio stream.
+        auto audioOutputStream = io::AudioOutputStream{};
+        if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
+            throw common::MicrotoneException("Failed to create audio output stream");
+        }
+        audioOutputStream.start();
 
         // Create synthesizer
-        auto synth = synth::Synthesizer{weightedWaveTables, onOutputFn};
+        auto synth = synth::Synthesizer{audioOutputStream.sampleRate(), weightedWaveTables};
+
+        auto processor = asciiboard::Processor(synth, audioOutputStream);
 
         // Listen to midi input
         auto midiInput = io::MidiInput();
@@ -108,7 +113,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             });
         }
 
-        auto envelope = synth::Envelope(initialControls.adsr, synth.sampleRate());
+        auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());
 
         // Callback invoked when asciiboard controls are changed
         auto onControlsChangedFn = [&synth, &weightedWaveTables, &envelope](const asciiboard::SynthControls& controls) {
@@ -134,7 +139,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 synth.setEnvelope(envelope);
             }
         };
-        synth.start();
 
         // Blocks this thread
         asciiboard.loop(initialControls, onControlsChangedFn);

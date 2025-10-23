@@ -16,21 +16,19 @@ using OnOutputFn = std::function<void(const AudioBuffer&)>;
 
 class Synthesizer : public I_Controller {
 public:
-    Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
+    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    void start();
-    void stop();
-
     std::vector<WeightedWaveTable> weightedWaveTables() const;
     void setWaveTables(const std::vector<WeightedWaveTable>& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
-    double sampleRate();
+
+    float nextSample();
 
     void noteOn(int note, int velocity) override;
     void noteOff(int note) override;
