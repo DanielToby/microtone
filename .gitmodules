@@ -7,9 +7,9 @@
 [submodule "io/vendor/rtmidi"]
 	path = io/vendor/rtmidi
 	url = https://github.com/thestk/rtmidi.git
+[submodule "io/vendor/portaudio"]
+    path = io/vendor/portaudio
+    url = git@github.com:PortAudio/portaudio.git
 [submodule "demo/asciiboard/vendor/ftxui"]
 	path = demo/asciiboard/vendor/ftxui
 	url = git@github.com:ArthurSonzogni/FTXUI.git
-[submodule "synth/vendor/portaudio"]
-	path = synth/vendor/portaudio
-	url = git@github.com:PortAudio/portaudio.git
