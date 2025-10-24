@@ -5,12 +5,10 @@
 #include <functional>
 #include <memory>
 
-#include <io/midi_input.hpp>
 #include <synth/audio_buffer.hpp>
 
 namespace asciiboard {
 
-const int FRAMES_PER_BUFFER = 512;
 using OnControlsChangedFn = std::function<void(const SynthControls&)>;
 
 class Asciiboard {
@@ -24,7 +22,6 @@ public:
 
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
     void addOutputData(const synth::AudioBuffer& data);
-    void addMidiData(const io::MidiMessage& message);
 
 private:
     class impl;

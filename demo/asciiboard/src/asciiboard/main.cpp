@@ -2,9 +2,9 @@
 
 #include <common/exception.hpp>
 #include <common/log.hpp>
-#include <io/midi_input.hpp>
-#include <synth/audio_buffer.hpp>
-#include <synth/synthesizer.hpp>
+#include <io/audio_output_stream.hpp>
+#include <io/midi_input_stream.hpp>
+#include <synth/synthesizer_processor.hpp>
 #include <synth/wave_table.hpp>
 
 #include <fmt/format.h>
@@ -15,7 +15,7 @@
 namespace {
 
 //! Reads a port from standard in.
-[[nodiscard]] int getUserMidiPortPreference(const io::MidiInput& midiInput) {
+[[nodiscard]] int getUserMidiPortPreference(const io::MidiInputStream& midiInput) {
     int selectedPort = -1;
     while (selectedPort < 0 || selectedPort >= midiInput.portCount()) {
         std::cout << fmt::format("Please choose a port between 0 and {}.", midiInput.portCount() - 1) << std::endl;
@@ -35,7 +35,7 @@ namespace {
 }
 
 //! Selects a midi port automatically, if possible. Awaits user input if there are multiple ports available.
-void trySelectPort(io::MidiInput& midiInput) {
+void trySelectPort(io::MidiInputStream& midiInput) {
     switch (midiInput.portCount()) {
     case 0:
         std::cout << "No midi ports are available. Continuing without midi..." << std::endl;
@@ -48,24 +48,6 @@ void trySelectPort(io::MidiInput& midiInput) {
         auto userPreference = getUserMidiPortPreference(midiInput);
         midiInput.openPort(userPreference);
         break;
-    }
-}
-
-void handleMidiMessage(synth::Synthesizer& synth, const io::MidiMessage& midiMessage) {
-    switch (static_cast<io::MidiStatusMessage>(midiMessage.status)) {
-    case io::MidiStatusMessage::NoteOn:
-        synth.noteOn(midiMessage.note, midiMessage.velocity);
-    case io::MidiStatusMessage::NoteOff:
-        synth.noteOff(midiMessage.note);
-    case io::MidiStatusMessage::ControlChange:
-        switch (static_cast<io::MidiNoteMessage>(midiMessage.note)) {
-        case io::MidiNoteMessage::SustainPedal:
-            if (midiMessage.velocity > static_cast<int>(io::MidiVelocityMessage::SustainPedalOnThreshold)) {
-                synth.sustainOn();
-            } else {
-                synth.sustainOff();
-            }
-        }
     }
 }
 
@@ -85,30 +67,33 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto weightedWaveTables = std::vector{
             synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), initialControls.sineWeight},
             synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), initialControls.squareWeight},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), initialControls.triangleWeight}
-        };
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), initialControls.triangleWeight}};
 
-        // This callback is invoked on every audio frame. Don't do anything blocking here!
-        auto onOutputFn = [&asciiboard](const synth::AudioBuffer& outputData) {
-            asciiboard.addOutputData(outputData);
-        };
 
-        // Create synthesizer
-        auto synth = synth::Synthesizer{weightedWaveTables, onOutputFn};
-
-        // Listen to midi input
-        auto midiInput = io::MidiInput();
-        trySelectPort(midiInput);
-
-        if (midiInput.isOpen()) {
-            // Start midi input, update UI and synth when midi data changes
-            midiInput.start([&synth, &asciiboard](io::MidiMessage message) {
-                handleMidiMessage(synth, message);
-                asciiboard.addMidiData(message);
-            });
+        // The midi thread is created and started.
+        auto midiHandle = common::midi::MidiHandle();
+        auto midiInputStream = io::MidiInputStream(midiHandle);
+        trySelectPort(midiInputStream);
+        if (midiInputStream.isOpen()) {
+            midiInputStream.start();
         }
 
-        auto envelope = synth::Envelope(initialControls.adsr, synth.sampleRate());
+        // The audio output thread is created and started.
+        auto outputBufferHandle = common::audio::RingBuffer<>{};
+        auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
+        if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
+            throw common::MicrotoneException("Failed to create audio output stream.");
+        }
+        audioOutputStream.start();
+
+        // The synthesizer thread is created and started.
+        auto synth = synth::Synthesizer{audioOutputStream.sampleRate(), weightedWaveTables};
+        // This must remain alive throughout the lifetime of this application!
+        auto handles = synth::SynthesizerProcessorHandles{synth, midiHandle, outputBufferHandle};
+        auto synthesizerProcess = synth::SynthesizerProcessor{handles};
+        synthesizerProcess.start();
+
+        auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());
 
         // Callback invoked when asciiboard controls are changed
         auto onControlsChangedFn = [&synth, &weightedWaveTables, &envelope](const asciiboard::SynthControls& controls) {
@@ -134,7 +119,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 synth.setEnvelope(envelope);
             }
         };
-        synth.start();
 
         // Blocks this thread
         asciiboard.loop(initialControls, onControlsChangedFn);

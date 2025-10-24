@@ -1,7 +1,9 @@
-#include <io/midi_input.hpp>
+#include <io/midi_input_stream.hpp>
 
+#include <common/atomic_snapshot.hpp>
 #include <common/exception.hpp>
 #include <common/log.hpp>
+#include <io/midi_message.hpp>
 
 #include <RtMidi.h>
 
@@ -11,10 +13,31 @@
 
 namespace io {
 
-class MidiInput::impl {
+namespace {
+void addMidiData(common::midi::MidiHandle& handle, const MidiMessage& m) {
+    switch (static_cast<MidiStatusMessage>(m.status)) {
+    case MidiStatusMessage::NoteOn:
+        handle.noteOn(m.note, m.velocity);
+    case MidiStatusMessage::NoteOff:
+        handle.noteOff(m.note);
+    case MidiStatusMessage::ControlChange:
+        switch (static_cast<MidiNoteMessage>(m.note)) {
+        case MidiNoteMessage::SustainPedal:
+            if (m.velocity > static_cast<int>(MidiVelocityMessage::SustainPedalOnThreshold)) {
+                handle.sustainOn();
+            } else {
+                handle.sustainOff();
+            }
+        }
+    }
+}
+}
+
+class MidiInputStream::impl {
 public:
-    impl() {
-        _rtMidiConnection = std::make_unique<RtMidiIn>();
+    impl(common::midi::MidiHandle& midiHandle) :
+        _midiHandle(midiHandle),
+        _rtMidiConnection{std::make_unique<RtMidiIn>()} {
         // Don't ignore sysex, timing, or active sensing messages.
         _rtMidiConnection->ignoreTypes(false, false, false);
     }
@@ -39,13 +62,13 @@ public:
         _rtMidiConnection->openPort(portNumber);
     }
 
-    void start(const OnMidiDataFn& onReceivedDataFn) {
+    void start() {
         if (!_rtMidiConnection->isPortOpen()) {
             throw common::MicrotoneException("A port must be open to read midi input data.");
         }
 
-        _dataThread = std::thread([onReceivedDataFn, this]() {
-            M_INFO("Started data collection in background thread.");
+        _dataThread = std::thread([this]() {
+            M_INFO("Opened midi input stream.");
             _isRunning.store(true);
             while (_isRunning.load() == true) {
                 auto message = std::vector<unsigned char>{};
@@ -55,12 +78,12 @@ public:
                     auto note = static_cast<int>(message[1]);
                     auto velocity = static_cast<int>(message[2]);
 
-                    onReceivedDataFn(io::MidiMessage{status, note, velocity});
+                    addMidiData(_midiHandle, MidiMessage{status, note, velocity});
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
-            M_INFO("Stopped data collection.");
+            M_INFO("Closed midi input stream.");
         });
     }
 
@@ -71,49 +94,51 @@ public:
         }
     }
 
+private:
+    common::midi::MidiHandle& _midiHandle;
     std::unique_ptr<RtMidiIn> _rtMidiConnection;
     std::thread _dataThread;
     std::atomic<bool> _isRunning = false;
 };
 
-MidiInput::MidiInput() :
-    _impl{std::make_unique<impl>()} {
+MidiInputStream::MidiInputStream(common::midi::MidiHandle& stateHandle) :
+    _impl{std::make_unique<impl>(stateHandle)} {
 }
 
-MidiInput::MidiInput(MidiInput&& other) noexcept :
+MidiInputStream::MidiInputStream(MidiInputStream&& other) noexcept :
     _impl{std::move(other._impl)} {
 }
 
-MidiInput& MidiInput::operator=(MidiInput&& other) noexcept {
+MidiInputStream& MidiInputStream::operator=(MidiInputStream&& other) noexcept {
     if (this != &other) {
         _impl = std::move(other._impl);
     }
     return *this;
 }
 
-MidiInput::~MidiInput() = default;
+MidiInputStream::~MidiInputStream() = default;
 
-int MidiInput::portCount() const {
+int MidiInputStream::portCount() const {
     return _impl->portCount();
 }
 
-std::string MidiInput::portName(int portNumber) const {
+std::string MidiInputStream::portName(int portNumber) const {
     return _impl->portName(portNumber);
 }
 
-bool MidiInput::isOpen() const {
+bool MidiInputStream::isOpen() const {
     return _impl->isOpen();
 }
 
-void MidiInput::openPort(int portNumber) {
+void MidiInputStream::openPort(int portNumber) {
     _impl->openPort(portNumber);
 }
 
-void MidiInput::start(const OnMidiDataFn& fn) {
-    _impl->start(fn);
+void MidiInputStream::start() {
+    _impl->start();
 }
 
-void MidiInput::stop() {
+void MidiInputStream::stop() {
     _impl->stop();
 }
 

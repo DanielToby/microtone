@@ -1,41 +1,30 @@
 #pragma once
 
-#include <synth/audio_buffer.hpp>
-#include <synth/controller.hpp>
+#include <common/midi_handle.hpp>
 #include <synth/envelope.hpp>
 #include <synth/filter.hpp>
 #include <synth/wave_table.hpp>
 
-#include <array>
 #include <functional>
 #include <memory>
 
 namespace synth {
 
-using OnOutputFn = std::function<void(const AudioBuffer&)>;
-
-class Synthesizer : public I_Controller {
+class Synthesizer {
 public:
-    Synthesizer(const std::vector<WeightedWaveTable>&, OnOutputFn);
+    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    void start();
-    void stop();
-
-    std::vector<WeightedWaveTable> weightedWaveTables() const;
+    std::vector<WeightedWaveTable> waveTables() const;
     void setWaveTables(const std::vector<WeightedWaveTable>& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
-    double sampleRate();
 
-    void noteOn(int note, int velocity) override;
-    void noteOff(int note) override;
-    void sustainOn() override;
-    void sustainOff() override;
+    float nextSample(const common::midi::Keyboard& keyboard);
 
 private:
     class impl;

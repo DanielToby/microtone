@@ -15,11 +15,14 @@ target_include_directories(common PUBLIC
 )
 
 set(SOURCES
+    src/common/atomic_snapshot.hpp
     src/common/exception.cpp
     src/common/exception.hpp
     src/common/log.cpp
     src/common/log.hpp
+    src/common/midi_handle.hpp
     src/common/mutex_protected.hpp
+    src/common/ring_buffer.hpp
 )
 
 target_sources(common PUBLIC ${SOURCES})
