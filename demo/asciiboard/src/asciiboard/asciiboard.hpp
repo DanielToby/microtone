@@ -5,7 +5,7 @@
 #include <functional>
 #include <memory>
 
-#include <io/midi_input.hpp>
+#include <common/keyboard.h>
 #include <synth/audio_buffer.hpp>
 
 namespace asciiboard {
@@ -24,7 +24,6 @@ public:
 
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
     void addOutputData(const synth::AudioBuffer& data);
-    void addMidiData(const io::MidiMessage& message);
 
 private:
     class impl;

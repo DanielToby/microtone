@@ -17,8 +17,9 @@ target_include_directories(io PUBLIC
 set(SOURCES
     src/io/audio_output_stream.cpp
     src/io/audio_output_stream.hpp
-    src/io/midi_input.cpp
-    src/io/midi_input.hpp
+    src/io/midi_input_stream.cpp
+    src/io/midi_input_stream.hpp
+    src/io/midi_message.hpp
     src/io/ring_buffer.hpp
 )
 

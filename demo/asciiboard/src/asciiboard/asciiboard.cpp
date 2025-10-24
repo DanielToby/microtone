@@ -10,7 +10,7 @@
 
 #include <fmt/format.h>
 
-#include <io/midi_input.hpp>
+#include <io/midi_input_stream.hpp>
 
 #include <string>
 #include <unordered_set>
@@ -24,37 +24,11 @@ public:
     impl() :
         _screen{ScreenInteractive::Fullscreen()},
         _lastOutputBuffer{},
-        _activeMidiNotes{},
-        _sustainedMidiNotes{},
         _sustainPedalOn{false} {}
 
     // No allocation can take place here (called every frame)
     void addOutputData(const synth::AudioBuffer& data) {
         std::copy(std::begin(data), std::end(data), std::begin(_lastOutputBuffer));
-        _screen.PostEvent(Event::Custom);
-    }
-
-    void addMidiData(const io::MidiMessage& message) {
-        if (message.status == 0b10010000) {
-            _activeMidiNotes.insert(message.note);
-        } else if (message.status == 0b10000000) {
-            if (_sustainPedalOn) {
-                _sustainedMidiNotes.insert(message.note);
-            } else {
-                _activeMidiNotes.erase(message.note);
-            }
-        } else if (message.status == 0b10110000) {
-            // Control Change
-            if (message.note == 64) {
-                _sustainPedalOn = message.velocity > 64;
-                if (!_sustainPedalOn) {
-                    for (const auto& id : _sustainedMidiNotes) {
-                        _activeMidiNotes.erase(id);
-                    }
-                    _sustainedMidiNotes.clear();
-                }
-            }
-        }
         _screen.PostEvent(Event::Custom);
     }
 
@@ -309,10 +283,6 @@ Asciiboard& Asciiboard::operator=(Asciiboard&& other) noexcept {
 
 void Asciiboard::addOutputData(const synth::AudioBuffer& data) {
     _impl->addOutputData(data);
-}
-
-void Asciiboard::addMidiData(const io::MidiMessage& message) {
-    _impl->addMidiData(message);
 }
 
 void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {

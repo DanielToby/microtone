@@ -1,20 +1,16 @@
 #pragma once
 
-#include <synth/audio_buffer.hpp>
-#include <synth/controller.hpp>
+#include <common/keyboard.h>
 #include <synth/envelope.hpp>
 #include <synth/filter.hpp>
 #include <synth/wave_table.hpp>
 
-#include <array>
 #include <functional>
 #include <memory>
 
 namespace synth {
 
-using OnOutputFn = std::function<void(const AudioBuffer&)>;
-
-class Synthesizer : public I_Controller {
+class Synthesizer {
 public:
     Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables);
     Synthesizer(const Synthesizer&) = delete;
@@ -28,12 +24,7 @@ public:
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
 
-    float nextSample();
-
-    void noteOn(int note, int velocity) override;
-    void noteOff(int note) override;
-    void sustainOn() override;
-    void sustainOff() override;
+    float nextSample(const common::Keyboard& keyboard);
 
 private:
     class impl;

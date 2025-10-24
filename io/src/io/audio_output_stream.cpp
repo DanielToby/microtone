@@ -16,8 +16,13 @@ const int FRAMES_PER_BUFFER = 512;
 
 class AudioOutputStream::impl {
 public:
-    impl() : _buffer{}, _portAudioStream{nullptr}, _sampleRate{0.f}, _createStreamError{AudioStreamError::NoError} {
-        if (auto initResult = Pa_Initialize(); initResult == paNoError) {
+    impl() :
+        _buffer{},
+        _portAudioStream{nullptr},
+        _sampleRate{0},
+        _createStreamError{AudioStreamError::NoError} {
+
+        if (auto initResult = Pa_Initialize(); initResult != paNoError) {
             _createStreamError = AudioStreamError::InitializationFailed;
             return;
         }
@@ -33,14 +38,14 @@ public:
             _createStreamError = AudioStreamError::NoDeviceInfo;
             return;
         }
+        _sampleRate = deviceInfo->defaultSampleRate;
 
         auto outputParameters = PaStreamParameters{
             /* device */ deviceId,
             /* channelCount */ 2,
             /* sampleFormat */ paFloat32,
             /* suggestedLatency */ deviceInfo->defaultLowOutputLatency,
-            /* hostApiSpecificStreamInfo */ nullptr
-        };
+            /* hostApiSpecificStreamInfo */ nullptr};
 
         auto openStreamResult = Pa_OpenStream(
             &_portAudioStream,
@@ -53,6 +58,7 @@ public:
             &_buffer);
 
         if (openStreamResult != paNoError) {
+            M_ERROR(fmt::format("ERROR: {}", static_cast<int>(openStreamResult)));
             _createStreamError = AudioStreamError::OpenStreamError;
         }
     }
@@ -92,8 +98,8 @@ public:
     void start() {
         if (auto startStreamResult = Pa_StartStream(_portAudioStream); startStreamResult != paNoError) {
             throw common::MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
-                                                 startStreamResult,
-                                                 Pa_GetErrorText(startStreamResult)));
+                                                         startStreamResult,
+                                                         Pa_GetErrorText(startStreamResult)));
         }
         M_INFO("Started audio output stream.");
     }
@@ -101,8 +107,8 @@ public:
     void stop() {
         if (auto stopStreamResult = Pa_StopStream(_portAudioStream); stopStreamResult != paNoError) {
             throw common::MicrotoneException(fmt::format("PortAudio error: {}, '{}'.",
-                                                 stopStreamResult,
-                                                 Pa_GetErrorText(stopStreamResult)));
+                                                         stopStreamResult,
+                                                         Pa_GetErrorText(stopStreamResult)));
         }
         M_INFO("Stopped audio output stream.");
     }

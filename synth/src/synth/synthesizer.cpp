@@ -16,54 +16,10 @@ namespace synth {
 
 namespace {
 
+//! These things are modifiable while the synth is active.
 struct SynthesizerState {
-    explicit SynthesizerState(const std::vector<WeightedWaveTable>& waveTables, const std::vector<Voice>& voices) :
-        weightedWaveTables(waveTables),
-        voices(voices),
-        sustainPedalOn(false) {}
-
-    void noteOn(int note, int velocity) {
-        voices[note].setVelocity(velocity);
-        voices[note].triggerOn();
-        activeVoices.insert(note);
-    }
-
-    void noteOff(int note) {
-        if (sustainPedalOn) {
-            sustainedVoices.insert(note);
-        } else {
-            voices[note].triggerOff();
-        }
-    }
-
-    void sustainOn() {
-        sustainPedalOn = true;
-    }
-
-    void sustainOff() {
-        sustainPedalOn = false;
-        for (const auto& id : sustainedVoices) {
-            voices[id].triggerOff();
-        }
-        sustainedVoices.clear();
-    }
-
-    //! TODO: Figure out where to call this.
-    void clearActiveVoices() {
-        for (const auto& id : activeVoices) {
-            if (!voices[id].isActive()) {
-                activeVoices.erase(id);
-            }
-        }
-    }
-
     std::vector<WeightedWaveTable> weightedWaveTables;
-
-    // Controller state.
     std::vector<Voice> voices;
-    std::unordered_set<int> activeVoices;
-    std::unordered_set<int> sustainedVoices;
-    bool sustainPedalOn;
 };
 
 [[nodiscard]] double noteToFrequencyHertz(int note) {
@@ -121,39 +77,19 @@ public:
         });
     }
 
-    float nextSample() {
+    float nextSample(const common::Keyboard& keyboard) {
         auto nextSample = 0.f;
         // Drops the sample instead of blocking for access to state.
-        _state.getIfAvailable([&nextSample](SynthesizerState& state) {
-            for (auto& id : state.activeVoices) {
-                nextSample += state.voices.at(id).nextSample(state.weightedWaveTables);
+        _state.getIfAvailable([&](SynthesizerState& state) {
+            for (auto note = 0; note < keyboard.notes.size(); ++note) {
+                if (keyboard.notes[note].velocity > 0) {
+                    nextSample += state.voices.at(note).nextSample(state.weightedWaveTables);
+                }
             }
+
+            // TODO: call "triggerOff" and "triggerOn" from this function.
         });
         return nextSample;
-    }
-
-    void noteOn(int note, int velocity) {
-        _state.get([&](SynthesizerState& state) {
-            state.noteOn(note, velocity);
-        });
-    }
-
-    void noteOff(int note) {
-        _state.get([&](SynthesizerState& state) {
-            state.noteOff(note);
-        });
-    }
-
-    void sustainOn() {
-        _state.get([](SynthesizerState& state) {
-            state.sustainOn();
-        });
-    }
-
-    void sustainOff() {
-        _state.get([](SynthesizerState& state) {
-            state.sustainOff();
-        });
     }
 
     common::MutexProtected<SynthesizerState> _state;
@@ -192,24 +128,8 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-float Synthesizer::nextSample() {
-    return _impl->nextSample();
-}
-
-void Synthesizer::noteOn(int note, int velocity) {
-    _impl->noteOn(note, velocity);
-}
-
-void Synthesizer::noteOff(int note) {
-    _impl->noteOff(note);
-}
-
-void Synthesizer::sustainOn() {
-    _impl->sustainOn();
-}
-
-void Synthesizer::sustainOff() {
-    _impl->sustainOff();
+float Synthesizer::nextSample(const common::Keyboard& keyboard) {
+    return _impl->nextSample(keyboard);
 }
 
 }

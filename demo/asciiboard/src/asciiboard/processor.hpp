@@ -11,12 +11,11 @@ namespace asciiboard {
 //! TODO: Move this somewhere else.
 class Processor {
 public:
-    Processor(synth::Synthesizer& synth, io::AudioOutputStream& outputStream)
-        : _synth(synth), _outputStream(outputStream) {}
+    Processor() = default;
 
-    void start() {
+    void start(double sampleRate, const std::function<void()>& callback) {
         _running = true;
-        thread_ = std::thread([this] { this->run(); });
+        thread_ = std::thread([&] { this->run(sampleRate, callback); });
     }
 
     void stop() {
@@ -25,9 +24,9 @@ public:
     }
 
 private:
-    void run() {
+    void run(double sampleRate, const std::function<void()>& callback) {
         using namespace std::chrono;
-        const auto samplePeriod = duration<double>(1.0 / _outputStream.sampleRate());
+        const auto samplePeriod = duration<double>(1.0 / sampleRate);
         auto nextTime = steady_clock::now();
 
         // for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
@@ -39,17 +38,13 @@ private:
         // }
 
         while (_running) {
-            float sample = _synth.nextSample();
-            _outputStream.push(sample);
+            callback();
 
             // Wait until it's time for the next sample
             nextTime += duration_cast<steady_clock::duration>(samplePeriod);;
             std::this_thread::sleep_until(nextTime);
         }
     }
-
-    synth::Synthesizer& _synth;
-    io::AudioOutputStream& _outputStream;
 
     std::atomic<bool> _running{false};
     std::thread thread_;

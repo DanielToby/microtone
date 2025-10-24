@@ -30,6 +30,8 @@ public:
 
     void start();
     void stop();
+
+    //! Thread safe.
     void push(float sample);
 
     [[nodiscard]] double sampleRate() const;
