@@ -77,17 +77,21 @@ public:
         });
     }
 
+    //! TODO: This will drop samples when controls are held. Better to just let the caller know so they don't push an empty frame.
     float nextSample(const common::midi::Keyboard& keyboard) {
         auto nextSample = 0.f;
-        // Drops the sample instead of blocking for access to state.
         _state.getIfAvailable([&](SynthesizerState& state) {
-            for (auto note = 0; note < keyboard.notes.size(); ++note) {
-                if (keyboard.notes[note].velocity > 0) {
-                    nextSample += state.voices.at(note).nextSample(state.weightedWaveTables);
+            for (auto i = 0; i < keyboard.notes.size(); ++i) {
+                const auto& note = keyboard.notes[i];
+                auto& voice  = state.voices[i];
+                if (note.isOn()) {
+                    voice.triggerOn();
+                } else if (note.isOff()) {
+                    voice.triggerOff();
                 }
-            }
 
-            // TODO: call "triggerOff" and "triggerOn" from this function.
+                nextSample += voice.nextSample(state.weightedWaveTables);
+            }
         });
         return nextSample;
     }

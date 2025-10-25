@@ -8,10 +8,25 @@
 //! This could be "device" or something to reduce conceptual overlap with lib/io, but whatever.
 namespace common::midi {
 
-//! A note on the keyboard. Velocity can be interpreted as "initial velocity".
+//! A note on the keyboard. Velocity is 0 if the note is off.
 struct Note {
-    int velocity = 0;           // 0 if note is inactive.
-    bool sustained = false;     // velocity won't be 0 if this is true.
+    int velocity = 0;
+
+    [[nodiscard]] bool isOn() const {
+        return velocity > 0;
+    }
+
+    [[nodiscard]] bool isOff() const {
+        return !this->isOn();
+    }
+
+    void triggerOn(int v) {
+        velocity = v;
+    }
+
+    void triggerOff() {
+        velocity = 0;
+    }
 };
 
 //! The state of the midi controller. Active notes have >0 velocity.
@@ -19,25 +34,26 @@ struct Keyboard {
     std::array<Note, 127> notes;
 };
 
+// Notes are turned off when noteOff is pressed, unless the sustain pedal is on.
+// Notes that have not been unpressed remain active when the pedal is released.
+
 //! A thread safe midi state handle.
 class MidiHandle {
 public:
     MidiHandle() = default;
 
     void noteOn(int note, int velocity) {
+        _pressedNotes.notes[note].triggerOn(velocity);
         this->write([&](Keyboard& keyboard) {
-            keyboard.notes[note].velocity = velocity;
-            keyboard.notes[note].sustained = false;
+            keyboard.notes[note].triggerOn(velocity);
         });
     }
 
     void noteOff(int note) {
+        _pressedNotes.notes[note].triggerOff();
         this->write([&](Keyboard& keyboard) {
-            if (_sustainPedalOn) {
-                keyboard.notes[note].sustained = true;
-            } else {
-                keyboard.notes[note].velocity = 0;
-                keyboard.notes[note].sustained = false;
+            if (!_sustainPedalOn) {
+                keyboard.notes[note].triggerOff();
             }
         });
     }
@@ -49,10 +65,9 @@ public:
     void sustainOff() {
         _sustainPedalOn = false;
         this->write([&](Keyboard& keyboard) {
-            for (auto& [velocity, sustained] : keyboard.notes) {
-                if (sustained) {
-                    velocity = 0;
-                    sustained = false;
+            for (auto note = 0; note <keyboard.notes.size(); ++note) {
+                if (!isPressed(note)) {
+                    keyboard.notes[note].triggerOff();
                 }
             }
         });
@@ -69,8 +84,16 @@ private:
         _keyboard.write(copy);
     }
 
+    [[nodiscard]] bool isPressed(int note) const {
+        return _pressedNotes.notes[note].velocity > 0;
+    }
+
+    // This data is shared with the reader (getKeyboardState).
     AtomicSnapshot<Keyboard> _keyboard;
-    bool _sustainPedalOn = false; // Only touched when writing.
+
+    // This data is only important to the writer.
+    Keyboard _pressedNotes;
+    bool _sustainPedalOn = false;
 };
 
 
