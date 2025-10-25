@@ -75,10 +75,10 @@ public:
         });
     }
 
-    //! TODO: This will drop samples when controls are held. Better to just let the caller know so they don't push an empty frame.
-    float nextSample(const common::midi::Keyboard& keyboard) {
-        auto nextSample = 0.f;
+    std::optional<float> nextSample(const common::midi::Keyboard& keyboard) {
+        auto nextSample = std::optional<float>{};
         _state.getIfAvailable([&](SynthesizerState& state) {
+            nextSample = 0.0f;
             for (auto i = 0; i < keyboard.notes.size(); ++i) {
                 const auto& note = keyboard.notes[i];
                 auto& voice  = state.voices[i];
@@ -88,7 +88,7 @@ public:
                     voice.triggerOff();
                 }
 
-                nextSample += voice.nextSample(state.weightedWaveTables);
+                *nextSample += voice.nextSample(state.weightedWaveTables);
             }
         });
         return nextSample;
@@ -130,7 +130,7 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-float Synthesizer::nextSample(const common::midi::Keyboard& keyboard) {
+std::optional<float> Synthesizer::nextSample(const common::midi::Keyboard& keyboard) {
     return _impl->nextSample(keyboard);
 }
 

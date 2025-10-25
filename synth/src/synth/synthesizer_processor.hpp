@@ -41,7 +41,7 @@ private:
             const auto numSamples = _handles.outputHandle.availableSpace();
             for (auto i = 0; i < numSamples; ++i) {
                 const auto sample = _handles.synthesizer.nextSample(_handles.midiHandle.getKeyboardState());
-                _handles.outputHandle.push(sample);
+                _handles.outputHandle.push(sample.value_or(0.0f)); // TODO: Not this.
             }
         }
     }

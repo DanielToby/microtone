@@ -24,7 +24,7 @@ public:
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
 
-    float nextSample(const common::midi::Keyboard& keyboard);
+    std::optional<float> nextSample(const common::midi::Keyboard& keyboard);
 
 private:
     class impl;
