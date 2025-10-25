@@ -18,6 +18,7 @@ namespace {
 struct SynthesizerState {
     std::vector<WeightedWaveTable> weightedWaveTables;
     std::vector<Voice> voices;
+    common::midi::Keyboard keyboard;
 };
 
 [[nodiscard]] double noteToFrequencyHertz(int note) {
@@ -75,18 +76,21 @@ public:
         });
     }
 
-    std::optional<float> nextSample(const common::midi::Keyboard& keyboard) {
+    std::optional<float> nextSample(const common::midi::Keyboard& latestKeyboard) {
         auto nextSample = std::optional<float>{};
         _state.getIfAvailable([&](SynthesizerState& state) {
             nextSample = 0.0f;
-            for (auto i = 0; i < keyboard.notes.size(); ++i) {
-                const auto& note = keyboard.notes[i];
+            for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
+                auto& currentNote = state.keyboard.notes[i];
+                const auto& newNote = latestKeyboard.notes[i];
+
                 auto& voice  = state.voices[i];
-                if (note.isOn()) {
+                if (currentNote.isOff() && newNote.isOn()) {
                     voice.triggerOn();
-                } else if (note.isOff()) {
+                } else if (currentNote.isOn() && newNote.isOff()) {
                     voice.triggerOff();
                 }
+                currentNote = newNote;
 
                 *nextSample += voice.nextSample(state.weightedWaveTables);
             }

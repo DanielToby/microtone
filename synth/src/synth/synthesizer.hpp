@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 namespace synth {
 
