@@ -1,6 +1,5 @@
 #include <synth/synthesizer.hpp>
 
-#include <common/log.hpp>
 #include <common/mutex_protected.hpp>
 #include <synth/envelope.hpp>
 #include <synth/filter.hpp>
@@ -9,7 +8,6 @@
 #include <synth/voice.hpp>
 
 #include <cmath>
-#include <unordered_set>
 #include <vector>
 
 namespace synth {

@@ -12,6 +12,8 @@ set_target_properties(io PROPERTIES
 
 target_include_directories(io PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/portaudio/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/rtmidi
 )
 
 set(SOURCES
@@ -37,8 +39,10 @@ elseif(WIN32)
     set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES "")
 endif()
 
-target_link_libraries(io PUBLIC
+target_link_libraries(io
+PUBLIC
     common
+PRIVATE
     portaudio
     rtmidi
 )

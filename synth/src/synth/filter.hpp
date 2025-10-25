@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 namespace synth {
 
 class Filter {
