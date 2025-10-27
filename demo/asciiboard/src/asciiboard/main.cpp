@@ -87,10 +87,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         audioOutputStream.start();
 
         // The synthesizer thread is created and started.
+        // TODO: Caller should create voices.
         auto synth = synth::Synthesizer{audioOutputStream.sampleRate(), weightedWaveTables};
         // This must remain alive throughout the lifetime of this application!
-        auto handles = synth::SynthesizerProcessorHandles{synth, midiHandle, outputBufferHandle};
-        auto synthesizerProcess = synth::SynthesizerProcessor{handles};
+        auto synthesizerProcess = synth::SynthesizerProcessor{synth, midiHandle, outputBufferHandle};
         synthesizerProcess.start();
 
         auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());

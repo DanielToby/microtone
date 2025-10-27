@@ -86,7 +86,7 @@ public:
 
                 auto& voice  = state.voices[i];
                 if (currentNote.isOff() && newNote.isOn()) {
-                    voice.triggerOn();
+                    voice.triggerOn(newNote.velocity);
                 } else if (currentNote.isOn() && newNote.isOff()) {
                     voice.triggerOff();
                 }

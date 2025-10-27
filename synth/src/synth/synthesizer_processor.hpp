@@ -10,18 +10,19 @@ namespace synth {
 
 //! The thread safe handles that the synth processor needs to operate safely.
 struct SynthesizerProcessorHandles {
-    Synthesizer& synthesizer;
 
-    const common::midi::MidiHandle& midiHandle;
-    common::audio::RingBuffer<>& outputHandle;
 };
 
 //! Runs the Synthesizer in a dedicated process that executes only if the buffer has room.
 class SynthesizerProcessor {
 public:
     SynthesizerProcessor() = delete;
-    explicit SynthesizerProcessor(const SynthesizerProcessorHandles& handles) :
-        _handles(handles) {}
+    SynthesizerProcessor(Synthesizer& synthesizer,
+                         const common::midi::MidiHandle& midiHandle,
+                         common::audio::RingBuffer<>& outputHandle) :
+        _synthesizer(synthesizer),
+        _midiHandle(midiHandle),
+        _outputHandle(outputHandle) {}
 
     void start() {
         _running = true;
@@ -38,15 +39,17 @@ private:
     void processLoop() {
         while (_running) {
             // More space might become available while we run. Let the next loop get that.
-            const auto numSamples = _handles.outputHandle.availableSpace();
+            const auto numSamples = _outputHandle.availableSpace();
             for (auto i = 0; i < numSamples; ++i) {
-                const auto sample = _handles.synthesizer.nextSample(_handles.midiHandle.getKeyboardState());
-                _handles.outputHandle.push(sample.value_or(0.0f)); // TODO: Not this.
+                const auto sample = _synthesizer.nextSample(_midiHandle.getKeyboardState());
+                _outputHandle.push(sample.value_or(0.0f)); // TODO: Not this.
             }
         }
     }
 
-    SynthesizerProcessorHandles _handles;
+    Synthesizer& _synthesizer;
+    const common::midi::MidiHandle& _midiHandle;
+    common::audio::RingBuffer<>& _outputHandle;
 
     std::atomic<bool> _running{false};
     std::thread _thread;
