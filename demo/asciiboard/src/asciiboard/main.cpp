@@ -71,7 +71,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
 
         // The midi thread is created and started.
-        auto midiHandle = common::midi::MidiHandle();
+        auto midiHandle = std::make_shared<common::midi::MidiHandle>();
         auto midiInputStream = io::MidiInputStream(midiHandle);
         trySelectPort(midiInputStream);
         if (midiInputStream.isOpen()) {
@@ -79,7 +79,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // The audio output thread is created and started.
-        auto outputBufferHandle = common::audio::RingBuffer<>{};
+        auto outputBufferHandle = std::make_shared<common::audio::RingBuffer<>>();
         auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
         if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
             throw common::MicrotoneException("Failed to create audio output stream.");
@@ -88,7 +88,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // The synthesizer thread is created and started.
         // TODO: Caller should create voices.
-        auto synth = synth::Synthesizer{audioOutputStream.sampleRate(), weightedWaveTables};
+        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables);
         // This must remain alive throughout the lifetime of this application!
         auto synthesizerProcess = synth::SynthesizerProcessor{synth, midiHandle, outputBufferHandle};
         synthesizerProcess.start();
@@ -111,12 +111,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 shouldUpdateWaveTables = true;
             }
             if (shouldUpdateWaveTables) {
-                synth.setWaveTables(weightedWaveTables);
+                synth->setWaveTables(weightedWaveTables);
             }
 
             if (controls.adsr != envelope.adsr()) {
                 envelope.setAdsr(controls.adsr);
-                synth.setEnvelope(envelope);
+                synth->setEnvelope(envelope);
             }
         };
 

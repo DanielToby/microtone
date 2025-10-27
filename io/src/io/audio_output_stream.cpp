@@ -8,19 +8,10 @@
 
 namespace io {
 
-namespace {
-
-//! A handle to the output. This casts cleanly from void*...
-struct OutputBufferHandle {
-    common::audio::RingBuffer<>& outputBuffer;
-};
-
-}
-
 class AudioOutputStream::impl {
 public:
-    impl(common::audio::RingBuffer<>& outputBufferHandle) :
-        _outputBufferHandle{outputBufferHandle},
+    explicit impl(std::shared_ptr<common::audio::RingBuffer<>> outputBuffer) :
+        _outputBuffer{std::move(outputBuffer)},
         _portAudioStream{nullptr},
         _sampleRate{0},
         _createStreamError{AudioStreamError::NoError} {
@@ -58,7 +49,7 @@ public:
             common::audio::RingBuffer<>::capacity,
             paClipOff,
             &impl::portAudioCallback,
-            &_outputBufferHandle);
+            _outputBuffer.get());
 
         if (openStreamResult != paNoError) {
             M_ERROR(fmt::format("ERROR: {}", static_cast<int>(openStreamResult)));
@@ -73,17 +64,17 @@ public:
         Pa_Terminate();
     }
 
-    static int portAudioCallback([[maybe_unused]] const void* inputBuffer,
+    static int portAudioCallback([[maybe_unused]] const void* rawInputBuffer,
                                  void* outputBuffer,
                                  unsigned long framesPerBuffer,
                                  [[maybe_unused]] const PaStreamCallbackTimeInfo* timeInfo,
                                  [[maybe_unused]] PaStreamCallbackFlags statusFlags,
                                  void* userData) {
-        auto outputBufferHandle = static_cast<const OutputBufferHandle*>(userData);
+        auto in = static_cast<common::audio::RingBuffer<>*>(userData);;
         auto out = static_cast<float*>(outputBuffer);
-        if (outputBufferHandle && out) {
+        if (in && out) {
             for (auto frame = 0; frame < static_cast<int>(framesPerBuffer); ++frame) {
-                auto sample = outputBufferHandle->outputBuffer.pop();
+                auto sample = in->pop();
                 for (std::size_t channel = 0; channel < 2; ++channel) {
                     *out++ = sample.value_or(0.f);
                 }
@@ -120,14 +111,14 @@ public:
         return _sampleRate;
     }
 
-    OutputBufferHandle _outputBufferHandle;
+    std::shared_ptr<common::audio::RingBuffer<>> _outputBuffer;
     PaStream* _portAudioStream;
     double _sampleRate;
     AudioStreamError _createStreamError;
 };
 
-AudioOutputStream::AudioOutputStream(common::audio::RingBuffer<>& outputBufferHandle) :
-    _impl{std::make_unique<impl>(outputBufferHandle)} {
+AudioOutputStream::AudioOutputStream(std::shared_ptr<common::audio::RingBuffer<>> inputBuffer) :
+    _impl{std::make_unique<impl>(inputBuffer)} {
 }
 
 AudioOutputStream::AudioOutputStream(AudioOutputStream&& other) noexcept :

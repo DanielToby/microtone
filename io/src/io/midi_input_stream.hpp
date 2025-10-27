@@ -10,7 +10,7 @@ namespace io {
 class MidiInputStream {
 public:
     //! Warning: midiHandle must remain alive while this class is alive!
-    MidiInputStream(common::midi::MidiHandle& midiHandle);
+    explicit MidiInputStream(std::shared_ptr<common::midi::MidiHandle> midiHandle);
     MidiInputStream(const MidiInputStream&) = delete;
     MidiInputStream& operator=(const MidiInputStream&) = delete;
     MidiInputStream(MidiInputStream&&) noexcept;

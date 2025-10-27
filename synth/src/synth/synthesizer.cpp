@@ -46,7 +46,7 @@ public:
     impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables) :
         _state{{SynthesizerState{waveTables, buildVoices(sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)}}} {}
 
-    ~impl() {}
+    ~impl() = default;
 
     std::vector<WeightedWaveTable> waveTables() const {
         return _state.get([](const SynthesizerState& state) {

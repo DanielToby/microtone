@@ -35,8 +35,8 @@ void addMidiData(common::midi::MidiHandle& handle, const MidiMessage& m) {
 
 class MidiInputStream::impl {
 public:
-    impl(common::midi::MidiHandle& midiHandle) :
-        _midiHandle(midiHandle),
+    explicit impl(std::shared_ptr<common::midi::MidiHandle> midiHandle) :
+        _midiHandle(std::move(midiHandle)),
         _rtMidiConnection{std::make_unique<RtMidiIn>()} {
         // Don't ignore sysex, timing, or active sensing messages.
         _rtMidiConnection->ignoreTypes(false, false, false);
@@ -78,7 +78,7 @@ public:
                     auto note = static_cast<int>(message[1]);
                     auto velocity = static_cast<int>(message[2]);
 
-                    addMidiData(_midiHandle, MidiMessage{status, note, velocity});
+                    addMidiData(*_midiHandle, MidiMessage{status, note, velocity});
                 }
 
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -95,13 +95,13 @@ public:
     }
 
 private:
-    common::midi::MidiHandle& _midiHandle;
+    std::shared_ptr<common::midi::MidiHandle> _midiHandle;
     std::unique_ptr<RtMidiIn> _rtMidiConnection;
     std::thread _dataThread;
     std::atomic<bool> _isRunning = false;
 };
 
-MidiInputStream::MidiInputStream(common::midi::MidiHandle& stateHandle) :
+MidiInputStream::MidiInputStream(std::shared_ptr<common::midi::MidiHandle> stateHandle) :
     _impl{std::make_unique<impl>(stateHandle)} {
 }
 
