@@ -85,7 +85,7 @@ private:
     }
 
     [[nodiscard]] bool isPressed(int note) const {
-        return _pressedNotes.notes[note].velocity > 0;
+        return _pressedNotes.notes[note].isOn();
     }
 
     // This data is shared with the reader (getKeyboardState).
