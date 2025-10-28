@@ -13,33 +13,30 @@ public:
     MutexProtected() = default;
     explicit MutexProtected(const T& value) : _value(value) {}
 
-    MutexProtected& operator=(MutexProtected&& other) {
+    MutexProtected& operator=(MutexProtected&& other) noexcept {
         if (this != &other) {
             _value = std::move(other._value);
         }
         return *this;
     }
 
-    //! Blocks until T is obtained, then invokes `fn`.
-    template <typename Fn>
-    std::invoke_result_t<Fn, T&> get(Fn&& fn) {
-        std::unique_lock lock(_mutex);
-        return std::invoke(std::forward<Fn>(fn), _value);
+    //! Blocks to obtain a copy of T.
+    T read() const {
+        auto lock = std::unique_lock(_mutex);
+        return _value;
     }
 
-    //! Const overload
-    template <typename Fn>
-    std::invoke_result_t<Fn, const T&> get(Fn&& fn) const {
-        std::unique_lock lock(_mutex);
-        return std::invoke(std::forward<Fn>(fn), _value);
+    //! Blocks to update T.
+    void write(const std::function<void(T&)>& mutate) {
+        auto lock = std::unique_lock(_mutex);
+        std::invoke(mutate, _value);
     }
 
     //! Tries to obtain `T` to invoke `fn`. Fn is not invoked if `T` is held by someone else.
-    template <typename Fn>
-    std::optional<std::invoke_result_t<Fn, T&>> ifAvailableThen(Fn&& fn) {
+    std::optional<T> readIfAvailable() const {
         if (_mutex.try_lock()) {
             auto unlock = std::unique_lock(_mutex, std::adopt_lock);
-            return std::invoke(std::forward<Fn>(fn), _value);
+            return _value;
         }
         return std::nullopt;
     }

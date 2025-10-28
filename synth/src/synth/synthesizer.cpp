@@ -68,19 +68,17 @@ public:
     ~impl() = default;
 
     std::vector<WeightedWaveTable> waveTables() const {
-        return _state.get([](const SynthesizerState& state) {
-            return state.weightedWaveTables;
-        });
+        return _state.read().weightedWaveTables;
     }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-        _state.get([&](SynthesizerState& state) {
+        _state.write([&](SynthesizerState& state) {
             state.weightedWaveTables = weightedWaveTables;
         });
     }
 
     void setEnvelope(const Envelope& envelope) {
-        _state.get([&](SynthesizerState& state) {
+        _state.write([&](SynthesizerState& state) {
             for (auto& voice : state.voices) {
                 voice.setEnvelope(envelope);
             }
@@ -88,7 +86,7 @@ public:
     }
 
     void setFilter(const Filter& filter) {
-        _state.get([&](SynthesizerState& state) {
+        _state.write([&](SynthesizerState& state) {
             for (auto& voice : state.voices) {
                 voice.setFilter(filter);
             }
@@ -96,7 +94,7 @@ public:
     }
 
     void respondToKeyboardChanges(const common::midi::Keyboard& latestKeyboard) {
-        _state.get([&latestKeyboard](SynthesizerState& state) {
+        _state.write([&latestKeyboard](SynthesizerState& state) {
             for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
                 auto& previousNote = state.keyboard.notes[i];
                 const auto& currentNote = latestKeyboard.notes[i];
@@ -109,15 +107,16 @@ public:
     }
 
     [[nodiscard]] common::audio::FrameBlock getNextBlock() {
-        return _state.get([](SynthesizerState& state) {
-            auto result = common::audio::FrameBlock{};
+        auto result = common::audio::FrameBlock{};
+        _state.write([&result](SynthesizerState& state) {
             for (auto i = 0; i < result.size(); ++i) {
                 result[i] = nextSample(state);
             }
-            return result;
         });
+        return result;
     }
 
+private:
     common::MutexProtected<SynthesizerState> _state;
 };
 
