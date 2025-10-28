@@ -14,7 +14,6 @@ target_include_directories(synth PUBLIC
 
 set(SOURCES
     src/synth/adsr.hpp
-    src/synth/audio_buffer.hpp
     src/synth/envelope.hpp
     src/synth/filter.hpp
     src/synth/low_frequency_oscillator.hpp
