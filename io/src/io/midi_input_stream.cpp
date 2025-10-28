@@ -1,6 +1,5 @@
 #include <io/midi_input_stream.hpp>
 
-#include <common/atomic_snapshot.hpp>
 #include <common/exception.hpp>
 #include <common/log.hpp>
 #include <io/midi_message.hpp>

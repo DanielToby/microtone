@@ -15,7 +15,6 @@ target_include_directories(common PUBLIC
 )
 
 set(SOURCES
-    src/common/atomic_snapshot.hpp
     src/common/exception.cpp
     src/common/exception.hpp
     src/common/log.cpp
