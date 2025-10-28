@@ -22,13 +22,14 @@ using namespace ftxui;
 class Asciiboard::impl {
 public:
     explicit impl() :
-        _screen{ScreenInteractive::Fullscreen()},
-        _lastOutputBuffer{},
-        _sustainPedalOn{false} {}
+        _latestAudioBlock{},
+        _screen{ScreenInteractive::Fullscreen()} {}
 
-    void addOutputData(const synth::AudioBuffer& data) {
-        std::copy(std::begin(data), std::end(data), std::begin(_lastOutputBuffer));
-        _screen.PostEvent(Event::Custom);
+    void addOutputData(const common::audio::FrameBlock& audioBlock) {
+        if (_latestAudioBlock != audioBlock) {
+            _latestAudioBlock = audioBlock;
+            _screen.PostEvent(Event::Custom);
+        }
     }
 
     void updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
@@ -79,13 +80,13 @@ public:
         auto scaleFactor = 0.5;
         auto graphHeight = 40;
         auto oscilloscope = Renderer([&] {
-            auto width = static_cast<int>(_lastOutputBuffer.size());
+            auto width = static_cast<int>(_latestAudioBlock.size());
             auto c = Canvas(width, graphHeight);
             for (auto i = 0; i < width - 1; ++i) {
                 c.DrawPointLine(i,
-                                (_lastOutputBuffer[i] * graphHeight * scaleFactor) + (graphHeight / 2),
+                                (_latestAudioBlock[i] * graphHeight * scaleFactor) + (graphHeight / 2),
                                 i + 1,
-                                (_lastOutputBuffer[i + 1] * graphHeight * scaleFactor) + (graphHeight / 2),
+                                (_latestAudioBlock[i + 1] * graphHeight * scaleFactor) + (graphHeight / 2),
                                 Color::Purple);
             }
 
@@ -267,9 +268,8 @@ public:
     }
 
     ftxui::ScreenInteractive _screen;
-    synth::AudioBuffer _lastOutputBuffer;
+    common::audio::FrameBlock _latestAudioBlock;
     common::midi::Keyboard _keyboard;
-    bool _sustainPedalOn;
 };
 
 Asciiboard::Asciiboard() : _impl{std::make_unique<impl>()} {};
@@ -285,8 +285,8 @@ Asciiboard& Asciiboard::operator=(Asciiboard&& other) noexcept {
     return *this;
 }
 
-void Asciiboard::addOutputData(const synth::AudioBuffer& data) {
-    _impl->addOutputData(data);
+void Asciiboard::addOutputData(const common::audio::FrameBlock& lastAudioBlock) {
+    _impl->addOutputData(lastAudioBlock);
 }
 
 void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {

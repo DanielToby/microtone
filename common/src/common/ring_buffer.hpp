@@ -45,7 +45,16 @@ public:
         }
         T item = _buffer[tail];
         _tail.store((tail + 1) % N, std::memory_order_release);
+        _lastPoppedIndex.store(tail, std::memory_order_release);
         return item;
+    }
+
+    //! Returns the last item returned by pop().
+    [[nodiscard]] std::optional<T> lastPopped() const {
+        if (auto lastPoppedIndex = _lastPoppedIndex.load(std::memory_order_relaxed)) {
+            return _buffer[*lastPoppedIndex];
+        }
+        return std::nullopt;
     }
 
 private:
@@ -56,6 +65,7 @@ private:
     std::array<T, N> _buffer;
     std::atomic<size_t> _tail{0};
     std::atomic<size_t> _head{0};
+    std::atomic<std::optional<size_t>> _lastPoppedIndex{std::nullopt};
 };
 
 }

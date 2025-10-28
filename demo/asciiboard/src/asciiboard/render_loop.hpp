@@ -34,7 +34,11 @@ public:
 private:
     void renderLoop() {
         while (_running) {
+            if (auto lastAudioBlock = _outputHandle->lastPopped()) {
+                _ui->addOutputData(*lastAudioBlock);
+            }
             _ui->updateMidiKeyboard(_midiHandle->getKeyboardState());
+
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }

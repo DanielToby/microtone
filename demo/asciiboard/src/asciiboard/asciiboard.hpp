@@ -6,7 +6,7 @@
 #include <memory>
 
 #include <common/midi_handle.hpp>
-#include <synth/audio_buffer.hpp>
+#include <common/ring_buffer.hpp>
 
 namespace asciiboard {
 
@@ -22,7 +22,7 @@ public:
     ~Asciiboard();
 
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
-    void addOutputData(const synth::AudioBuffer& data);
+    void addOutputData(const common::audio::FrameBlock& lastAudioBlock);
     void updateMidiKeyboard(const common::midi::Keyboard& latestKeyboard);
 
 private:
