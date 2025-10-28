@@ -34,13 +34,14 @@ public:
         return std::invoke(std::forward<Fn>(fn), _value);
     }
 
-    //! Tries to obtain `T` to invoke `fn`. Fn is not invoked if `T` is held.
+    //! Tries to obtain `T` to invoke `fn`. Fn is not invoked if `T` is held by someone else.
     template <typename Fn>
-    void getIfAvailable(Fn&& fn) {
+    std::optional<std::invoke_result_t<Fn, T&>> ifAvailableThen(Fn&& fn) {
         if (_mutex.try_lock()) {
-            auto unlock = std::unique_lock<std::mutex>(_mutex, std::adopt_lock);
-            std::invoke(std::forward<Fn>(fn), _value);
+            auto unlock = std::unique_lock(_mutex, std::adopt_lock);
+            return std::invoke(std::forward<Fn>(fn), _value);
         }
+        return std::nullopt;
     }
 
 private:

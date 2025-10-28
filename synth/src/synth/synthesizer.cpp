@@ -39,6 +39,31 @@ struct SynthesizerState {
     return result;
 }
 
+//! Updates the voice (triggers it on or off) based on whether it was turned on or off.
+void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNote, const common::midi::Note& currentNote) {
+    if (previousNote.isOff() && currentNote.isOn()) {
+        voice.triggerOn(currentNote.velocity);
+    } else if (previousNote.isOn() && currentNote.isOff()) {
+        voice.triggerOff();
+    }
+}
+
+//! Samples each voice in the provided state, using latestKeyboard.
+[[nodiscard]] float nextSample(const common::midi::Keyboard& latestKeyboard, SynthesizerState& state) {
+    auto result = 0.0f;
+    for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
+        auto& voice  = state.voices[i];
+
+        auto& previousNote = state.keyboard.notes[i];
+        const auto& currentNote = latestKeyboard.notes[i];
+        triggerVoiceIfNecessary(voice, previousNote, currentNote);
+        previousNote = currentNote;
+
+        result += voice.nextSample(state.weightedWaveTables);
+    }
+    return result;
+}
+
 }
 
 class Synthesizer::impl {
@@ -76,26 +101,14 @@ public:
         });
     }
 
-    std::optional<float> nextSample(const common::midi::Keyboard& latestKeyboard) {
-        auto nextSample = std::optional<float>{};
-        _state.getIfAvailable([&](SynthesizerState& state) {
-            nextSample = 0.0f;
-            for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
-                auto& currentNote = state.keyboard.notes[i];
-                const auto& newNote = latestKeyboard.notes[i];
-
-                auto& voice  = state.voices[i];
-                if (currentNote.isOff() && newNote.isOn()) {
-                    voice.triggerOn(newNote.velocity);
-                } else if (currentNote.isOn() && newNote.isOff()) {
-                    voice.triggerOff();
-                }
-                currentNote = newNote;
-
-                *nextSample += voice.nextSample(state.weightedWaveTables);
+    [[nodiscard]] std::optional<common::audio::FrameBlock> getNextBlock(const common::midi::Keyboard& latestKeyboard) {
+        return _state.ifAvailableThen([&latestKeyboard](SynthesizerState& state) {
+            auto result = common::audio::FrameBlock{};
+            for (auto i = 0; i < result.size(); ++i) {
+                result[i] = nextSample(latestKeyboard, state);
             }
+            return result;
         });
-        return nextSample;
     }
 
     common::MutexProtected<SynthesizerState> _state;
@@ -134,8 +147,8 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-std::optional<float> Synthesizer::nextSample(const common::midi::Keyboard& keyboard) {
-    return _impl->nextSample(keyboard);
+std::optional<common::audio::FrameBlock> Synthesizer::getNextBlock(const common::midi::Keyboard& keyboard) {
+    return _impl->getNextBlock(keyboard);
 }
 
 }

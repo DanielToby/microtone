@@ -34,11 +34,13 @@ public:
 private:
     void processLoop() {
         while (_running) {
-            // More space might become available while we run. Let the next loop get that.
-            const auto numSamples = _outputHandle->availableSpace();
-            for (auto i = 0; i < numSamples; ++i) {
-                const auto sample = _synthesizer->nextSample(_midiHandle->getKeyboardState());
-                _outputHandle->push(sample.value_or(0.0f)); // TODO: Not this.
+            if (!_outputHandle->isFull()) {
+                if (auto nextBlock = _synthesizer->getNextBlock(_midiHandle->getKeyboardState())) {
+                    if (!_outputHandle->push(*nextBlock)) {
+                        // This is technically possible if someone else is writing to outputHandle.
+                        throw common::MicrotoneException("Incremented synth but discarded the result.");
+                    }
+                }
             }
         }
     }
