@@ -49,14 +49,14 @@ public:
 
     void noteOn(int note, int velocity) {
         _pressedNotes.notes[note].triggerOn(velocity);
-        this->write([&](Keyboard& keyboard) {
+        this->getAndMutateAndSet([&](Keyboard& keyboard) {
             keyboard.notes[note].triggerOn(velocity);
         });
     }
 
     void noteOff(int note) {
         _pressedNotes.notes[note].triggerOff();
-        this->write([&](Keyboard& keyboard) {
+        this->getAndMutateAndSet([&](Keyboard& keyboard) {
             if (!_sustainPedalOn) {
                 keyboard.notes[note].triggerOff();
             }
@@ -69,7 +69,7 @@ public:
 
     void sustainOff() {
         _sustainPedalOn = false;
-        this->write([&](Keyboard& keyboard) {
+        this->getAndMutateAndSet([&](Keyboard& keyboard) {
             for (auto note = 0; note <keyboard.notes.size(); ++note) {
                 if (!isPressed(note)) {
                     keyboard.notes[note].triggerOff();
@@ -83,7 +83,7 @@ public:
     }
 
 private:
-    void write(const std::function<void(Keyboard&)>& mutateFn) {
+    void getAndMutateAndSet(const std::function<void(Keyboard&)>& mutateFn) {
         auto copy = _keyboard.read();
         mutateFn(copy);
         _keyboard.write(copy);
