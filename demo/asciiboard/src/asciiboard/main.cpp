@@ -1,4 +1,5 @@
 #include <asciiboard/asciiboard.hpp>
+#include <asciiboard/render_loop.hpp>
 
 #include <common/exception.hpp>
 #include <common/log.hpp>
@@ -58,7 +59,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
     try {
         // Asciiboard
-        auto asciiboard = asciiboard::Asciiboard();
+        auto asciiboard = std::make_shared<asciiboard::Asciiboard>();
 
         // Initial GUI / synthesizer values
         auto initialControls = asciiboard::SynthControls{synth::ADSR{.01, .1, .8, .01}, .8, 0, .2};
@@ -93,6 +94,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto synthesizerProcess = synth::SynthesizerProcessor{synth, midiHandle, outputBufferHandle};
         synthesizerProcess.start();
 
+        auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, outputBufferHandle};
+        renderLoop.start();
+
         auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());
 
         // Callback invoked when asciiboard controls are changed
@@ -121,7 +125,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         };
 
         // Blocks this thread
-        asciiboard.loop(initialControls, onControlsChangedFn);
+        asciiboard->loop(initialControls, onControlsChangedFn);
 
     } catch (common::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

@@ -21,15 +21,21 @@ using namespace ftxui;
 
 class Asciiboard::impl {
 public:
-    impl() :
+    explicit impl() :
         _screen{ScreenInteractive::Fullscreen()},
         _lastOutputBuffer{},
         _sustainPedalOn{false} {}
 
-    // No allocation can take place here (called every frame)
     void addOutputData(const synth::AudioBuffer& data) {
         std::copy(std::begin(data), std::end(data), std::begin(_lastOutputBuffer));
         _screen.PostEvent(Event::Custom);
+    }
+
+    void updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
+        if (_keyboard != keyboard) {
+            _keyboard = keyboard;
+            _screen.PostEvent(Event::Custom);
+        }
     }
 
     void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
@@ -200,8 +206,7 @@ public:
         auto activeNotes = [this](int width, [[maybe_unused]] int height) {
             std::vector<int> output(width, -1);
             for (auto i = 0; i < width; ++i) {
-                if (_activeMidiNotes.find(i) != _activeMidiNotes.end() ||
-                    _sustainedMidiNotes.find(i) != _sustainedMidiNotes.end()) {
+                if (_keyboard.notes[i].isOn()) {
                     output[i] = 1;
                 }
             }
@@ -263,8 +268,7 @@ public:
 
     ftxui::ScreenInteractive _screen;
     synth::AudioBuffer _lastOutputBuffer;
-    std::unordered_set<int> _activeMidiNotes;
-    std::unordered_set<int> _sustainedMidiNotes;
+    common::midi::Keyboard _keyboard;
     bool _sustainPedalOn;
 };
 
@@ -283,6 +287,10 @@ Asciiboard& Asciiboard::operator=(Asciiboard&& other) noexcept {
 
 void Asciiboard::addOutputData(const synth::AudioBuffer& data) {
     _impl->addOutputData(data);
+}
+
+void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
+    _impl->updateMidiKeyboard(keyboard);
 }
 
 void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {

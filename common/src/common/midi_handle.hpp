@@ -12,6 +12,8 @@ namespace common::midi {
 struct Note {
     int velocity = 0;
 
+    [[nodiscard]] bool operator==(const Note& other) const { return velocity == other.velocity; }
+
     [[nodiscard]] bool isOn() const {
         return velocity > 0;
     }
@@ -32,6 +34,9 @@ struct Note {
 //! The state of the midi controller. Active notes have >0 velocity.
 struct Keyboard {
     std::array<Note, 127> notes;
+
+    [[nodiscard]] bool operator==(const Keyboard& other) const { return notes == other.notes; }
+    [[nodiscard]] bool operator!=(const Keyboard& other) const { return !(*this == other); }
 };
 
 // Notes are turned off when noteOff is pressed, unless the sustain pedal is on.

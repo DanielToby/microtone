@@ -7,6 +7,7 @@ set(SOURCES
     src/asciiboard/asciiboard.hpp
     src/asciiboard/asciiboard.cpp
     src/asciiboard/main.cpp
+    src/asciiboard/render_loop.hpp
     src/asciiboard/synth_controls.hpp
 )
 
