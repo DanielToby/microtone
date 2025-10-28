@@ -49,16 +49,10 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 }
 
 //! Samples each voice in the provided state, using latestKeyboard.
-[[nodiscard]] float nextSample(const common::midi::Keyboard& latestKeyboard, SynthesizerState& state) {
+[[nodiscard]] float nextSample(SynthesizerState& state) {
     auto result = 0.0f;
-    for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
+    for (auto i = 0; i < state.voices.size(); ++i) {
         auto& voice  = state.voices[i];
-
-        auto& previousNote = state.keyboard.notes[i];
-        const auto& currentNote = latestKeyboard.notes[i];
-        triggerVoiceIfNecessary(voice, previousNote, currentNote);
-        previousNote = currentNote;
-
         result += voice.nextSample(state.weightedWaveTables);
     }
     return result;
@@ -101,11 +95,24 @@ public:
         });
     }
 
-    [[nodiscard]] std::optional<common::audio::FrameBlock> getNextBlock(const common::midi::Keyboard& latestKeyboard) {
-        return _state.ifAvailableThen([&latestKeyboard](SynthesizerState& state) {
+    void respondToKeyboardChanges(const common::midi::Keyboard& latestKeyboard) {
+        _state.get([&latestKeyboard](SynthesizerState& state) {
+            for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
+                auto& previousNote = state.keyboard.notes[i];
+                const auto& currentNote = latestKeyboard.notes[i];
+
+                auto& voice  = state.voices[i];
+                triggerVoiceIfNecessary(voice, previousNote, currentNote);
+                previousNote = currentNote;
+            }
+        });
+    }
+
+    [[nodiscard]] common::audio::FrameBlock getNextBlock() {
+        return _state.get([](SynthesizerState& state) {
             auto result = common::audio::FrameBlock{};
             for (auto i = 0; i < result.size(); ++i) {
-                result[i] = nextSample(latestKeyboard, state);
+                result[i] = nextSample(state);
             }
             return result;
         });
@@ -147,8 +154,12 @@ void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
 }
 
-std::optional<common::audio::FrameBlock> Synthesizer::getNextBlock(const common::midi::Keyboard& keyboard) {
-    return _impl->getNextBlock(keyboard);
+void Synthesizer::respondToKeyboardChanges(const common::midi::Keyboard& keyboard) {
+    _impl->respondToKeyboardChanges(keyboard);
+}
+
+common::audio::FrameBlock Synthesizer::getNextBlock() {
+    return _impl->getNextBlock();
 }
 
 }

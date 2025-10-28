@@ -28,9 +28,11 @@ public:
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
 
+    //! Respond to changes in the keyboard (trigger voices on or off).
+    void respondToKeyboardChanges(const common::midi::Keyboard& keyboard);
+
     //! Increments counters in envelopes and everything. It's probably not a good idea to throw away the result!
-    //! Returns nullopt instead of blocking to acquire configurable state.
-    [[nodiscard]] std::optional<common::audio::FrameBlock> getNextBlock(const common::midi::Keyboard& keyboard);
+    [[nodiscard]] common::audio::FrameBlock getNextBlock();
 
 private:
     class impl;

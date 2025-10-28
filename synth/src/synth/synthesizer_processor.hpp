@@ -35,11 +35,11 @@ private:
     void processLoop() {
         while (_running) {
             if (!_outputHandle->isFull()) {
-                if (auto nextBlock = _synthesizer->getNextBlock(_midiHandle->getKeyboardState())) {
-                    if (!_outputHandle->push(*nextBlock)) {
-                        // This is technically possible if someone else is writing to outputHandle.
-                        throw common::MicrotoneException("Incremented synth but discarded the result.");
-                    }
+                _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
+                auto nextBlock = _synthesizer->getNextBlock();
+                if (!_outputHandle->push(nextBlock)) {
+                    // This is technically possible if someone else is writing to outputHandle.
+                    throw common::MicrotoneException("Incremented synth but discarded the result.");
                 }
             }
         }
