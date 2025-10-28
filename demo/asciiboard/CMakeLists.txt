@@ -6,6 +6,7 @@ add_subdirectory(vendor)
 set(SOURCES
     src/asciiboard/asciiboard.hpp
     src/asciiboard/asciiboard.cpp
+    src/asciiboard/demo_midi_generator.hpp
     src/asciiboard/main.cpp
     src/asciiboard/render_loop.hpp
     src/asciiboard/synth_controls.hpp

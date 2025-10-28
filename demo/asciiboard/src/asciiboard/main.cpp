@@ -1,4 +1,5 @@
 #include <asciiboard/asciiboard.hpp>
+#include <asciiboard/demo_midi_generator.hpp>
 #include <asciiboard/render_loop.hpp>
 
 #include <common/exception.hpp>
@@ -39,7 +40,7 @@ namespace {
 void trySelectPort(io::MidiInputStream& midiInput) {
     switch (midiInput.portCount()) {
     case 0:
-        std::cout << "No midi ports are available. Continuing without midi..." << std::endl;
+        std::cout << "No midi ports are available. Continuing with generated midi..." << std::endl;
         break;
     case 1:
         std::cout << "Using midi port 0 (the only one available)." << std::endl;
@@ -75,8 +76,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto midiHandle = std::make_shared<common::midi::MidiHandle>();
         auto midiInputStream = io::MidiInputStream(midiHandle);
         trySelectPort(midiInputStream);
+
+        // If midi isn't available, a demo midi generator is used.
+        auto midiGenerator = asciiboard::demo::MidiGenerator(midiHandle);
         if (midiInputStream.isOpen()) {
             midiInputStream.start();
+        } else {
+            midiGenerator.start();
         }
 
         // The audio output thread is created and started.
