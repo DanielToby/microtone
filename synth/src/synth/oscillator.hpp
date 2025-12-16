@@ -2,6 +2,7 @@
 
 #include <synth/wave_table.hpp>
 
+#include <cmath>
 #include <functional>
 #include <memory>
 
@@ -22,7 +23,7 @@ public:
 
     float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
         // Linear interpolation improves the signal approximation accuracy at discrete index.
-        auto indexBelow = static_cast<int>(floor(_currentIndex));
+        auto indexBelow = static_cast<int>(std::floor(_currentIndex));
         auto indexAbove = (indexBelow + 1) % WAVETABLE_LENGTH;
         auto fractionAbove = _currentIndex - indexBelow;
         auto fractionBelow = 1.0 - fractionAbove;

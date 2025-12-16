@@ -1,10 +1,8 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 #include <functional>
-
-
-#define M_PI 3.14159265358979323846
 
 namespace synth {
 
