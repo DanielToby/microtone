@@ -34,8 +34,8 @@ public:
 private:
     void processLoop() {
         while (_running) {
+            _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
             if (!_outputHandle->isFull()) {
-                _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
                 auto nextBlock = _synthesizer->getNextBlock();
                 if (!_outputHandle->push(nextBlock)) {
                     // This is technically possible if someone else is writing to outputHandle.
