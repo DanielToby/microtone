@@ -5,6 +5,8 @@ if(APPLE)
     set (PLATFORM "macos")
 elseif(WIN32)
     set (PLATFORM "windows")
+elseif(UNIX)
+    set (PLATFORM "linux")
 endif()
 
 add_subdirectory(common)

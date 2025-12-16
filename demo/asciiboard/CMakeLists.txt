@@ -32,3 +32,7 @@ target_link_libraries(asciiboard PRIVATE
     ftxui::dom
     ftxui::screen
 )
+
+if(${PLATFORM} STREQUAL "linux")
+    target_link_libraries(asciiboard PRIVATE atomic)
+endif()
