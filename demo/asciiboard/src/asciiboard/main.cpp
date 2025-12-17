@@ -135,6 +135,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto onAboutToQuitFn = [&outputBufferHandle]() {
             auto stats = outputBufferHandle->getStatistics();
             M_INFO(fmt::format("Processed {} audio blocks. Dropped {} blocks.", stats.numBlocksPopped, stats.numBlocksDropped));
+            common::Log::shutdown();
         };
 
         // Blocks this thread

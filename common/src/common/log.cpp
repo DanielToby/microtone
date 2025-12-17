@@ -7,8 +7,6 @@
 #include <filesystem>
 #include <memory>
 
-#include "common/exception.hpp"
-
 namespace common {
 
 namespace {
@@ -43,7 +41,7 @@ namespace {
 #elif defined(__linux__)
     return defaultLinuxLogPath();
 #else
-    throw common::MicrotoneException("Unknown platform");
+    static_assert(false); //< Unknown platform.
 #endif
 }
 
@@ -79,6 +77,11 @@ std::shared_ptr<spdlog::logger> Log::getLogger() {
 
 std::string Log::getDefaultLogfilePath() {
     return defaultLogPath();
+}
+
+void Log::shutdown() {
+    spdlog::shutdown();
+    s_Logger.reset();
 }
 
 };

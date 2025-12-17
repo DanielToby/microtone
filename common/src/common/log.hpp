@@ -21,8 +21,8 @@ public:
 
     static void init();
     static std::shared_ptr<spdlog::logger> getLogger();
-
     static std::string getDefaultLogfilePath();
+    static void shutdown();
 
 private:
     static std::shared_ptr<spdlog::logger> s_Logger;
