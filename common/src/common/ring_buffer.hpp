@@ -13,6 +13,10 @@ constexpr std::size_t AudioBlockSize = 512;
 using SampleT = float;
 using FrameBlock = std::array<SampleT, AudioBlockSize>;
 
+[[nodiscard]] inline double getDuration_us(const FrameBlock& block, const double sampleRate) {
+    return (static_cast<double>(block.size()) / sampleRate) * 1e6;
+}
+
 struct RingBufferStatistics {
     std::size_t numBlocksPopped{0};  // The number of blocks read out of the buffer.
     std::size_t numBlocksDropped{0}; // The number of blocks not read because none were available.

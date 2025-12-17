@@ -63,7 +63,8 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 class Synthesizer::impl {
 public:
     impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables) :
-        _state{{SynthesizerState{waveTables, buildVoices(sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)}}} {}
+        _state{{SynthesizerState{waveTables, buildVoices(sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)}}},
+        _sampleRate(sampleRate) {}
 
     ~impl() = default;
 
@@ -116,8 +117,13 @@ public:
         return result;
     }
 
+    [[nodiscard]] double sampleRate() const {
+        return _sampleRate;
+    }
+
 private:
     common::MutexProtected<SynthesizerState> _state;
+    double _sampleRate = -1;
 };
 
 Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables) :
@@ -159,6 +165,10 @@ void Synthesizer::respondToKeyboardChanges(const common::midi::Keyboard& keyboar
 
 common::audio::FrameBlock Synthesizer::getNextBlock() {
     return _impl->getNextBlock();
+}
+
+double Synthesizer::sampleRate() const {
+    return _impl->sampleRate();
 }
 
 }

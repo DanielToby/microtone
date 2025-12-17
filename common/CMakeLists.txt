@@ -22,6 +22,7 @@ set(SOURCES
     src/common/midi_handle.hpp
     src/common/mutex_protected.hpp
     src/common/ring_buffer.hpp
+    src/common/timer.hpp
 )
 
 target_sources(common PUBLIC ${SOURCES})

@@ -2,6 +2,7 @@
 
 #include <common/midi_handle.hpp>
 #include <common/ring_buffer.hpp>
+#include <common/timer.hpp>
 #include <synth/synthesizer.hpp>
 
 #include <memory>
@@ -11,9 +12,13 @@ namespace synth {
 
 namespace detail {
 
-inline void logAudioBlockStatistics(const common::audio::FrameBlock& block) {
+inline void logAudioBlockStatistics(const common::audio::FrameBlock& block, double blockDuration_us, double computeDuration_us) {
     if (block.empty()) {
         return;
+    }
+
+    if (computeDuration_us > blockDuration_us) {
+        M_WARN("Compute took longer than block duration.");
     }
 
     for (const auto& sample : block) {
@@ -62,8 +67,11 @@ private:
         while (_running) {
             _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
             if (!_outputHandle->isFull()) {
-                auto nextBlock = _synthesizer->getNextBlock();
-                detail::logAudioBlockStatistics(nextBlock);
+                auto [nextBlock, duration] = common::timedInvoke([this]() { return _synthesizer->getNextBlock(); });
+                detail::logAudioBlockStatistics(
+                    nextBlock,
+                    common::audio::getDuration_us(nextBlock, _synthesizer->sampleRate()),
+                    static_cast<double>(duration.count()));
                 if (!_outputHandle->push(nextBlock)) {
                     // This is technically possible if someone else is writing to outputHandle.
                     throw common::MicrotoneException("Incremented synth but discarded the result.");

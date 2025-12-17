@@ -34,6 +34,8 @@ public:
     //! Increments counters in envelopes and everything. It's probably not a good idea to throw away the result!
     [[nodiscard]] common::audio::FrameBlock getNextBlock();
 
+    [[nodiscard]] double sampleRate() const;
+
 private:
     class impl;
     std::unique_ptr<impl> _impl;
