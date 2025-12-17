@@ -36,7 +36,7 @@ public:
 
         auto outputParameters = PaStreamParameters{
             /* device */ deviceId,
-            /* channelCount */ 2,
+            /* channelCount */ 1,
             /* sampleFormat */ paFloat32,
             /* suggestedLatency */ deviceInfo->defaultLowOutputLatency,
             /* hostApiSpecificStreamInfo */ nullptr};
@@ -47,7 +47,7 @@ public:
             &outputParameters,
             _sampleRate,
             common::audio::AudioBlockSize,
-            paClipOff,
+            paNoFlag,
             &impl::portAudioCallback,
             _outputBuffer.get());
 
@@ -64,31 +64,28 @@ public:
         Pa_Terminate();
     }
 
-    static int portAudioCallback([[maybe_unused]] const void* rawInputBuffer,
+    static int portAudioCallback(const void* /*input*/,
                                  void* outputBuffer,
-                                 [[maybe_unused]] unsigned long framesPerBuffer, // <- this is fixed.
-                                 [[maybe_unused]] const PaStreamCallbackTimeInfo* timeInfo,
-                                 [[maybe_unused]] PaStreamCallbackFlags statusFlags,
+                                 unsigned long framesPerBuffer,
+                                 const PaStreamCallbackTimeInfo* /*timeInfo*/,
+                                 PaStreamCallbackFlags /*statusFlags*/,
                                  void* userData) {
-        auto in = static_cast<common::audio::RingBuffer<>*>(userData);;
-        auto out = static_cast<float*>(outputBuffer);
-        if (in && out) {
-            if (auto nextBlock = in->pop()) {
-                if (nextBlock->size() != framesPerBuffer) {
-                    throw common::MicrotoneException("Unexpected framesPerBuffer.");
-                }
-                for (auto i = 0; i < framesPerBuffer; i++) {
-                    const auto& sample = nextBlock->at(i);
-                    for (std::size_t channel = 0; channel < 2; ++channel) {
-                        *out++ = std::clamp(sample, -1.0f, 1.0f);
-                    }
-                }
-            } else {
-                // No io allowed in here, but we're dropping a frame :(
-            }
-        } else {
-            throw common::MicrotoneException("Invalid Port Audio callback.");
+        auto* ringBuffer = static_cast<common::audio::RingBuffer<>*>(userData);
+        auto* out = static_cast<float*>(outputBuffer);
+
+        if (!ringBuffer || !out) {
+            return paContinue;
         }
+
+        if (auto nextBlock = ringBuffer->pop()) {
+            if (nextBlock->size() != framesPerBuffer) {
+                throw common::MicrotoneException("Unexpected framesPerBuffer.");
+            }
+            std::copy_n(nextBlock->data(), framesPerBuffer, out);
+        } else {
+            std::fill_n(out, framesPerBuffer, 0.0f);
+        }
+
         return paContinue;
     }
 
