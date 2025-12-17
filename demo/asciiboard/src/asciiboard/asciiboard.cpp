@@ -39,7 +39,7 @@ public:
         }
     }
 
-    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
+    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
         auto controls = SynthControls{initialControls};
 
         // Instructions
@@ -251,6 +251,7 @@ public:
 
         auto eventListener = CatchEvent(mainRenderer, [&](Event event) {
             if (event == Event::Character('q')) {
+                onAboutToQuit();
                 _screen.ExitLoopClosure()();
                 return true;
             } else if (event == Event::Return) {
@@ -293,8 +294,8 @@ void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
     _impl->updateMidiKeyboard(keyboard);
 }
 
-void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn) {
-    _impl->loop(initialControls, onControlsChangedFn);
+void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {
+    _impl->loop(initialControls, onControlsChangedFn, onAboutToQuitFn);
 }
 
 Asciiboard::~Asciiboard() = default;

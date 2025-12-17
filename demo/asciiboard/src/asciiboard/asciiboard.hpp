@@ -11,6 +11,7 @@
 namespace asciiboard {
 
 using OnControlsChangedFn = std::function<void(const SynthControls&)>;
+using OnAboutToQuitFn = std::function<void()>;
 
 class Asciiboard {
 public:
@@ -21,7 +22,7 @@ public:
     Asciiboard& operator=(Asciiboard&&) noexcept;
     ~Asciiboard();
 
-    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn);
+    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn);
     void addOutputData(const common::audio::FrameBlock& lastAudioBlock);
     void updateMidiKeyboard(const common::midi::Keyboard& latestKeyboard);
 

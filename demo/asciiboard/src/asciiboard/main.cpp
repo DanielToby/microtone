@@ -131,8 +131,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             }
         };
 
+        // Log statistics before exiting.
+        auto onAboutToQuitFn = [&outputBufferHandle]() {
+            auto stats = outputBufferHandle->getStatistics();
+            M_INFO(fmt::format("Processed {} audio blocks. Dropped {} blocks.", stats.numBlocksPopped, stats.numBlocksDropped));
+        };
+
         // Blocks this thread
-        asciiboard->loop(initialControls, onControlsChangedFn);
+        asciiboard->loop(initialControls, onControlsChangedFn, onAboutToQuitFn);
 
     } catch (common::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;
