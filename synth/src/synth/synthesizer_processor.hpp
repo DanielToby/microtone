@@ -9,6 +9,28 @@
 
 namespace synth {
 
+namespace detail {
+
+inline void logAudioBlockStatistics(const common::audio::FrameBlock& block) {
+    if (block.empty()) {
+        return;
+    }
+
+    for (const auto& sample : block) {
+        if (!std::isfinite(sample)) {
+            M_WARN("Sample is NaN.");
+        };
+
+        if (sample > 1.0f) {
+            M_WARN(fmt::format("Sample higher than 1.0: {}", sample));
+        } else if (sample < -1.0f) {
+            M_WARN(fmt::format("Sample less than -1.0: {}", sample));
+        }
+    }
+}
+
+}
+
 //! Runs the Synthesizer in a dedicated process that executes only if the buffer has room.
 class SynthesizerProcessor {
 public:
@@ -41,6 +63,7 @@ private:
             _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
             if (!_outputHandle->isFull()) {
                 auto nextBlock = _synthesizer->getNextBlock();
+                detail::logAudioBlockStatistics(nextBlock);
                 if (!_outputHandle->push(nextBlock)) {
                     // This is technically possible if someone else is writing to outputHandle.
                     throw common::MicrotoneException("Incremented synth but discarded the result.");
