@@ -13,6 +13,11 @@ constexpr std::size_t AudioBlockSize = 512;
 using SampleT = float;
 using FrameBlock = std::array<SampleT, AudioBlockSize>;
 
+struct RingBufferStatistics {
+    std::size_t numBlocksPopped{0};  // The number of blocks read out of the buffer.
+    std::size_t numBlocksDropped{0}; // The number of blocks not read because none were available.
+};
+
 //! Provides thread-safe access to a buffer of Ts.
 //! Buffering helps avoid jitter in multithreaded contexts. As long as the producer is more often faster than the consumer,
 //! the buffer helps accommodate temporary slowdowns, which prevents jitter. This comes at the cost of latency, because
@@ -41,11 +46,13 @@ public:
     [[nodiscard]] std::optional<T> pop() {
         size_t tail = _tail.load(std::memory_order_relaxed);
         if (tail == _head.load(std::memory_order_relaxed)) {
+            _statistics.numBlocksDropped++;
             return std::nullopt; // empty
         }
         T item = _buffer[tail];
         _tail.store((tail + 1) % N, std::memory_order_release);
         _lastPoppedIndex.store(tail, std::memory_order_release);
+        _statistics.numBlocksPopped++;
         return item;
     }
 
@@ -57,6 +64,8 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] RingBufferStatistics getStatistics() const { return _statistics; }
+
 private:
     [[nodiscard]] std::size_t nextHead() const {
         return (_head.load(std::memory_order_acquire) + 1) % N;
@@ -66,6 +75,8 @@ private:
     std::atomic<size_t> _tail{0};
     std::atomic<size_t> _head{0};
     std::atomic<std::optional<size_t>> _lastPoppedIndex{std::nullopt};
+
+    RingBufferStatistics _statistics; //< Only touched by pop().
 };
 
 }
