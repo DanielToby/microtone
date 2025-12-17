@@ -20,6 +20,10 @@ public:
         _midiHandle(std::move(midiHandle)),
         _outputHandle(std::move(outputHandle)) {}
 
+    ~SynthesizerProcessor() {
+        this->stop();
+    }
+
     void start() {
         _running = true;
         _thread = std::thread(&SynthesizerProcessor::processLoop, this);

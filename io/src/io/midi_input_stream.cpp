@@ -115,7 +115,9 @@ MidiInputStream& MidiInputStream::operator=(MidiInputStream&& other) noexcept {
     return *this;
 }
 
-MidiInputStream::~MidiInputStream() = default;
+MidiInputStream::~MidiInputStream() {
+    this->stop();
+}
 
 int MidiInputStream::portCount() const {
     return _impl->portCount();

@@ -20,6 +20,10 @@ public:
         _midiHandle(std::move(midiHandle)),
         _outputHandle(std::move(outputHandle)) {}
 
+    ~RenderLoop() {
+        this->stop();
+    }
+
     void start() {
         _running = true;
         _thread = std::thread(&RenderLoop::renderLoop, this);

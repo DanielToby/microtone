@@ -50,8 +50,12 @@ constexpr auto chromaticScale = std::array{
 class MidiGenerator {
 public:
     MidiGenerator() = delete;
-    MidiGenerator(std::shared_ptr<common::midi::MidiHandle> midiHandle) :
+    explicit MidiGenerator(std::shared_ptr<common::midi::MidiHandle> midiHandle) :
         _midiHandle(std::move(midiHandle)) {}
+
+    ~MidiGenerator() {
+        this->stop();
+    }
 
     void start() {
         _running = true;
