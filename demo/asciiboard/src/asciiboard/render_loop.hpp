@@ -2,7 +2,7 @@
 
 #include <asciiboard/asciiboard.hpp>
 #include <common/midi_handle.hpp>
-#include <common/ring_buffer.hpp>
+#include <synth/synthesizer.hpp>
 
 #include <memory>
 #include <thread>
@@ -15,10 +15,10 @@ public:
     RenderLoop() = delete;
     RenderLoop(std::shared_ptr<Asciiboard> ui,
                          std::shared_ptr<const common::midi::MidiHandle> midiHandle,
-                         std::shared_ptr<common::audio::RingBuffer<>> outputHandle) :
+                         std::shared_ptr<const synth::Synthesizer> synthHandle) :
         _ui(std::move(ui)),
         _midiHandle(std::move(midiHandle)),
-        _outputHandle(std::move(outputHandle)) {}
+        _synthHandle(std::move(synthHandle)) {}
 
     ~RenderLoop() {
         this->stop();
@@ -38,7 +38,7 @@ public:
 private:
     void renderLoop() {
         while (_running) {
-            if (auto lastAudioBlock = _outputHandle->lastPopped()) {
+            if (auto lastAudioBlock = _synthHandle->getLastBlock()) {
                 _ui->addOutputData(*lastAudioBlock);
             }
             _ui->updateMidiKeyboard(_midiHandle->getKeyboardState());
@@ -48,7 +48,7 @@ private:
     }
     std::shared_ptr<Asciiboard> _ui;
     std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
-    std::shared_ptr<common::audio::RingBuffer<>> _outputHandle;
+    std::shared_ptr<const synth::Synthesizer> _synthHandle;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

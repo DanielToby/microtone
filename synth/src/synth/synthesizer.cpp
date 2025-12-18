@@ -19,6 +19,7 @@ struct SynthesizerState {
     std::vector<WeightedWaveTable> weightedWaveTables;
     std::vector<Voice> voices;
     common::midi::Keyboard keyboard;
+    std::optional<common::audio::FrameBlock> lastBlock;
 };
 
 [[nodiscard]] double noteToFrequencyHertz(int note) {
@@ -113,8 +114,13 @@ public:
             for (auto i = 0; i < result.size(); ++i) {
                 result[i] = nextSample(state);
             }
+            state.lastBlock = result;
         });
         return result;
+    }
+
+    [[nodiscard]] std::optional<common::audio::FrameBlock> getLastBlock() const {
+        return _state.read().lastBlock;
     }
 
     [[nodiscard]] double sampleRate() const {
@@ -165,6 +171,10 @@ void Synthesizer::respondToKeyboardChanges(const common::midi::Keyboard& keyboar
 
 common::audio::FrameBlock Synthesizer::getNextBlock() {
     return _impl->getNextBlock();
+}
+
+std::optional<common::audio::FrameBlock> Synthesizer::getLastBlock() const {
+    return _impl->getLastBlock();
 }
 
 double Synthesizer::sampleRate() const {

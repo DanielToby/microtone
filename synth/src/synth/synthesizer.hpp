@@ -34,6 +34,9 @@ public:
     //! Increments counters in envelopes and everything. It's probably not a good idea to throw away the result!
     [[nodiscard]] common::audio::FrameBlock getNextBlock();
 
+    //! The last block returned by `getNextBlock`, for bookkeeping.
+    [[nodiscard]] std::optional<common::audio::FrameBlock> getLastBlock() const;
+
     [[nodiscard]] double sampleRate() const;
 
 private:

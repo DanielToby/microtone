@@ -101,7 +101,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto synthesizerProcess = synth::SynthesizerProcessor{synth, midiHandle, outputBufferHandle};
         synthesizerProcess.start();
 
-        auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, outputBufferHandle};
+        auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
 
         auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());
