@@ -5,12 +5,18 @@
 namespace common {
 
 template <typename Fn>
-[[nodiscard]] std::pair<std::invoke_result_t<Fn>, std::chrono::microseconds> timedInvoke(Fn&& fn) {
+[[nodiscard]] auto timedInvoke(Fn&& fn) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = std::invoke(std::forward<Fn>(fn));
-    auto end = std::chrono::high_resolution_clock::now();
 
-    return {result, std::chrono::duration_cast<std::chrono::microseconds>(end - start)};
+    if constexpr (std::is_void_v<std::invoke_result_t<Fn>>) {
+        std::invoke(std::forward<Fn>(fn));
+        auto end = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    } else {
+        auto result = std::invoke(std::forward<Fn>(fn));
+        auto end = std::chrono::high_resolution_clock::now();
+        return std::make_pair(result, std::chrono::duration_cast<std::chrono::microseconds>(end - start));
+    }
 }
 
 }

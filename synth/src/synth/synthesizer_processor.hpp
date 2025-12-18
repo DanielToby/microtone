@@ -70,7 +70,7 @@ private:
                 auto [nextBlock, duration] = common::timedInvoke([this]() { return _synthesizer->getNextBlock(); });
                 detail::logAudioBlockStatistics(
                     nextBlock,
-                    common::audio::getDuration_us(nextBlock, _synthesizer->sampleRate()),
+                    common::audio::getDuration_us(nextBlock.size(), _synthesizer->sampleRate()),
                     static_cast<double>(duration.count()));
                 if (!_outputHandle->push(nextBlock)) {
                     // This is technically possible if someone else is writing to outputHandle.
