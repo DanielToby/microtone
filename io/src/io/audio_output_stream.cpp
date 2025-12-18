@@ -2,9 +2,10 @@
 
 #include <portaudio.h>
 
-#include <common/ring_buffer.hpp>
 #include <common/exception.hpp>
 #include <common/log.hpp>
+#include <common/ring_buffer.hpp>
+#include <common/timer.hpp>
 
 namespace io {
 
@@ -69,21 +70,16 @@ public:
                                  unsigned long framesPerBuffer,
                                  const PaStreamCallbackTimeInfo* /*timeInfo*/,
                                  PaStreamCallbackFlags /*statusFlags*/,
-                                 void* userData) {
-        auto* ringBuffer = static_cast<common::audio::RingBuffer<>*>(userData);
+                                 void* rawUserData) {
+        auto* userData = static_cast<common::audio::RingBuffer<>*>(rawUserData);
         auto* out = static_cast<float*>(outputBuffer);
 
-        if (!ringBuffer || !out) {
+        if (!userData || !out) {
             return paContinue;
         }
 
-        if (auto nextBlock = ringBuffer->pop()) {
-            if (nextBlock->size() != framesPerBuffer) {
-                throw common::MicrotoneException("Unexpected framesPerBuffer.");
-            }
-            std::copy_n(nextBlock->data(), framesPerBuffer, out);
-        } else {
-            std::fill_n(out, framesPerBuffer, 0.0f);
+        if (!userData->popInto(out)) {
+            M_ERROR(fmt::format("Dropped frame!"));
         }
 
         return paContinue;

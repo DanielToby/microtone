@@ -46,26 +46,22 @@ public:
         return false;
     }
 
-    //! Returns an item if one is available.
-    [[nodiscard]] std::optional<T> pop() {
-        size_t tail = _tail.load(std::memory_order_relaxed);
-        if (tail == _head.load(std::memory_order_relaxed)) {
+    //! Attempts to write an audio block into out, incrementing out by common::audio::AudioBlockSize.
+    template <typename OutputIterator>
+    [[nodiscard]] bool popInto(OutputIterator& out) noexcept {
+        const auto tail = _tail.load(std::memory_order_relaxed);
+        if (tail == _head.load(std::memory_order_acquire)) {
             _statistics.numBlocksDropped++;
-            return std::nullopt; // empty
+            return false; // empty
         }
-        T item = _buffer[tail];
-        _tail.store((tail + 1) % N, std::memory_order_release);
-        _lastPoppedIndex.store(tail, std::memory_order_release);
-        _statistics.numBlocksPopped++;
-        return item;
-    }
 
-    //! Returns the last item returned by pop().
-    [[nodiscard]] std::optional<T> lastPopped() const {
-        if (auto lastPoppedIndex = _lastPoppedIndex.load(std::memory_order_relaxed)) {
-            return _buffer[*lastPoppedIndex];
+        for (const auto& v : _buffer[tail]) {
+            *out++ = v;
         }
-        return std::nullopt;
+
+        _tail.store((tail + 1) % N, std::memory_order_release);
+        _statistics.numBlocksPopped++;
+        return true;
     }
 
     [[nodiscard]] RingBufferStatistics getStatistics() const { return _statistics; }
@@ -78,7 +74,6 @@ private:
     std::array<T, N> _buffer;
     std::atomic<size_t> _tail{0};
     std::atomic<size_t> _head{0};
-    std::atomic<std::optional<size_t>> _lastPoppedIndex{std::nullopt};
 
     RingBufferStatistics _statistics; //< Only touched by pop().
 };
