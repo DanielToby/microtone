@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# For easier development on raspberry pi.
+
+export DEVELOPER_DIR="$HOME/developer"
+export SOURCE_DIR="$DEVELOPER_DIR/microtone"
+export BUILD_DIR="$DEVELOPER_DIR/build-microtone"
