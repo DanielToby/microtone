@@ -39,7 +39,7 @@ public:
             /* device */ deviceId,
             /* channelCount */ 1,
             /* sampleFormat */ paFloat32,
-            /* suggestedLatency */ deviceInfo->defaultLowOutputLatency,
+            /* suggestedLatency */ deviceInfo->defaultHighOutputLatency,
             /* hostApiSpecificStreamInfo */ nullptr};
 
         auto openStreamResult = Pa_OpenStream(
@@ -49,7 +49,7 @@ public:
             _sampleRate,
             common::audio::AudioBlockSize,
             paNoFlag,
-            &impl::portAudioCallback,
+            &portAudioCallback,
             _outputBuffer.get());
 
         if (openStreamResult != paNoError) {
