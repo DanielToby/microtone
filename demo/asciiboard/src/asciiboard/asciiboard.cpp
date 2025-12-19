@@ -78,7 +78,7 @@ public:
 
         // Oscilloscope
         auto scaleFactor = 0.5;
-        auto graphHeight = 40;
+        auto graphHeight = 180;
         auto oscilloscope = Renderer([&] {
             auto width = static_cast<int>(_latestAudioBlock.size());
             auto c = Canvas(width, graphHeight);
