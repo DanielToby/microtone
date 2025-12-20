@@ -131,10 +131,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             }
         };
 
-        // Log statistics before exiting.
-        auto onAboutToQuitFn = [&outputBufferHandle]() {
-            auto stats = outputBufferHandle->getStatistics();
-            M_INFO(fmt::format("Processed {} audio blocks. Dropped {} blocks.", stats.numBlocksPopped, stats.numBlocksDropped));
+        auto onAboutToQuitFn = []() {
             common::Log::shutdown();
         };
 

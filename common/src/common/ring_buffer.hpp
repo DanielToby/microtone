@@ -1,9 +1,8 @@
 #pragma once
 
-#include <atomic>
 #include <array>
-#include <cstddef>
-#include <optional>
+#include <atomic>
+#include <functional>
 
 namespace common::audio {
 
@@ -17,11 +16,6 @@ using FrameBlock = std::array<SampleT, AudioBlockSize>;
     return (static_cast<double>(blockSize) / sampleRate) * 1e6;
 }
 
-struct RingBufferStatistics {
-    std::size_t numBlocksPopped{0};  // The number of blocks read out of the buffer.
-    std::size_t numBlocksDropped{0}; // The number of blocks not read because none were available.
-};
-
 //! Provides thread-safe access to a buffer of Ts.
 //! Buffering helps avoid jitter in multithreaded contexts. As long as the producer is more often faster than the consumer,
 //! the buffer helps accommodate temporary slowdowns, which prevents jitter. This comes at the cost of latency, because
@@ -29,53 +23,49 @@ struct RingBufferStatistics {
 //! A default of 4 is used with FrameBlock for a total latency of ~42.8 ms.
 template <typename T = FrameBlock, size_t N = 4>
 class RingBuffer {
+    static_assert(N >= 2);
+    static_assert(std::is_trivially_copyable_v<T>);
 public:
     RingBuffer() = default;
 
-    [[nodiscard]] bool isFull() const {
-        return this->nextHead() == _tail.load(std::memory_order_acquire);
+    [[nodiscard]] bool isFull() const noexcept {
+        return nextAfter(_head.load(std::memory_order_relaxed)) == _tail.load(std::memory_order_relaxed);
     }
 
     //! Returns true if an item was pushed.
-    [[nodiscard]] bool push(const T& item) {
-        if (auto nextHead = this->nextHead(); nextHead != _tail.load(std::memory_order_acquire)) {
-            _buffer[nextHead] = item;
-            _head.store(nextHead);
+    [[nodiscard]] bool push(const T& item) noexcept {
+        const auto head = _head.load(std::memory_order_relaxed);
+        const auto tail = _tail.load(std::memory_order_relaxed);
+        const auto nextHead = nextAfter(head);
+        if (nextHead != tail) {
+            _buffer[head] = item;
+            _head.store(nextHead, std::memory_order_release);
             return true;
         }
         return false;
     }
 
-    //! Attempts to write an audio block into out, incrementing out by common::audio::AudioBlockSize.
-    template <typename OutputIterator>
-    [[nodiscard]] bool popInto(OutputIterator& out) noexcept {
+    //! If an item is available, `fn` is invoked on it.
+    [[nodiscard]] bool pop(const std::function<void(const T&)>& fn) noexcept {
+        const auto head = _head.load(std::memory_order_acquire);
         const auto tail = _tail.load(std::memory_order_relaxed);
-        if (tail == _head.load(std::memory_order_acquire)) {
-            _statistics.numBlocksDropped++;
-            return false; // empty
+        if (head != tail) {
+            std::invoke(fn, _buffer[tail]);
+            const auto nextTail = nextAfter(tail);
+            _tail.store(nextTail, std::memory_order_release);
+            return true;
         }
-
-        for (const auto& v : _buffer[tail]) {
-            *out++ = v;
-        }
-
-        _tail.store((tail + 1) % N, std::memory_order_release);
-        _statistics.numBlocksPopped++;
-        return true;
+        return false;
     }
 
-    [[nodiscard]] RingBufferStatistics getStatistics() const { return _statistics; }
-
 private:
-    [[nodiscard]] std::size_t nextHead() const {
-        return (_head.load(std::memory_order_acquire) + 1) % N;
+    [[nodiscard]] static constexpr std::size_t nextAfter(std::size_t i) noexcept {
+        return (i + 1) % N;
     }
 
     std::array<T, N> _buffer;
-    std::atomic<size_t> _tail{0};
-    std::atomic<size_t> _head{0};
-
-    RingBufferStatistics _statistics; //< Only touched by pop().
+    alignas(64) std::atomic<std::size_t> _tail{0};
+    alignas(64) std::atomic<std::size_t> _head{0};
 };
 
 }

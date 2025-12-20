@@ -73,12 +73,17 @@ public:
                                  void* rawUserData) {
         auto* userData = static_cast<common::audio::RingBuffer<>*>(rawUserData);
         auto* out = static_cast<float*>(outputBuffer);
-
         if (!userData || !out) {
             return paContinue;
         }
 
-        if (!userData->popInto(out)) {
+        auto addData = [&out](const common::audio::FrameBlock& block) {
+            for (const auto& v : block) {
+                *out++ = v;
+            }
+        };
+
+        if (!userData->pop(addData)) {
             M_ERROR(fmt::format("Dropped frame!"));
         }
 
