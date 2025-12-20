@@ -42,7 +42,7 @@ public:
     SynthesizerProcessor() = delete;
     SynthesizerProcessor(std::shared_ptr<Synthesizer> synthesizer,
                          std::shared_ptr<const common::midi::MidiHandle> midiHandle,
-                         std::shared_ptr<common::audio::RingBuffer<>> outputHandle) :
+                         std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> outputHandle) :
         _synthesizer(std::move(synthesizer)),
         _midiHandle(std::move(midiHandle)),
         _outputHandle(std::move(outputHandle)) {}
@@ -82,7 +82,7 @@ private:
 
     std::shared_ptr<Synthesizer> _synthesizer;
     std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
-    std::shared_ptr<common::audio::RingBuffer<>> _outputHandle;
+    std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> _outputHandle;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

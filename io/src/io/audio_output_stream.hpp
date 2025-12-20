@@ -19,7 +19,7 @@ enum class AudioStreamError {
 //! This is the portaudio wrapper.
 class AudioOutputStream {
 public:
-    explicit AudioOutputStream(std::shared_ptr<common::audio::RingBuffer<>> inputBuffer);
+    explicit AudioOutputStream(std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> inputBuffer);
     AudioOutputStream(const AudioOutputStream&) = delete;
     AudioOutputStream& operator=(const AudioOutputStream&) = delete;
     AudioOutputStream(AudioOutputStream&&) noexcept;

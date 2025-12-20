@@ -87,7 +87,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // The audio output thread is created and started.
-        auto outputBufferHandle = std::make_shared<common::audio::RingBuffer<>>();
+        auto outputBufferHandle = std::make_shared<common::RingBuffer<common::audio::FrameBlock>>();
         auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
         if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
             throw common::MicrotoneException("Failed to create audio output stream.");

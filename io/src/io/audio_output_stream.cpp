@@ -11,7 +11,7 @@ namespace io {
 
 class AudioOutputStream::impl {
 public:
-    explicit impl(std::shared_ptr<common::audio::RingBuffer<>> outputBuffer) :
+    explicit impl(std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> outputBuffer) :
         _outputBuffer{std::move(outputBuffer)},
         _portAudioStream{nullptr},
         _sampleRate{0},
@@ -71,7 +71,7 @@ public:
                                  const PaStreamCallbackTimeInfo* /*timeInfo*/,
                                  PaStreamCallbackFlags /*statusFlags*/,
                                  void* rawUserData) {
-        auto* userData = static_cast<common::audio::RingBuffer<>*>(rawUserData);
+        auto* userData = static_cast<common::RingBuffer<common::audio::FrameBlock>*>(rawUserData);
         auto* out = static_cast<float*>(outputBuffer);
         if (!userData || !out) {
             return paContinue;
@@ -116,13 +116,13 @@ public:
         return _sampleRate;
     }
 
-    std::shared_ptr<common::audio::RingBuffer<>> _outputBuffer;
+    std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> _outputBuffer;
     PaStream* _portAudioStream;
     double _sampleRate;
     AudioStreamError _createStreamError;
 };
 
-AudioOutputStream::AudioOutputStream(std::shared_ptr<common::audio::RingBuffer<>> inputBuffer) :
+AudioOutputStream::AudioOutputStream(std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> inputBuffer) :
     _impl{std::make_unique<impl>(inputBuffer)} {
 }
 

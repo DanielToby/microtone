@@ -4,8 +4,9 @@
 #include <atomic>
 #include <functional>
 
-namespace common::audio {
+namespace common {
 
+namespace audio {
 //! Describes each block in the ring buffer in case producing T's is more efficient if done in blocks.
 //! At a sample rate of 44.1 kHz, this is 512 / 48000, or ~10.7 ms  of audio.
 constexpr std::size_t AudioBlockSize = 512;
@@ -16,12 +17,14 @@ using FrameBlock = std::array<SampleT, AudioBlockSize>;
     return (static_cast<double>(blockSize) / sampleRate) * 1e6;
 }
 
+}
+
 //! Provides thread-safe access to a buffer of Ts.
 //! Buffering helps avoid jitter in multithreaded contexts. As long as the producer is more often faster than the consumer,
 //! the buffer helps accommodate temporary slowdowns, which prevents jitter. This comes at the cost of latency, because
 //! the consumer is popping items that are N * blockTime_s behind the producer.
 //! A default of 4 is used with FrameBlock for a total latency of ~42.8 ms.
-template <typename T = FrameBlock, size_t N = 4>
+template <typename T, size_t N = 4>
 class RingBuffer {
     static_assert(N >= 2);
     static_assert(std::is_trivially_copyable_v<T>);

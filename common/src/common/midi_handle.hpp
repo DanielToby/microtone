@@ -83,6 +83,8 @@ public:
     }
 
 private:
+
+
     [[nodiscard]] bool isPressed(int note) const {
         return _pressedNotes.notes[note].isOn();
     }
