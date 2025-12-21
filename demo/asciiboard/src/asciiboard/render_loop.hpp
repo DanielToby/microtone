@@ -41,8 +41,7 @@ private:
             if (auto lastAudioBlock = _synthHandle->getLastBlock()) {
                 _ui->addOutputData(*lastAudioBlock);
             }
-            _ui->updateMidiKeyboard(_midiHandle->getKeyboardState());
-
+            _ui->updateMidiKeyboard(_midiHandle->read());
             std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
     }

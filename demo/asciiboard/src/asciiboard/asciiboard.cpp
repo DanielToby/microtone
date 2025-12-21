@@ -207,7 +207,7 @@ public:
         auto activeNotes = [this](int width, [[maybe_unused]] int height) {
             std::vector<int> output(width, -1);
             for (auto i = 0; i < width; ++i) {
-                if (_keyboard.notes[i].isOn()) {
+                if (_keyboard.audibleNotes[i].isOn()) {
                     output[i] = 1;
                 }
             }

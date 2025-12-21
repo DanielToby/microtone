@@ -1,6 +1,7 @@
 #pragma once
 
 #include <asciiboard/asciiboard.hpp>
+#include <common/log.hpp>
 #include <common/midi_handle.hpp>
 #include <common/ring_buffer.hpp>
 
@@ -60,6 +61,7 @@ public:
     void start() {
         _running = true;
         _thread = std::thread(&MidiGenerator::loop, this);
+        M_INFO("Started midi generator.");
     }
 
     void stop() {

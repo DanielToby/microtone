@@ -14,14 +14,14 @@ namespace io {
 
 namespace {
 void addMidiData(common::midi::MidiHandle& handle, const MidiMessage& m) {
-    switch (static_cast<MidiStatusMessage>(m.status)) {
-    case MidiStatusMessage::NoteOn:
+    const auto status = static_cast<MidiStatusMessage>(m.status);
+    if (status == MidiStatusMessage::NoteOn) {
         handle.noteOn(m.note, m.velocity);
-    case MidiStatusMessage::NoteOff:
+    } else if (status == MidiStatusMessage::NoteOff) {
         handle.noteOff(m.note);
-    case MidiStatusMessage::ControlChange:
-        switch (static_cast<MidiNoteMessage>(m.note)) {
-        case MidiNoteMessage::SustainPedal:
+    } else if (status == MidiStatusMessage::ControlChange) {
+        const auto midiNoteMessage = static_cast<MidiNoteMessage>(m.note);
+        if (midiNoteMessage == MidiNoteMessage::SustainPedal) {
             if (m.velocity > static_cast<int>(MidiVelocityMessage::SustainPedalOnThreshold)) {
                 handle.sustainOn();
             } else {
@@ -66,38 +66,56 @@ public:
             throw common::MicrotoneException("A port must be open to read midi input data.");
         }
 
-        _dataThread = std::thread([this]() {
-            M_INFO("Opened midi input stream.");
-            _isRunning.store(true);
-            while (_isRunning.load() == true) {
-                auto message = std::vector<unsigned char>{};
-                _rtMidiConnection->getMessage(&message);
-                if (message.size() == 3) {
-                    auto status = static_cast<int>(message[0]);
-                    auto note = static_cast<int>(message[1]);
-                    auto velocity = static_cast<int>(message[2]);
+        M_INFO("Opened midi input stream.");
 
-                    addMidiData(*_midiHandle, MidiMessage{status, note, velocity});
-                }
+        _rtMidiConnection->setCallback(
+            &impl::midiCallback,
+            this
+        );
 
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-            M_INFO("Closed midi input stream.");
-        });
+        _isRunning.store(true, std::memory_order_release);
     }
 
     void stop() {
-        if (_isRunning.load() == true) {
-            _isRunning.store(false);
-            _dataThread.join();
+        if (!_isRunning.exchange(false)) {
+            return;
+        }
+
+        M_INFO("Closed midi input stream.");
+
+        if (_rtMidiConnection) {
+            _rtMidiConnection->cancelCallback();
         }
     }
 
 private:
+    static void midiCallback(
+        double /*deltaTime*/,
+        std::vector<unsigned char>* message,
+        void* userData
+    ) {
+        auto* self = static_cast<impl*>(userData);
+
+        if (!self->_isRunning.load(std::memory_order_relaxed)) {
+            return;
+        }
+
+        if (!message || message->size() != 3) {
+            return;
+        }
+
+        const int status   = static_cast<int>((*message)[0]);
+        const int note     = static_cast<int>((*message)[1]);
+        const int velocity = static_cast<int>((*message)[2]);
+
+        addMidiData(
+            *self->_midiHandle,
+            MidiMessage{status, note, velocity});
+    }
+
     std::shared_ptr<common::midi::MidiHandle> _midiHandle;
     std::unique_ptr<RtMidiIn> _rtMidiConnection;
-    std::thread _dataThread;
-    std::atomic<bool> _isRunning = false;
+    std::atomic<bool> _isRunning{false};
 };
 
 MidiInputStream::MidiInputStream(std::shared_ptr<common::midi::MidiHandle> stateHandle) :

@@ -32,7 +32,13 @@ public:
         std::invoke(mutate, _value);
     }
 
-    //! Tries to obtain `T` to invoke `fn`. Fn is not invoked if `T` is held by someone else.
+    //! Overload taking T.
+    void write(T&& value) {
+        auto lock = std::unique_lock(_mutex);
+        _value = std::forward<T>(value);
+    }
+
+    //! Tries to obtain `T` to invoke `fn`.
     std::optional<T> readIfAvailable() const {
         if (_mutex.try_lock()) {
             auto unlock = std::unique_lock(_mutex, std::adopt_lock);

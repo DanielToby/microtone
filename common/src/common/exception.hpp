@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <string>
 
 namespace common {
 struct MicrotoneException : public std::runtime_error {

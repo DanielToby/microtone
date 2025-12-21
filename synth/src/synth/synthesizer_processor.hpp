@@ -65,7 +65,8 @@ public:
 private:
     void processLoop() {
         while (_running) {
-            _synthesizer->respondToKeyboardChanges(_midiHandle->getKeyboardState());
+            // Ignores identical keyboard.
+            _synthesizer->respondToKeyboardChanges(_midiHandle->read());
             if (!_outputHandle->isFull()) {
                 auto [nextBlock, duration] = common::timedInvoke([this]() { return _synthesizer->getNextBlock(); });
                 detail::logAudioBlockStatistics(

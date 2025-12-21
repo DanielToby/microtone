@@ -96,16 +96,19 @@ public:
     }
 
     void respondToKeyboardChanges(const common::midi::Keyboard& latestKeyboard) {
-        _state.write([&latestKeyboard](SynthesizerState& state) {
-            for (auto i = 0; i < latestKeyboard.notes.size(); ++i) {
-                auto& previousNote = state.keyboard.notes[i];
-                const auto& currentNote = latestKeyboard.notes[i];
+        const auto currentKeyboard = _state.read().keyboard;
+        if (latestKeyboard != currentKeyboard) {
+            _state.write([&latestKeyboard](SynthesizerState& state) {
+                for (auto i = 0; i < latestKeyboard.audibleNotes.size(); ++i) {
+                    auto& previousNote = state.keyboard.audibleNotes[i];
+                    const auto& currentNote = latestKeyboard.audibleNotes[i];
 
-                auto& voice  = state.voices[i];
-                triggerVoiceIfNecessary(voice, previousNote, currentNote);
-                previousNote = currentNote;
-            }
-        });
+                    auto& voice = state.voices[i];
+                    triggerVoiceIfNecessary(voice, previousNote, currentNote);
+                    previousNote = currentNote;
+                }
+            });
+        }
     }
 
     [[nodiscard]] common::audio::FrameBlock getNextBlock() {

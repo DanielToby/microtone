@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <functional>
 
 #include <common/mutex_protected.hpp>
 
@@ -31,16 +30,59 @@ struct Note {
     }
 };
 
-//! The state of the midi controller. Active notes have >0 velocity.
+//! The state of the midi controller.
 struct Keyboard {
-    std::array<Note, 127> notes;
+    friend class KeyboardFactory;
 
-    [[nodiscard]] bool operator==(const Keyboard& other) const { return notes == other.notes; }
-    [[nodiscard]] bool operator!=(const Keyboard& other) const { return !(*this == other); }
+    std::array<Note, 128> audibleNotes;
+
+    [[nodiscard]] bool operator==(const Keyboard& other) const {
+        return audibleNotes == other.audibleNotes && pressedNotes == other.pressedNotes && sustainOn == other.sustainOn;
+    }
+    [[nodiscard]] bool operator!=(const Keyboard& other) const {
+        return !(*this == other);
+    }
+
+private:
+    std::array<Note, 128> pressedNotes;
+    bool sustainOn = false;
 };
 
-// Notes are turned off when noteOff is pressed, unless the sustain pedal is on.
-// Notes that have not been unpressed remain active when the pedal is released.
+class KeyboardFactory {
+public:
+    [[nodiscard]] static Keyboard copyWithNoteOn(const Keyboard& k, int note, int velocity) {
+        auto result = k;
+        result.pressedNotes[note].triggerOn(velocity);
+        result.audibleNotes[note].triggerOn(velocity);
+        return result;
+    }
+
+    [[nodiscard]] static Keyboard copyWithNoteOff(const Keyboard& k, int note) {
+        auto result = k;
+        result.pressedNotes[note].triggerOff();
+        if (!result.sustainOn) {
+            result.audibleNotes[note].triggerOff();
+        }
+        return result;
+    }
+
+    [[nodiscard]] static Keyboard copyWithSustainOn(const Keyboard& k) {
+        auto result = k;
+        result.sustainOn = true;
+        return result;
+    }
+
+    [[nodiscard]] static Keyboard copyWithSustainOff(const Keyboard& k) {
+        auto result = k;
+        for (auto note = 0; note < result.audibleNotes.size(); ++note) {
+            if (!result.pressedNotes[note].isOn()) {
+                result.audibleNotes[note].triggerOff();
+            }
+        }
+        result.sustainOn = false;
+        return result;
+    }
+};
 
 //! A thread safe midi state handle.
 class MidiHandle {
@@ -48,54 +90,28 @@ public:
     MidiHandle() = default;
 
     void noteOn(int note, int velocity) {
-        _pressedNotes.notes[note].triggerOn(velocity);
-        _keyboard.write([&](Keyboard& keyboard) {
-            keyboard.notes[note].triggerOn(velocity);
-        });
+        _keyboard.write(KeyboardFactory::copyWithNoteOn(_keyboard.read(), note, velocity));
     }
 
     void noteOff(int note) {
-        _pressedNotes.notes[note].triggerOff();
-        _keyboard.write([&](Keyboard& keyboard) {
-            if (!_sustainPedalOn) {
-                keyboard.notes[note].triggerOff();
-            }
-        });
+        _keyboard.write(KeyboardFactory::copyWithNoteOff(_keyboard.read(), note));
     }
 
     void sustainOn() {
-        _sustainPedalOn = true;
+        _keyboard.write(KeyboardFactory::copyWithSustainOn(_keyboard.read()));
     }
 
     void sustainOff() {
-        _sustainPedalOn = false;
-        _keyboard.write([&](Keyboard& keyboard) {
-            for (auto note = 0; note <keyboard.notes.size(); ++note) {
-                if (!isPressed(note)) {
-                    keyboard.notes[note].triggerOff();
-                }
-            }
-        });
+        _keyboard.write(KeyboardFactory::copyWithSustainOff(_keyboard.read()));
     }
 
-    [[nodiscard]] Keyboard getKeyboardState() const {
+    //! If it's not available, it's being written to.
+    [[nodiscard]] Keyboard read() const {
         return _keyboard.read();
     }
 
 private:
-
-
-    [[nodiscard]] bool isPressed(int note) const {
-        return _pressedNotes.notes[note].isOn();
-    }
-
-    // This data is shared with the reader (getKeyboardState).
     MutexProtected<Keyboard> _keyboard;
-
-    // This data is only important to the writer.
-    Keyboard _pressedNotes;
-    bool _sustainPedalOn = false;
 };
-
 
 }
