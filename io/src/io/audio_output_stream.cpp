@@ -39,7 +39,7 @@ public:
             /* device */ deviceId,
             /* channelCount */ 1,
             /* sampleFormat */ paFloat32,
-            /* suggestedLatency */ deviceInfo->defaultHighOutputLatency,
+            /* suggestedLatency */ deviceInfo->defaultLowOutputLatency,
             /* hostApiSpecificStreamInfo */ nullptr};
 
         auto openStreamResult = Pa_OpenStream(
