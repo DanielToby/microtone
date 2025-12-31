@@ -2,6 +2,7 @@
 
 #include <array>
 
+#include <common/dirty_flagged.hpp>
 #include <common/mutex_protected.hpp>
 
 //! This could be "device" or something to reduce conceptual overlap with lib/io, but whatever.
@@ -105,13 +106,12 @@ public:
         _keyboard.write(KeyboardFactory::copyWithSustainOff(_keyboard.read()));
     }
 
-    //! If it's not available, it's being written to.
     [[nodiscard]] Keyboard read() const {
         return _keyboard.read();
     }
 
 private:
-    MutexProtected<Keyboard> _keyboard;
+    DirtyFlagged<MutexProtected<Keyboard>> _keyboard;
 };
 
 }

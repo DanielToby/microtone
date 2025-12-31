@@ -15,6 +15,7 @@ target_include_directories(common PUBLIC
 )
 
 set(SOURCES
+    src/common/dirty_flagged.hpp
     src/common/exception.cpp
     src/common/exception.hpp
     src/common/log.cpp

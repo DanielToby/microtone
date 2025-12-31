@@ -10,6 +10,8 @@ namespace common {
 template <class T>
 class MutexProtected {
 public:
+    using ValueType = T;
+
     MutexProtected() = default;
     explicit MutexProtected(const T& value) : _value(value) {}
 
