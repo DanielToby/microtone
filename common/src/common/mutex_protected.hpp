@@ -28,6 +28,12 @@ public:
         return _value;
     }
 
+    //! Blocks to return a const reference to T.
+    const T& readConst() const {
+        auto lock = std::unique_lock(_mutex);
+        return _value;
+    }
+
     //! Blocks to update T.
     void write(const std::function<void(T&)>& mutate) {
         auto lock = std::unique_lock(_mutex);

@@ -38,11 +38,11 @@ public:
 private:
     void renderLoop() {
         while (_running) {
-            if (auto lastAudioBlock = _synthHandle->getLastBlock()) {
+            if (const auto& lastAudioBlock = _synthHandle->getLastBlock()) {
                 _ui->addOutputData(*lastAudioBlock);
             }
             _ui->updateMidiKeyboard(_midiHandle->read());
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            std::this_thread::sleep_for(std::chrono::milliseconds(8));
         }
     }
     std::shared_ptr<Asciiboard> _ui;

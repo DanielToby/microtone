@@ -122,8 +122,8 @@ public:
         return result;
     }
 
-    [[nodiscard]] std::optional<common::audio::FrameBlock> getLastBlock() const {
-        return _state.read().lastBlock;
+    [[nodiscard]] const std::optional<common::audio::FrameBlock>& getLastBlock() const {
+        return _state.readConst().lastBlock;
     }
 
     [[nodiscard]] double sampleRate() const {
@@ -176,7 +176,7 @@ common::audio::FrameBlock Synthesizer::getNextBlock() {
     return _impl->getNextBlock();
 }
 
-std::optional<common::audio::FrameBlock> Synthesizer::getLastBlock() const {
+const std::optional<common::audio::FrameBlock>& Synthesizer::getLastBlock() const {
     return _impl->getLastBlock();
 }
 

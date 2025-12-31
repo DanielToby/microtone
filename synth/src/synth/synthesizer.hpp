@@ -35,7 +35,7 @@ public:
     [[nodiscard]] common::audio::FrameBlock getNextBlock();
 
     //! The last block returned by `getNextBlock`, for bookkeeping.
-    [[nodiscard]] std::optional<common::audio::FrameBlock> getLastBlock() const;
+    [[nodiscard]] const std::optional<common::audio::FrameBlock>&  getLastBlock() const;
 
     [[nodiscard]] double sampleRate() const;
 

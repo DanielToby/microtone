@@ -110,6 +110,10 @@ public:
         return _keyboard.read();
     }
 
+    [[nodiscard]] bool hasChanges() const {
+        return _keyboard.isDirty();
+    }
+
 private:
     DirtyFlagged<MutexProtected<Keyboard>> _keyboard;
 };
