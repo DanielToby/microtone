@@ -14,12 +14,13 @@ target_include_directories(synth PUBLIC
 
 set(SOURCES
     src/synth/adsr.hpp
+    src/synth/audio_pipeline.hpp
     src/synth/envelope.hpp
     src/synth/filter.hpp
+    src/synth/instrument.hpp
     src/synth/low_frequency_oscillator.hpp
     src/synth/oscillator.hpp
     src/synth/synthesizer.cpp
-    src/synth/synthesizer_processor.hpp
     src/synth/synthesizer.hpp
     src/synth/voice.hpp
     src/synth/wave_table.hpp

@@ -1,9 +1,6 @@
 #pragma once
 
-#include <common/midi_handle.hpp>
-#include <common/ring_buffer.hpp>
 #include <common/timer.hpp>
-#include <synth/synthesizer.hpp>
 
 #include <memory>
 #include <thread>
@@ -36,24 +33,25 @@ inline void logAudioBlockStatistics(const common::audio::FrameBlock& block, doub
 
 }
 
-//! Runs the Synthesizer in a dedicated process that executes only if the buffer has room.
-class SynthesizerProcessor {
+//! Runs the input in a dedicated process that executes only if the output has space.
+//! Forwards midi changes to inputs as soon as they're available.
+class Instrument {
 public:
-    SynthesizerProcessor() = delete;
-    SynthesizerProcessor(std::shared_ptr<Synthesizer> synthesizer,
-                         std::shared_ptr<const common::midi::MidiHandle> midiHandle,
-                         std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> outputHandle) :
-        _synthesizer(std::move(synthesizer)),
+    Instrument() = delete;
+    Instrument(std::shared_ptr<I_Source> source,
+               std::shared_ptr<const common::midi::MidiHandle> midiHandle,
+               std::shared_ptr<I_Sink> sink) :
+        _source(std::move(source)),
         _midiHandle(std::move(midiHandle)),
-        _outputHandle(std::move(outputHandle)) {}
+        _sink(std::move(sink)) {}
 
-    ~SynthesizerProcessor() {
+    ~Instrument() {
         this->stop();
     }
 
     void start() {
         _running = true;
-        _thread = std::thread(&SynthesizerProcessor::processLoop, this);
+        _thread = std::thread(&Instrument::processLoop, this);
     }
 
     void stop() {
@@ -66,15 +64,15 @@ private:
     void processLoop() {
         while (_running) {
             if (_midiHandle->hasChanges()) {
-                _synthesizer->respondToKeyboardChanges(_midiHandle->read());
+                _source->respondToKeyboardChanges(_midiHandle->read());
             }
-            if (!_outputHandle->isFull()) {
-                auto [nextBlock, duration] = common::timedInvoke([this]() { return _synthesizer->getNextBlock(); });
+            if (!_sink->isFull()) {
+                auto [nextBlock, duration] = common::timedInvoke([this]() { return _source->getNextBlock(); });
                 detail::logAudioBlockStatistics(
                     nextBlock,
-                    common::audio::getDuration_us(nextBlock.size(), _synthesizer->sampleRate()),
+                    common::audio::getDuration_us(nextBlock.size(), _source->sampleRate()),
                     static_cast<double>(duration.count()));
-                if (!_outputHandle->push(nextBlock)) {
+                if (!_sink->push(nextBlock)) {
                     // This is technically possible if someone else is writing to outputHandle.
                     throw common::MicrotoneException("Incremented synth but discarded the result.");
                 }
@@ -82,9 +80,9 @@ private:
         }
     }
 
-    std::shared_ptr<Synthesizer> _synthesizer;
+    std::shared_ptr<I_Source> _source;
     std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
-    std::shared_ptr<common::RingBuffer<common::audio::FrameBlock>> _outputHandle;
+    std::shared_ptr<I_Sink> _sink;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

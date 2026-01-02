@@ -6,7 +6,7 @@
 #include <common/log.hpp>
 #include <io/audio_output_stream.hpp>
 #include <io/midi_input_stream.hpp>
-#include <synth/synthesizer_processor.hpp>
+#include <synth/instrument.hpp>
 #include <synth/wave_table.hpp>
 
 #include <fmt/format.h>
@@ -97,9 +97,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // The synthesizer thread is created and started.
         // TODO: Caller should create voices.
         auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables);
+
+        // For now this is a simple audio output device, but it'll soon record into a memory buffer.
+        auto outputDevice = std::make_shared<synth::AudioOutput>(outputBufferHandle);
+
         // This must remain alive throughout the lifetime of this application!
-        auto synthesizerProcess = synth::SynthesizerProcessor{synth, midiHandle, outputBufferHandle};
-        synthesizerProcess.start();
+        auto instrument = synth::Instrument{synth, midiHandle, outputDevice};
+        instrument.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
