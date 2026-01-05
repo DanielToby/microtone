@@ -101,8 +101,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
 
-        // This must remain alive throughout the lifetime of this application!
-        auto instrument = synth::Instrument{synth, midiHandle, outputDevice};
+        // The audio pipeline of the instrument.
+        auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
+
+        // TODO: Decouple effects and Synthesizer by describing effects and effect control changes here. (audioPipeline.addEffect)
+
+        // The thread responsible for running out audio pipeline.
+        auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
         instrument.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};

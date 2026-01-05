@@ -8,7 +8,7 @@ namespace common {
 
 namespace audio {
 //! Describes each block in the ring buffer in case producing T's is more efficient if done in blocks.
-//! At a sample rate of 44.1 kHz, this is 512 / 48000, or ~10.7 ms  of audio.
+//! At a sample rate of 48 kHz, this is 512 / 48000, or ~10.7 ms  of audio.
 constexpr std::size_t AudioBlockSize = 512;
 using SampleT = float;
 using FrameBlock = std::array<SampleT, AudioBlockSize>;

@@ -14,6 +14,7 @@ target_include_directories(synth PUBLIC
 
 set(SOURCES
     src/synth/adsr.hpp
+    src/synth/audio_pipeline.cpp
     src/synth/audio_pipeline.hpp
     src/synth/envelope.hpp
     src/synth/filter.hpp
