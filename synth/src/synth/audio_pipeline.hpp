@@ -48,7 +48,7 @@ public:
         return true;
     }
 
-    [[nodiscard]] common::audio::FrameBlock getNextBlock() override { return _nextBlock; };
+    [[nodiscard]] common::audio::FrameBlock getNextBlock() override { return _nextBlock; }
 
 protected:
     //! Modifies the input signal. Invoked on every sample in every frame pushed.

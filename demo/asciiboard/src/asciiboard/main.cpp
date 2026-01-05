@@ -6,6 +6,7 @@
 #include <common/log.hpp>
 #include <io/audio_output_stream.hpp>
 #include <io/midi_input_stream.hpp>
+#include <synth/effects/delay.hpp>
 #include <synth/instrument.hpp>
 #include <synth/wave_table.hpp>
 
@@ -104,7 +105,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // The audio pipeline of the instrument.
         auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
 
-        // TODO: Decouple effects and Synthesizer by describing effects and effect control changes here. (audioPipeline.addEffect)
+        // Effects.
+        audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5));
 
         // The thread responsible for running out audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
