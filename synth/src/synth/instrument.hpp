@@ -38,9 +38,9 @@ inline void logAudioBlockStatistics(const common::audio::FrameBlock& block, doub
 class Instrument {
 public:
     Instrument() = delete;
-    Instrument(std::shared_ptr<I_Source> source,
+    Instrument(std::shared_ptr<I_SourceNode> source,
                std::shared_ptr<const common::midi::MidiHandle> midiHandle,
-               std::shared_ptr<I_Sink> sink) :
+               std::shared_ptr<I_SinkNode> sink) :
         _source(std::move(source)),
         _midiHandle(std::move(midiHandle)),
         _sink(std::move(sink)) {}
@@ -80,9 +80,9 @@ private:
         }
     }
 
-    std::shared_ptr<I_Source> _source;
+    std::shared_ptr<I_SourceNode> _source;
     std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
-    std::shared_ptr<I_Sink> _sink;
+    std::shared_ptr<I_SinkNode> _sink;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

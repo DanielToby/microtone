@@ -14,7 +14,7 @@
 
 namespace synth {
 
-class Synthesizer : public I_Source {
+class Synthesizer : public I_SourceNode {
 public:
     Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables);
     Synthesizer(const Synthesizer&) = delete;

@@ -99,7 +99,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
-        auto outputDevice = std::make_shared<synth::AudioOutput>(outputBufferHandle);
+        auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
 
         // This must remain alive throughout the lifetime of this application!
         auto instrument = synth::Instrument{synth, midiHandle, outputDevice};

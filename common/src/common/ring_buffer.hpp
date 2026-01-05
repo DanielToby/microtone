@@ -12,6 +12,7 @@ namespace audio {
 constexpr std::size_t AudioBlockSize = 512;
 using SampleT = float;
 using FrameBlock = std::array<SampleT, AudioBlockSize>;
+constexpr auto emptyFrameBlock = FrameBlock{0.f};
 
 [[nodiscard]] inline double getDuration_us(const std::size_t blockSize, const double sampleRate) {
     return (static_cast<double>(blockSize) / sampleRate) * 1e6;
