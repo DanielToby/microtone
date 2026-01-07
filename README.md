@@ -3,8 +3,6 @@ A cross-platform polyphonic synthesis library and MIDI player.
 
 [![Watch the demo!](https://user-images.githubusercontent.com/41296254/170831269-3c965d7d-9fa6-4e9e-9729-c81c28f8a52b.png)](https://youtu.be/3SpMUx2KE4o)
 
-[![Another Demo](assets/demo-thumbnail.png)](https://youtu.be/H49p-wMduN0)
-
 ### Build Steps
 ```sh
 git clone git@github.com:DanielToby/microtone.git
@@ -24,6 +22,15 @@ The audio synthesis techniques demonstrated in this project can be attributed to
 
 Midi input is handled by the [RtMidi library](https://www.music.mcgill.ca/~gary/rtmidi/).
 
+### Hardware Integration
+Because this demo app runs in the shell and is fully cross-platform, running it on a Raspberry Pi took very little additional work. See the [Pi Setup instructions](https://github.com/DanielToby/microtone/blob/util/README.md).
+
+![Hardware](assets/pi-hardware.png)
+
+The HDMI display and pi are powered off of the same 12V power source. I used a buck converter to reduce power to 5V for the pi. I soldered 1/4 input jacks to the underside of a cheap DAC that sits on the Pi's GPIO pinout.
+
+[![Pi Demo](assets/demo-pi.png)](https://youtu.be/aejMkUpq9vs?si=gbkU0w9zX1il4FNy)
+
 ### Audio Architecture
 
 Libraries in this repo are designed to reduce coupling between synthesis, midi, audio output, and UI.
@@ -37,5 +44,28 @@ Libraries in this repo are designed to reduce coupling between synthesis, midi, 
 - Forwarded audio buffers -- update your UI with live audio data by passing a lambda to the synth::Synthesizer constructor.
 - Midi input, including the sustain pedal.
 
+### Audio Effects
+I added abstractions for the existing `Synthesizer` and `AudioOutput` devices: `I_SourceNode` and `I_SinkNode`. These simple interfaces are collected into an `AudioPipeline` owned by an `Instrument`. Right now there's just one instrument.
+
+
+`I_FunctionNode` implements both interfaces, allowing blocks to be passed through. This interface is used to describe effects. The `AudioPipeline` interface was extended to enable N effects between the source and sink nodes.
+
+```C++
+// The audio pipeline of the instrument.
+auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
+
+// Effects.
+audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5));
+```
+
+See [Delay.hpp](https://github.com/DanielToby/microtone/blob/main/synth/src/synth/effects/delay.hpp).
+
+
 # asciiboard
 A console application that manages an instance of microtone. It displays midi input and audio output through a piano roll and oscilloscope, and includes an envelope editor in a separate tab.
+
+### More Features
+
+Asciiboard also has generated midi, in case you don't have a midi device handy. This video demonstrates some of the features using generated midi.
+
+[![Another Demo](assets/demo-thumbnail.png)](https://youtu.be/H49p-wMduN0)
