@@ -17,6 +17,7 @@ namespace {
 //! These things are modifiable while the synth is active.
 struct SynthesizerState {
     std::vector<WeightedWaveTable> weightedWaveTables;
+    float gain;
     std::vector<Voice> voices;
     common::midi::Keyboard keyboard;
     std::optional<common::audio::FrameBlock> lastBlock;
@@ -63,15 +64,11 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 
 class Synthesizer::impl {
 public:
-    impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables) :
-        _state{{SynthesizerState{waveTables, buildVoices(sampleRate, ADSR{0.01, 0.1, .8, 0.01}, .25)}}},
+    impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequency) :
+        _state{{SynthesizerState{waveTables, gain, buildVoices(sampleRate, adsr, lfoFrequency)}}},
         _sampleRate(sampleRate) {}
 
     ~impl() = default;
-
-    std::vector<WeightedWaveTable> waveTables() const {
-        return _state.read().weightedWaveTables;
-    }
 
     void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
         _state.write([&](SynthesizerState& state) {
@@ -95,6 +92,20 @@ public:
         });
     }
 
+    void setLfoFrequency(float frequencyHz) {
+        _state.write([&](SynthesizerState& state) {
+            for (auto& voice : state.voices) {
+                voice.setLfoFrequency(frequencyHz);
+            }
+        });
+    }
+
+    void setGain(float gain) {
+        _state.write([&](SynthesizerState& state) {
+            state.gain = gain;
+        });
+    }
+
     void respondToKeyboardChanges(const common::midi::Keyboard& latestKeyboard) {
         const auto currentKeyboard = _state.read().keyboard;
         if (latestKeyboard != currentKeyboard) {
@@ -115,7 +126,7 @@ public:
         auto result = common::audio::FrameBlock{};
         _state.write([&result](SynthesizerState& state) {
             for (auto i = 0; i < result.size(); ++i) {
-                result[i] = nextSample(state);
+                result[i] = nextSample(state) * state.gain;
             }
             state.lastBlock = result;
         });
@@ -135,8 +146,8 @@ private:
     double _sampleRate = -1;
 };
 
-Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables) :
-    _impl{std::make_unique<impl>(sampleRate, waveTables)} {
+Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz) :
+    _impl{std::make_unique<impl>(sampleRate, waveTables, gain, adsr, lfoFrequencyHz)} {
 }
 
 Synthesizer::Synthesizer(Synthesizer&& other) noexcept :
@@ -152,10 +163,6 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 
 Synthesizer::~Synthesizer() = default;
 
-std::vector<WeightedWaveTable> Synthesizer::waveTables() const {
-    return _impl->waveTables();
-}
-
 void Synthesizer::setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
     _impl->setWaveTables(weightedWaveTables);
 }
@@ -166,6 +173,14 @@ void Synthesizer::setEnvelope(const Envelope& envelope) {
 
 void Synthesizer::setFilter(const Filter& filter) {
     _impl->setFilter(filter);
+}
+
+void Synthesizer::setGain(float gain) {
+    _impl->setGain(gain);
+}
+
+void Synthesizer::setLfoFrequency(float frequencyHz) {
+    _impl->setLfoFrequency(frequencyHz);
 }
 
 void Synthesizer::respondToKeyboardChanges(const common::midi::Keyboard& keyboard) {

@@ -38,6 +38,10 @@ public:
         return nextSample;
     }
 
+    void setFrequency(float frequency) {
+        _frequency = frequency;
+    }
+
     double _frequency;
     double _sampleRate;
     double _currentIndex;

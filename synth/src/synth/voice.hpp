@@ -35,6 +35,10 @@ public:
         _filter = filter;
     }
 
+    void setLfoFrequency(float frequencyHz) {
+        _lfo.setFrequency(frequencyHz);
+    }
+
     bool isActive() {
         return _envelope.state() != EnvelopeState::Off;
     }

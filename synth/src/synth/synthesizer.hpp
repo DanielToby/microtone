@@ -16,19 +16,18 @@ namespace synth {
 
 class Synthesizer : public I_SourceNode {
 public:
-    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables);
+    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    //! Thread safe configurable state.
-    //! TODO: No raw synchronization primitives. Move this to a thread_safe_accessible<T>.
-    std::vector<WeightedWaveTable> waveTables() const;
     void setWaveTables(const std::vector<WeightedWaveTable>& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
+    void setGain(float gain);
+    void setLfoFrequency(float frequencyHz);
 
     //! Respond to changes in the keyboard (trigger voices on or off).
     void respondToKeyboardChanges(const common::midi::Keyboard& keyboard) override;

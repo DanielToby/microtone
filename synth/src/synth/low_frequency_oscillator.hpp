@@ -23,6 +23,10 @@ public:
         return _oscillator.nextSample({{_waveTable, 1.0}});
     }
 
+    void setFrequency(float frequencyHz) {
+        _oscillator.setFrequency(frequencyHz);
+    }
+
 private:
     Oscillator _oscillator;
     WaveTable _waveTable;

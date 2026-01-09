@@ -65,7 +65,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto asciiboard = std::make_shared<asciiboard::Asciiboard>();
 
         // Initial GUI / synthesizer values
-        auto initialControls = asciiboard::SynthControls{synth::ADSR{.01, .1, .8, .01}, .8, 0, .2};
+        auto initialAdsr = synth::ADSR{0.01, 0.1, .8, 0.01};
+        auto initialGain = 1.f;
+        auto initialLfoFrequencyHz = .25f;
+        auto initialControls = asciiboard::SynthControls{initialAdsr, .8, 0, .2};
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector{
@@ -96,8 +99,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         audioOutputStream.start();
 
         // The synthesizer thread is created and started.
-        // TODO: Caller should create voices.
-        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables);
+        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables, initialGain, initialAdsr, initialLfoFrequencyHz);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
