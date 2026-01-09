@@ -85,37 +85,45 @@ public:
     }
 };
 
-//! A thread safe midi state handle.
+//! A thread safe midi state handle. NumReaders must be known to the caller.
+template <std::size_t NumReaders>
 class MidiHandle {
 public:
     MidiHandle() = default;
 
     void noteOn(int note, int velocity) {
-        _keyboard.write(KeyboardFactory::copyWithNoteOn(_keyboard.read(), note, velocity));
+        _keyboard.write(KeyboardFactory::copyWithNoteOn(_keyboard.quietRead(), note, velocity));
     }
 
     void noteOff(int note) {
-        _keyboard.write(KeyboardFactory::copyWithNoteOff(_keyboard.read(), note));
+        _keyboard.write(KeyboardFactory::copyWithNoteOff(_keyboard.quietRead(), note));
     }
 
     void sustainOn() {
-        _keyboard.write(KeyboardFactory::copyWithSustainOn(_keyboard.read()));
+        _keyboard.write(KeyboardFactory::copyWithSustainOn(_keyboard.quietRead()));
     }
 
     void sustainOff() {
-        _keyboard.write(KeyboardFactory::copyWithSustainOff(_keyboard.read()));
+        _keyboard.write(KeyboardFactory::copyWithSustainOff(_keyboard.quietRead()));
     }
 
-    [[nodiscard]] Keyboard read() const {
-        return _keyboard.read();
+    [[nodiscard]] std::size_t registerReader() const {
+        return _keyboard.registerReader();
     }
 
-    [[nodiscard]] bool hasChanges() const {
-        return _keyboard.isDirty();
+    [[nodiscard]] Keyboard read(std::size_t readerId) const {
+        return _keyboard.read(readerId);
+    }
+
+    [[nodiscard]] bool hasChanges(std::size_t readerId) const {
+        return _keyboard.isDirty(readerId);
     }
 
 private:
-    DirtyFlagged<MutexProtected<Keyboard>> _keyboard;
+    DirtyFlagged<MutexProtected<Keyboard>, NumReaders> _keyboard;
 };
+
+//! For convenience while I plumb NumMidiReaders into more contexts.
+using TwoReaderMidiHandle = MidiHandle<2>;
 
 }

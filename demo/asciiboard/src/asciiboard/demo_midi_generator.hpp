@@ -51,7 +51,7 @@ constexpr auto chromaticScale = std::array{
 class MidiGenerator {
 public:
     MidiGenerator() = delete;
-    explicit MidiGenerator(std::shared_ptr<common::midi::MidiHandle> midiHandle) :
+    explicit MidiGenerator(std::shared_ptr<common::midi::TwoReaderMidiHandle> midiHandle) :
         _midiHandle(std::move(midiHandle)) {}
 
     ~MidiGenerator() {
@@ -90,7 +90,7 @@ private:
         }
     }
 
-    std::shared_ptr<common::midi::MidiHandle> _midiHandle;
+    std::shared_ptr<common::midi::TwoReaderMidiHandle> _midiHandle;
     std::atomic<bool> _running{false};
     std::thread _thread;
 

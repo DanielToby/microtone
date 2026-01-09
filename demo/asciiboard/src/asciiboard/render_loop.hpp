@@ -14,11 +14,12 @@ class RenderLoop {
 public:
     RenderLoop() = delete;
     RenderLoop(std::shared_ptr<Asciiboard> ui,
-                         std::shared_ptr<const common::midi::MidiHandle> midiHandle,
-                         std::shared_ptr<const synth::Synthesizer> synthHandle) :
+               std::shared_ptr<const common::midi::TwoReaderMidiHandle> midiHandle,
+               std::shared_ptr<const synth::Synthesizer> synthHandle) :
         _ui(std::move(ui)),
+        _synthHandle(std::move(synthHandle)),
         _midiHandle(std::move(midiHandle)),
-        _synthHandle(std::move(synthHandle)) {}
+        _midiReaderId(_midiHandle->registerReader()) {}
 
     ~RenderLoop() {
         this->stop();
@@ -41,15 +42,19 @@ private:
             if (const auto& lastAudioBlock = _synthHandle->getLastBlock()) {
                 _ui->addOutputData(*lastAudioBlock);
             }
-            if (_midiHandle->hasChanges()) {
-                _ui->updateMidiKeyboard(_midiHandle->read());
+            if (!_midiReaderId) {
+                throw common::MicrotoneException("Uninitialized (no midi reader ID).");
+            }
+            if (_midiHandle->hasChanges(*_midiReaderId)) {
+                _ui->updateMidiKeyboard(_midiHandle->read(*_midiReaderId));
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(8));
         }
     }
     std::shared_ptr<Asciiboard> _ui;
-    std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
     std::shared_ptr<const synth::Synthesizer> _synthHandle;
+    std::shared_ptr<const common::midi::TwoReaderMidiHandle> _midiHandle;
+    std::optional<std::size_t> _midiReaderId;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

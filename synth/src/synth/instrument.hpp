@@ -10,9 +10,10 @@ namespace synth {
 class Instrument {
 public:
     Instrument() = delete;
-    Instrument(std::shared_ptr<const common::midi::MidiHandle> midiHandle, AudioPipeline&& pipeline) :
+    Instrument(std::shared_ptr<const common::midi::TwoReaderMidiHandle> midiHandle, AudioPipeline&& pipeline) :
         _pipeline(std::move(pipeline)),
-        _midiHandle(std::move(midiHandle)) {}
+        _midiHandle(std::move(midiHandle)),
+        _midiReaderId(_midiHandle->registerReader()) {}
 
     ~Instrument() {
         this->stop();
@@ -32,8 +33,11 @@ public:
 private:
     void processLoop() {
         while (_running) {
-            if (_midiHandle->hasChanges()) {
-                _pipeline.getSource().respondToKeyboardChanges(_midiHandle->read());
+            if (!_midiReaderId) {
+                throw common::MicrotoneException("Uninitialized (no midi reader ID).");
+            }
+            if (_midiHandle->hasChanges(*_midiReaderId)) {
+                _pipeline.getSource().respondToKeyboardChanges(_midiHandle->read(*_midiReaderId));
             }
             if (_pipeline.shouldProcessBlock()) {
                 _pipeline.processBlock();
@@ -42,7 +46,8 @@ private:
     }
 
     AudioPipeline _pipeline;
-    std::shared_ptr<const common::midi::MidiHandle> _midiHandle;
+    std::shared_ptr<const common::midi::TwoReaderMidiHandle> _midiHandle;
+    std::optional<std::size_t> _midiReaderId;
 
     std::atomic<bool> _running{false};
     std::thread _thread;

@@ -13,7 +13,7 @@
 namespace io {
 
 namespace {
-void addMidiData(common::midi::MidiHandle& handle, const MidiMessage& m) {
+void addMidiData(common::midi::TwoReaderMidiHandle& handle, const MidiMessage& m) {
     const auto status = static_cast<MidiStatusMessage>(m.status);
     if (status == MidiStatusMessage::NoteOn) {
         handle.noteOn(m.note, m.velocity);
@@ -34,7 +34,7 @@ void addMidiData(common::midi::MidiHandle& handle, const MidiMessage& m) {
 
 class MidiInputStream::impl {
 public:
-    explicit impl(std::shared_ptr<common::midi::MidiHandle> midiHandle) :
+    explicit impl(std::shared_ptr<common::midi::TwoReaderMidiHandle> midiHandle) :
         _midiHandle(std::move(midiHandle)),
         _rtMidiConnection{std::make_unique<RtMidiIn>()} {
         // Don't ignore sysex, timing, or active sensing messages.
@@ -113,12 +113,12 @@ private:
             MidiMessage{status, note, velocity});
     }
 
-    std::shared_ptr<common::midi::MidiHandle> _midiHandle;
+    std::shared_ptr<common::midi::TwoReaderMidiHandle> _midiHandle;
     std::unique_ptr<RtMidiIn> _rtMidiConnection;
     std::atomic<bool> _isRunning{false};
 };
 
-MidiInputStream::MidiInputStream(std::shared_ptr<common::midi::MidiHandle> stateHandle) :
+MidiInputStream::MidiInputStream(std::shared_ptr<common::midi::TwoReaderMidiHandle> stateHandle) :
     _impl{std::make_unique<impl>(stateHandle)} {
 }
 

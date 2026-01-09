@@ -72,7 +72,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // The midi thread is created and started.
-        auto midiHandle = std::make_shared<common::midi::MidiHandle>();
+        auto midiHandle = std::make_shared<common::midi::TwoReaderMidiHandle>();
         auto midiInputStream = io::MidiInputStream(midiHandle);
         trySelectPort(midiInputStream);
 
