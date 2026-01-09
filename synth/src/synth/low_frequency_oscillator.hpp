@@ -5,31 +5,29 @@
 
 namespace synth {
 
-// This class is a wrapper around Oscillator that manages a sinusoidal wavetable.
-
 class LowFrequencyOscillator {
 public:
-    LowFrequencyOscillator(double frequency, double sampleRate) :
+    LowFrequencyOscillator(double frequency, double sampleRate, double gain) :
         _oscillator{frequency, sampleRate},
-        _waveTable{} {
-        for (auto i = 0; i < synth::WAVETABLE_LENGTH; ++i) {
-            _waveTable[i] = static_cast<float>(std::sin(2.0 * M_PI * i / synth::WAVETABLE_LENGTH));
-        }
-    }
+        _weightedWaveTable{buildWaveTable(examples::sineWaveFill), gain} {}
 
     LowFrequencyOscillator(const LowFrequencyOscillator& other) = default;
 
     float nextSample() {
-        return _oscillator.nextSample({{_waveTable, 1.0}});
+        return _oscillator.nextSample(_weightedWaveTable);
     }
 
     void setFrequency(float frequencyHz) {
         _oscillator.setFrequency(frequencyHz);
     }
 
+    void setGain(double gain) {
+        _weightedWaveTable.weight = gain;
+    }
+
 private:
     Oscillator _oscillator;
-    WaveTable _waveTable;
+    WeightedWaveTable _weightedWaveTable;
 };
 
 }

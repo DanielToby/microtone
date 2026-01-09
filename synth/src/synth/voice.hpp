@@ -39,6 +39,10 @@ public:
         _lfo.setFrequency(frequencyHz);
     }
 
+    void setLfoGain(float gain) {
+        _lfo.setGain(gain);
+    }
+
     bool isActive() {
         return _envelope.state() != EnvelopeState::Off;
     }
@@ -56,13 +60,14 @@ public:
     float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
         auto velocityScalar = static_cast<float>(_velocity);
         auto nextOscillatorOutput = _oscillator.nextSample(weightedWaveTables);
+        auto lfoOutput = _lfo.nextSample();
         auto envelopeScalar = _envelope.nextSample();
 
         if (!this->isActive()) {
             this->setVelocity(0);
         }
 
-        return _filter.nextSample(nextOscillatorOutput * velocityScalar * envelopeScalar);
+        return _filter.nextSample((nextOscillatorOutput + lfoOutput) * velocityScalar * envelopeScalar);
     }
 
 private:

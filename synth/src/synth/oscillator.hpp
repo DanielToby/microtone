@@ -38,10 +38,22 @@ public:
         return nextSample;
     }
 
+    float nextSample(const WeightedWaveTable& weightedWaveTable) {
+        // Linear interpolation improves the signal approximation accuracy at discrete index.
+        auto indexBelow = static_cast<int>(std::floor(_currentIndex));
+        auto indexAbove = (indexBelow + 1) % WAVETABLE_LENGTH;
+        auto fractionAbove = _currentIndex - indexBelow;
+        auto fractionBelow = 1.0 - fractionAbove;
+        _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
+
+        return static_cast<float>(fractionBelow * weightedWaveTable.waveTable[indexBelow] + fractionAbove * weightedWaveTable.waveTable[indexAbove]) * weightedWaveTable.weight;
+    }
+
     void setFrequency(float frequency) {
         _frequency = frequency;
     }
 
+private:
     double _frequency;
     double _sampleRate;
     double _currentIndex;

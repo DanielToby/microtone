@@ -76,6 +76,27 @@ public:
                                                             triangleSlider->Render()});
                                            });
 
+        // Gain and LFO Frequency
+        auto gain = controls.gain;
+        auto lfoFrequencyHz = controls.lfoFrequencyHz;
+        auto lfoGain = controls.lfoGain;
+        auto gainSlider = Slider("Gain:", &gain, .1, 1., .1);
+        auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &lfoFrequencyHz, .01, 20, .1);
+        auto lfoGainSlider = Slider("LFO Gain:", &lfoGain, .1, 1., .1);
+
+        auto gainAndLfoFrequencyContainer = Container::Horizontal({
+            gainSlider,
+            lfoFrequencyHzSlider,
+            lfoGainSlider
+        });
+
+        auto gainAndLfoFrequencyControls = Renderer(gainAndLfoFrequencyContainer,
+                                                    [&gainSlider, &lfoFrequencyHzSlider, &lfoGainSlider]() {
+                                                        return hbox({gainSlider->Render(),
+                                                                     lfoFrequencyHzSlider->Render(),
+                                                                     lfoGainSlider->Render()});
+                                                    });
+
         // Oscilloscope
         auto scaleFactor = 0.5;
         auto graphHeight = 180;
@@ -96,14 +117,16 @@ public:
             });
         });
 
-        auto oscillatorsContainer = Container::Vertical({
-                                                  oscillatorControls,
-                                                  oscilloscope});
+        auto oscillatorsContainer = Container::Vertical({oscilloscope,
+                                                         oscillatorControls,
+                                                         gainAndLfoFrequencyControls});
 
         auto oscillators = Renderer(oscillatorsContainer, [&] {
             return vbox({
                 oscilloscope->Render() | flex,
                 oscillatorControls->Render(),
+                separatorEmpty() | size(HEIGHT, EQUAL, 1),
+                gainAndLfoFrequencyControls->Render(),
             }) | borderRounded | hcenter | color(Color::BlueLight);
         });
 
@@ -206,7 +229,7 @@ public:
 
         auto activeNotes = [this](int width, [[maybe_unused]] int height) {
             std::vector<int> output(width, -1);
-            for (auto i = 0; i < width; ++i) {
+            for (auto i = 0; i < std::min(width, static_cast<int>(_keyboard.audibleNotes.size())); ++i) {
                 if (_keyboard.audibleNotes[i].isOn()) {
                     output[i] = 1;
                 }
@@ -259,6 +282,9 @@ public:
                 controls.squareWeight = square / 100.;
                 controls.triangleWeight = triangle / 100.;
                 controls.adsr = {attack / 100., decay / 100., sustain / 100., release / 100.};
+                controls.gain = gain;
+                controls.lfoFrequencyHz = lfoFrequencyHz;
+                controls.lfoGain = lfoGain;
 
                 onControlsChangedFn(controls);
             }

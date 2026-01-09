@@ -64,18 +64,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // Asciiboard
         auto asciiboard = std::make_shared<asciiboard::Asciiboard>();
 
-        // Initial GUI / synthesizer values
-        auto initialAdsr = synth::ADSR{0.01, 0.1, .8, 0.01};
-        auto initialGain = 1.f;
-        auto initialLfoFrequencyHz = .25f;
-        auto initialControls = asciiboard::SynthControls{initialAdsr, .8, 0, .2};
-
-        // These wave tables are sampled by the synthesizers oscillators.
-        auto weightedWaveTables = std::vector{
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), initialControls.sineWeight},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), initialControls.squareWeight},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), initialControls.triangleWeight}};
-
+        // The audio output thread is created and started.
+        auto outputBufferHandle = std::make_shared<common::RingBuffer<common::audio::FrameBlock>>();
+        auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
+        if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
+            throw common::MicrotoneException("Failed to create audio output stream.");
+        }
+        audioOutputStream.start();
 
         // The midi thread is created and started.
         auto midiHandle = std::make_shared<common::midi::MidiHandle>();
@@ -90,16 +85,24 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             midiGenerator.start();
         }
 
-        // The audio output thread is created and started.
-        auto outputBufferHandle = std::make_shared<common::RingBuffer<common::audio::FrameBlock>>();
-        auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
-        if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
-            throw common::MicrotoneException("Failed to create audio output stream.");
-        }
-        audioOutputStream.start();
+        // Initial GUI / synthesizer values
+        auto initialAdsr = synth::ADSR{0.01, 0.1, .8, 0.01};
+        auto initialGain = .9f;
+        auto initialLfoFrequencyHz = .25f;
+        auto initialLfoGain = .1f;
+        auto controls = asciiboard::SynthControls{initialAdsr, .8, 0, .2, initialGain, initialLfoFrequencyHz, initialLfoGain};
+
+        // These wave tables are sampled by the synthesizers oscillators.
+        auto weightedWaveTables = std::vector{
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), controls.sineWeight},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), controls.squareWeight},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), controls.triangleWeight}};
+
+        // ADSR of the synthesizer.
+        auto envelope = synth::Envelope(controls.adsr, audioOutputStream.sampleRate());
 
         // The synthesizer thread is created and started.
-        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables, initialGain, initialAdsr, initialLfoFrequencyHz);
+        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables, initialGain, initialAdsr, initialLfoFrequencyHz, initialLfoGain);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
@@ -108,40 +111,43 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
 
         // Effects.
-        audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5f));
+        // audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5f));
 
-        // The thread responsible for running out audio pipeline.
+        // The thread responsible for running our audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
         instrument.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
 
-        auto envelope = synth::Envelope(initialControls.adsr, audioOutputStream.sampleRate());
-
-        // Callback invoked when asciiboard controls are changed
-        auto onControlsChangedFn = [&synth, &weightedWaveTables, &envelope](const asciiboard::SynthControls& controls) {
-            auto shouldUpdateWaveTables = false;
-            if (controls.sineWeight != weightedWaveTables[0].weight) {
+        auto onControlsChangedFn = [&synth, &controls, &weightedWaveTables, &envelope](const asciiboard::SynthControls& newControls) {
+            if (controls.sineWeight != newControls.sineWeight || controls.squareWeight != newControls.squareWeight || controls.triangleWeight != newControls.triangleWeight) {
                 weightedWaveTables[0].weight = controls.sineWeight;
-                shouldUpdateWaveTables = true;
-            }
-            if (controls.squareWeight != weightedWaveTables[1].weight) {
                 weightedWaveTables[1].weight = controls.squareWeight;
-                shouldUpdateWaveTables = true;
-            }
-            if (controls.triangleWeight != weightedWaveTables[2].weight) {
                 weightedWaveTables[2].weight = controls.triangleWeight;
-                shouldUpdateWaveTables = true;
-            }
-            if (shouldUpdateWaveTables) {
+
+                //! TODO: setWeights.
                 synth->setWaveTables(weightedWaveTables);
             }
 
-            if (controls.adsr != envelope.adsr()) {
+            if (controls.gain != newControls.gain) {
+                synth->setGain(controls.gain);
+            }
+
+            if (controls.lfoFrequencyHz != newControls.lfoFrequencyHz) {
+                synth->setLfoFrequency(controls.lfoFrequencyHz);
+            }
+
+            if (controls.lfoGain != newControls.lfoGain) {
+                synth->setLfoGain(controls.lfoGain);
+            }
+
+            if (controls.adsr != newControls.adsr) {
                 envelope.setAdsr(controls.adsr);
                 synth->setEnvelope(envelope);
             }
+
+            controls = newControls;
         };
 
         auto onAboutToQuitFn = []() {
@@ -149,7 +155,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         };
 
         // Blocks this thread
-        asciiboard->loop(initialControls, onControlsChangedFn, onAboutToQuitFn);
+        asciiboard->loop(controls, onControlsChangedFn, onAboutToQuitFn);
 
     } catch (common::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

@@ -28,14 +28,14 @@ struct SynthesizerState {
     return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
 }
 
-[[nodiscard]] std::vector<Voice> buildVoices(double sampleRate, const ADSR& adsr, double lfoFrequencyHertz) {
+[[nodiscard]] std::vector<Voice> buildVoices(double sampleRate, const ADSR& adsr, double lfoFrequencyHertz, double lfoGain) {
     auto result = std::vector<Voice>{};
     for (auto i = 0; i < 127; ++i) {
         result.emplace_back(
             noteToFrequencyHertz(i),
             Envelope{adsr, sampleRate},
             Oscillator{noteToFrequencyHertz(i), sampleRate},
-            LowFrequencyOscillator{lfoFrequencyHertz, sampleRate},
+            LowFrequencyOscillator{lfoFrequencyHertz, sampleRate, lfoGain},
             Filter{});
     }
     return result;
@@ -64,8 +64,8 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 
 class Synthesizer::impl {
 public:
-    impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequency) :
-        _state{{SynthesizerState{waveTables, gain, buildVoices(sampleRate, adsr, lfoFrequency)}}},
+    impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequency, float lfoGain) :
+        _state{{SynthesizerState{waveTables, gain, buildVoices(sampleRate, adsr, lfoFrequency, lfoGain)}}},
         _sampleRate(sampleRate) {}
 
     ~impl() = default;
@@ -96,6 +96,14 @@ public:
         _state.write([&](SynthesizerState& state) {
             for (auto& voice : state.voices) {
                 voice.setLfoFrequency(frequencyHz);
+            }
+        });
+    }
+
+    void setLfoGain(float gain) {
+        _state.write([&](SynthesizerState& state) {
+            for (auto& voice : state.voices) {
+                voice.setLfoGain(gain);
             }
         });
     }
@@ -146,8 +154,8 @@ private:
     double _sampleRate = -1;
 };
 
-Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz) :
-    _impl{std::make_unique<impl>(sampleRate, waveTables, gain, adsr, lfoFrequencyHz)} {
+Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain) :
+    _impl{std::make_unique<impl>(sampleRate, waveTables, gain, adsr, lfoFrequencyHz, lfoGain)} {
 }
 
 Synthesizer::Synthesizer(Synthesizer&& other) noexcept :
@@ -181,6 +189,10 @@ void Synthesizer::setGain(float gain) {
 
 void Synthesizer::setLfoFrequency(float frequencyHz) {
     _impl->setLfoFrequency(frequencyHz);
+}
+
+void Synthesizer::setLfoGain(float gain) {
+    _impl->setLfoGain(gain);
 }
 
 void Synthesizer::respondToKeyboardChanges(const common::midi::Keyboard& keyboard) {

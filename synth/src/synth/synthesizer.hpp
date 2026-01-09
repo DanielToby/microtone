@@ -16,7 +16,7 @@ namespace synth {
 
 class Synthesizer : public I_SourceNode {
 public:
-    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz);
+    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
@@ -28,6 +28,7 @@ public:
     void setFilter(const Filter& filter);
     void setGain(float gain);
     void setLfoFrequency(float frequencyHz);
+    void setLfoGain(float gain);
 
     //! Respond to changes in the keyboard (trigger voices on or off).
     void respondToKeyboardChanges(const common::midi::Keyboard& keyboard) override;
