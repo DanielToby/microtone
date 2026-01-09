@@ -70,7 +70,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
             throw common::MicrotoneException("Failed to create audio output stream.");
         }
-        audioOutputStream.start();
 
         // The midi thread is created and started.
         auto midiHandle = std::make_shared<common::midi::MidiHandle>();
@@ -116,6 +115,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // The thread responsible for running our audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
         instrument.start();
+
+        // Start audio output after everything else:
+        audioOutputStream.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
