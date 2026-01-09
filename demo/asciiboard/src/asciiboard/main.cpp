@@ -106,7 +106,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
 
         // Effects.
-        audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5));
+        audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5f));
 
         // The thread responsible for running out audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};

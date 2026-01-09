@@ -35,7 +35,7 @@ struct Note {
 struct Keyboard {
     friend class KeyboardFactory;
 
-    std::array<Note, 128> audibleNotes;
+    std::array<Note, 127> audibleNotes;
 
     [[nodiscard]] bool operator==(const Keyboard& other) const {
         return audibleNotes == other.audibleNotes && pressedNotes == other.pressedNotes && sustainOn == other.sustainOn;
