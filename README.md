@@ -47,17 +47,44 @@ Libraries in this repo are designed to reduce coupling between synthesis, midi, 
 ### Audio Effects
 I added abstractions for the existing `Synthesizer` and `AudioOutput` devices: `I_SourceNode` and `I_SinkNode`. These simple interfaces are collected into an `AudioPipeline` owned by an `Instrument`. Right now there's just one instrument.
 
-
-`I_FunctionNode` implements both interfaces, allowing blocks to be passed through. This interface is used to describe effects. The `AudioPipeline` interface was extended to enable N effects between the source and sink nodes.
+`I_FunctionNode` implements both interfaces, allowing blocks to be passed through. This interface is used to describe effects. The `AudioPipeline` interface was extended to enable N effects between the source and sink nodes:
 
 ```C++
+// Audio input (source)
+auto synth = std::make_shared<synth::Synthesizer>(
+    sampleRate,
+    synth::TripleWaveTableT{
+        .waveTables = {
+            synth::buildWaveTable(synth::examples::sineWaveFill),
+            synth::buildWaveTable(synth::examples::squareWaveFill),
+            synth::buildWaveTable(synth::examples::triangleWaveFill)},
+        .weights = controls.getOscillatorWeights()},
+    controls.gain,
+    controls.getAdsr(),
+    controls.lfoFrequency_Hz,
+    controls.lfoGain);
+
+// Effects
+auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(sampleRate), controls.delayGain);
+
+// Audio output (sink)
+auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
+
 // The audio pipeline of the instrument.
-auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
+auto audioPipeline = synth::AudioPipeline{
+    synth,
+    {delay},
+    outputDevice};
 
-// Effects.
-audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 14400, /*gain=*/ 0.5));
+// The thread responsible for polling the input source, applying effects, and pushing results into the output.
+// This is kept separate from the audioOutputStream, whose callback should never be blocked.
+auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
+instrument.start();
+
+// Start audio output after the instrument is started:
+audioOutputStream.start();
 ```
-
+See [main.cpp](https://github.com/DanielToby/microtone/blob/main/demo/asciiboard/src/asciiboard/main.cpp).
 See [Delay.hpp](https://github.com/DanielToby/microtone/blob/main/synth/src/synth/effects/delay.hpp).
 
 

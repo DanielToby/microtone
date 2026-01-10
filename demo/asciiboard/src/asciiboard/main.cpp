@@ -61,15 +61,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
     M_INFO(fmt::format("Started logging: {}", common::Log::getDefaultLogfilePath()));
 
     try {
-        // Asciiboard
+        // Asciiboard (GUI)
         auto asciiboard = std::make_shared<asciiboard::Asciiboard>();
 
-        // The audio output thread is created and started.
+        // The audio output thread is created and started. We do this first to find out the sample rate.
         auto outputBufferHandle = std::make_shared<common::RingBuffer<common::audio::FrameBlock>>();
         auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
         if (audioOutputStream.createStreamError() != io::AudioStreamError::NoError) {
             throw common::MicrotoneException("Failed to create audio output stream.");
         }
+        const auto sampleRate = audioOutputStream.sampleRate();
 
         // The midi thread is created and started.
         auto midiHandle = std::make_shared<common::midi::TwoReaderMidiHandle>();
@@ -102,7 +103,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Audio input (source)
         auto synth = std::make_shared<synth::Synthesizer>(
-            audioOutputStream.sampleRate(),
+            sampleRate,
             synth::TripleWaveTableT{
                 .waveTables = {
                     synth::buildWaveTable(synth::examples::sineWaveFill),
@@ -115,7 +116,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             controls.lfoGain);
 
         // Effects
-        auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(audioOutputStream.sampleRate()), controls.delayGain);
+        auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(sampleRate), controls.delayGain);
 
         // Audio output (sink)
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
@@ -126,11 +127,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             {delay},
             outputDevice};
 
-        // The thread responsible for running our audio pipeline.
+        // The thread responsible for polling the input source, applying effects, and pushing results into the output.
+        // This is kept separate from the audioOutputStream, whose callback should never be blocked.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
         instrument.start();
 
-        // Start audio output after everything else:
+        // Start audio output after the instrument is started:
         audioOutputStream.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
@@ -138,7 +140,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         auto onControlsChangedFn = [&](const asciiboard::SynthControls& newControls) {
             controls.applyChanges(*synth, newControls);
-            controls.applyChanges(*delay, newControls, audioOutputStream.sampleRate());
+            controls.applyChanges(*delay, newControls, sampleRate);
             controls = newControls;
         };
 
