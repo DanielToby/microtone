@@ -19,7 +19,7 @@ target_include_directories(asciiboard PRIVATE
 )
 
 set_target_properties(asciiboard PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )

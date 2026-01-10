@@ -5,7 +5,7 @@ add_subdirectory(vendor)
 add_library(io STATIC)
 
 set_target_properties(io PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.29)
 add_library(synth STATIC)
 
 set_target_properties(synth PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD 20
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS NO
 )
