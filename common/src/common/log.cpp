@@ -1,6 +1,6 @@
 #include <common/log.hpp>
 
-#include "spdlog/sinks/rotating_file_sink.h"
+#include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
@@ -62,11 +62,7 @@ void Log::init(bool enableConsoleLogging) {
     const auto log_path = defaultLogPath();
     std::filesystem::create_directories(std::filesystem::path(log_path).parent_path());
 
-    constexpr size_t max_file_size = 5 * 1024 * 1024; // 5 MB
-    constexpr size_t max_files = 3;
-
-    auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-        log_path, max_file_size, max_files);
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path, /* truncate = */ true);
     file_sink->set_level(spdlog::level::trace);
     file_sink->set_pattern("[microtone] [%^%l%$] %v");
     sinks.emplace_back(file_sink);
