@@ -79,7 +79,7 @@ public:
 
         auto addData = [&out](const common::audio::FrameBlock& block) {
             for (const auto& v : block) {
-                *out++ = v;
+                *out++ = std::clamp<float>(v, -1., 1.);
             }
         };
 
