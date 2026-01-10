@@ -108,9 +108,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 synth::buildWaveTable(synth::examples::triangleWaveFill)},
             .weights = controls.getOscillatorWeights()};
 
-        // ADSR of the synthesizer.
-        auto envelope = synth::Envelope(controls.getAdsr(), audioOutputStream.sampleRate());
-
         // The synthesizer thread is created and started.
         auto synth = std::make_shared<synth::Synthesizer>(
             audioOutputStream.sampleRate(),
@@ -161,8 +158,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             }
 
             if (controls.getAdsr() != newControls.getAdsr()) {
-                envelope.setAdsr(controls.getAdsr());
-                synth->setEnvelope(envelope);
+                synth->setAdsr(controls.getAdsr());
             }
 
             if (controls.delay_ms != newControls.delay_ms) {

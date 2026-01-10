@@ -28,7 +28,7 @@ public:
     ~Synthesizer();
 
     void setOscillatorWeights(const TripleWeightsT& tables);
-    void setEnvelope(const Envelope& envelope);
+    void setAdsr(const ADSR& adsr);
     void setFilter(const Filter& filter);
     void setGain(float gain);
     void setLfoFrequency(float frequencyHz);

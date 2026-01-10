@@ -27,8 +27,8 @@ public:
         _oscillator = oscillator;
     }
 
-    void setEnvelope(const Envelope& envelope) {
-        _envelope = envelope;
+    void setAdsr(const ADSR& adsr) {
+        _envelope.setAdsr(adsr);
     }
 
     void setFilter(const Filter& filter) {

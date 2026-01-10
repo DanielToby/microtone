@@ -75,10 +75,10 @@ public:
         });
     }
 
-    void setEnvelope(const Envelope& envelope) {
+    void setAdsr(const ADSR& adsr) {
         _state.write([&](SynthesizerState& state) {
             for (auto& voice : state.voices) {
-                voice.setEnvelope(envelope);
+                voice.setAdsr(adsr);
             }
         });
     }
@@ -174,8 +174,8 @@ void Synthesizer::setOscillatorWeights(const TripleWeightsT& weightedWaveTables)
     _impl->setOscillatorWeights(weightedWaveTables);
 }
 
-void Synthesizer::setEnvelope(const Envelope& envelope) {
-    _impl->setEnvelope(envelope);
+void Synthesizer::setAdsr(const ADSR& adsr) {
+    _impl->setAdsr(adsr);
 }
 
 void Synthesizer::setFilter(const Filter& filter) {
