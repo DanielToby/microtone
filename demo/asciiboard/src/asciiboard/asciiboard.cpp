@@ -7,10 +7,10 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/color.hpp>
-
 #include <fmt/format.h>
 
-#include <io/midi_input_stream.hpp>
+#include "common/log.hpp"
+#include "io/midi_input_stream.hpp"
 
 #include <string>
 #include <unordered_set>
@@ -50,12 +50,17 @@ public:
 
 
         // =========== Info ===========
-        auto showInstructions = true;
-        auto closeInstructions = Button("Ok", [&showInstructions] { showInstructions = false; });
-        auto instructions = Renderer(closeInstructions, [&closeInstructions] {
-            return vbox({text("Press <enter> to submit changes to the controls. Press 'q' to quit."),
+        auto showInfo = true;
+        auto closeInfo = Button("Ok", [&showInfo] { showInfo = false; });
+        auto instructionMessage = "Press <enter> to submit changes to the controls. Press 'q' to quit.";
+        auto logLocationMessage = fmt::format("Logs are written to: {}", common::Log::getDefaultLogfilePath());
+        auto info = Renderer(closeInfo, [&closeInfo, &instructionMessage, &logLocationMessage] {
+            return vbox({text(instructionMessage) | hcenter,
+                         separatorEmpty() | size(HEIGHT, EQUAL, 1),
+                         text(logLocationMessage) | hcenter,
+                         separatorEmpty() | size(HEIGHT, EQUAL, 1),
                          hbox({filler(),
-                               closeInstructions->Render(),
+                               closeInfo->Render(),
                                filler()})}) |
                    hcenter | border;
         });
@@ -245,7 +250,7 @@ public:
                    borderRounded | color(Color::RedLight);
         });
 
-        auto mainContents = Container::Vertical({instructions,
+        auto mainContents = Container::Vertical({info,
                                                  selectedTab,
                                                  tabContent,
                                                  pianoRoll});
@@ -256,10 +261,10 @@ public:
                                      tabContent->Render(),
                                      pianoRoll->Render()});
 
-            if (showInstructions) {
+            if (showInfo) {
                 document = dbox({
                     document,
-                    instructions->Render() | clear_under | center,
+                    info->Render() | clear_under | center,
                 });
             }
             return document;
