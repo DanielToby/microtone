@@ -7,30 +7,57 @@ namespace synth {
 //! Records a history of the samples that pass through this class, then feeds them into the input.
 class Delay : public I_FunctionNode {
 public:
-    Delay(std::size_t numSamples, float gain) : _head(numSamples), _gain(gain) {
-        if (numSamples == 0 || numSamples > _memory.size()) {
+    Delay(std::size_t numSamples, float gain) :
+        _state(State{numSamples, gain}) {
+        throwIfInvalid();
+    }
+
+    [[nodiscard]] float transform(float in) override {
+        auto out = in;
+        _state.write([&out, this](State& state) {
+            out += state.gain * state.memory[state.tail];
+
+            state.memory[state.head] = out;
+            state.head = (state.head + 1) % state.memory.size();
+            state.tail = (state.tail + 1) % state.memory.size();
+        });
+        return out;
+    }
+
+    void setDelay(std::size_t numSamples) {
+        _state.write([&numSamples](State& state) {
+            state.head = numSamples;
+            state.tail = 0;
+        });
+    }
+
+    void setGain(float gain) {
+        _state.write([&gain](State& state) {
+            state.gain = gain;
+        });
+    }
+
+private:
+    void throwIfInvalid() const {
+        const auto& state = _state.read();
+        const auto delay = state.head - state.tail;
+        if (delay == 0 || delay >= state.memory.size()) {
             throw common::MicrotoneException("Delay duration is outside of allowable bounds.");
         }
     }
 
-    [[nodiscard]] float transform(float in) override {
-        // It's safe to apply this even when we haven't seen numSamples yet, because the buffer is zero-initialized.
-        auto out = in + _gain * _memory[_tail];
+    struct State {
+        State(std::size_t numSamples, float gain) : head{numSamples}, gain{gain} {}
 
-        _memory[_head] = out;
-        _head = (_head + 1) % _memory.size();
-        _tail = (_tail + 1) % _memory.size();
+        // This class supports a delay of up to 1s at a sample rate of 48 kHz.
+        std::array<float, 48000> memory{0.f};
+        std::size_t head{0};
+        std::size_t tail{0};
 
-        return out;
-    }
+        float gain{1.f};
+    };
 
-private:
-    float _gain;
-
-    // This class supports a delay of up to 1s at a sample rate of 48 kHz.
-    std::array<float, 48000> _memory{0.f};
-    std::size_t _head; // Initialized to _numSamples.
-    std::size_t _tail{0};
+    common::MutexProtected<State> _state;
 };
 
 }
