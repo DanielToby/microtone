@@ -151,7 +151,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
 
-        auto onControlsChangedFn = [&synth, &controls, &weightedWaveTables, &envelope](const asciiboard::SynthControls& newControls) {
+        auto onControlsChangedFn = [&](const asciiboard::SynthControls& newControls) {
             if (controls.sineWeight != newControls.sineWeight || controls.squareWeight != newControls.squareWeight || controls.triangleWeight != newControls.triangleWeight) {
                 weightedWaveTables[0].weight = controls.sineWeight;
                 weightedWaveTables[1].weight = controls.squareWeight;
@@ -176,6 +176,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             if (controls.getAdsr() != newControls.getAdsr()) {
                 envelope.setAdsr(controls.getAdsr());
                 synth->setEnvelope(envelope);
+            }
+
+            if (controls.delay_ms != newControls.delay_ms) {
+                delay->setDelay(static_cast<std::size_t>(controls.delay_ms / 1000 * audioOutputStream.sampleRate()));
+            }
+
+            if (controls.delayGain != newControls.delayGain) {
+                delay->setGain(controls.delayGain);
             }
 
             controls = newControls;

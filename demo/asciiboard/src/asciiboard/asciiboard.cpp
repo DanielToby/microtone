@@ -95,11 +95,7 @@ public:
         auto gainSlider = Slider("Gain:", &controls.gain, .1, 1., .1);
         auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &controls.lfoFrequencyHz, .01, 20, .1);
         auto lfoGainSlider = Slider("LFO Gain:", &controls.lfoGain, .1, 1., .1);
-
-        auto gainAndLfoFrequencyContainer = Container::Horizontal({gainSlider,
-                                                                   lfoFrequencyHzSlider,
-                                                                   lfoGainSlider});
-
+        auto gainAndLfoFrequencyContainer = Container::Horizontal({gainSlider, lfoFrequencyHzSlider, lfoGainSlider});
         auto gainAndLfoFrequencyControls = Renderer(gainAndLfoFrequencyContainer,
                                                     [&gainSlider, &lfoFrequencyHzSlider, &lfoGainSlider]() {
                                                         return hbox({gainSlider->Render(),
@@ -107,9 +103,7 @@ public:
                                                                      lfoGainSlider->Render()});
                                                     });
 
-        auto oscillatorControls = Container::Vertical({oscillatorMixer,
-                                                       gainAndLfoFrequencyControls});
-
+        auto oscillatorControls = Container::Vertical({oscillatorMixer, gainAndLfoFrequencyControls});
         auto oscillatorsContainer = Container::Vertical({oscilloscope, oscillatorControls});
         auto oscillatorsTab = Renderer(oscillatorsContainer, [&] {
             return vbox({
@@ -151,19 +145,14 @@ public:
             c.DrawPointLine(x2, sustainHeight, x3, sustainHeight, Color::Purple);
             c.DrawPointLine(x3, sustainHeight, width, effectiveHeight, Color::Red);
 
-            return vbox({text(fmt::format("Envelope (ms)", scaleFactor)) | hcenter,
-                         canvas(std::move(c)) | hcenter});
+            return vbox({text("Envelope (ms)") | hcenter, canvas(std::move(c)) | hcenter});
         });
 
         auto attackSlider = Slider("Attack:", &controls.attack, 1, 100, 1);
         auto decaySlider = Slider(" Decay:", &controls.decay, 1, 100, 1);
         auto sustainSlider = Slider(" Sustain:", &controls.sustain, 0, 100, 1);
         auto releaseSlider = Slider(" Release:", &controls.release, 1, 100, 1);
-
-        auto envelopeControlsContainer = Container::Horizontal({attackSlider,
-                                                                decaySlider,
-                                                                sustainSlider,
-                                                                releaseSlider});
+        auto envelopeControlsContainer = Container::Horizontal({attackSlider, decaySlider, sustainSlider, releaseSlider});
 
         auto envelopeControls = Renderer(envelopeControlsContainer,
                                          [&attackSlider, &decaySlider, &sustainSlider, &releaseSlider]() {
@@ -178,16 +167,41 @@ public:
             return vbox({hbox({filler(),
                                envelopeGraph->Render(),
                                envelopeControls->Render(),
+
                                filler()}),
                          envelopeControls->Render()}) |
                    borderRounded | color(Color::BlueLight);
         });
 
+        // =========== Effects tab ===========
+        auto delayGainSlider = Slider("Delay gain:", &controls.delayGain, 0., 1., .05);
+        auto delaySlider = Slider("Delay (ms):", &controls.delay_ms, 1, 1000, 50);
+        auto delayContainer = Container::Horizontal({delaySlider, delayGainSlider});
+        auto delayControls = Renderer(delayContainer,
+                                      [&delayGainSlider, &delaySlider]() {
+                                          return hbox({delayGainSlider->Render(), delaySlider->Render()});
+                                      });
+
+        auto effectsSpacer = Renderer([&] {
+            auto width = 80;
+            auto c = Canvas(width, graphHeight);
+            return vbox({canvas(std::move(c)) | hcenter});
+        });
+
+        auto effectsContainer = Container::Vertical({delayControls, effectsSpacer});
+        auto effectsTab = Renderer(effectsContainer, [&] {
+            return vbox({delayControls->Render(),
+                         hbox({filler(),
+                               effectsSpacer->Render(),
+                               filler()})}) |
+                   borderRounded | color(Color::BlueLight);
+        });
+
         // =========== Tab Bar ===========
         auto tab_index = 0;
-        auto tab_entries = std::vector<std::string>{"oscillators", "envelope"};
+        auto tab_entries = std::vector<std::string>{"oscillators", "envelope", "effects"};
         auto selectedTab = Menu(&tab_entries, &tab_index, MenuOption::HorizontalAnimated());
-        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab}, &tab_index);
+        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab}, &tab_index);
 
         // =========== Piano Roll ===========
         auto basePianoRoll = [](int width, int height) {
