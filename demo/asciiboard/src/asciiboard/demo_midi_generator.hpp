@@ -81,7 +81,7 @@ private:
                 _midiHandle->noteOff(scale[index].note);
                 _notePlaying.store(false);
                 _index.store((index + 1) % scale.size());
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(800));
             } else {
                 _midiHandle->noteOn(scale[index].note, scale[index].velocity);
                 _notePlaying.store(true);
