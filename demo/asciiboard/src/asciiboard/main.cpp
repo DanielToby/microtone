@@ -85,32 +85,61 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // Initial GUI / synthesizer values
-        auto initialAdsr = synth::ADSR{0.01, 0.1, .8, 0.01};
+        auto initialAttack = 1;
+        auto initialDecay = 10;
+        auto initialSustain = 80;
+        auto initialRelease = 1;
         auto initialGain = .9f;
         auto initialLfoFrequencyHz = .25f;
         auto initialLfoGain = .1f;
-        auto controls = asciiboard::SynthControls{initialAdsr, .8, 0, .2, initialGain, initialLfoFrequencyHz, initialLfoGain};
+
+        auto initialDelay_ms = 180.f;
+        auto initialDelayGain = 0.4f;
+        auto controls = asciiboard::SynthControls{
+            initialAttack,
+            initialDecay,
+            initialSustain,
+            initialRelease,
+            80,
+            0,
+            20,
+            initialGain,
+            initialLfoFrequencyHz,
+            initialLfoGain,
+            initialDelay_ms,
+            initialDelayGain,
+        };
 
         // These wave tables are sampled by the synthesizers oscillators.
         auto weightedWaveTables = std::vector{
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), controls.sineWeight},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), controls.squareWeight},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), controls.triangleWeight}};
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), controls.sineWeight / 100.},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), controls.squareWeight / 100.},
+            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), controls.triangleWeight / 100.}};
 
         // ADSR of the synthesizer.
-        auto envelope = synth::Envelope(controls.adsr, audioOutputStream.sampleRate());
+        auto envelope = synth::Envelope(controls.getAdsr(), audioOutputStream.sampleRate());
 
         // The synthesizer thread is created and started.
-        auto synth = std::make_shared<synth::Synthesizer>(audioOutputStream.sampleRate(), weightedWaveTables, initialGain, initialAdsr, initialLfoFrequencyHz, initialLfoGain);
+        auto synth = std::make_shared<synth::Synthesizer>(
+            audioOutputStream.sampleRate(),
+            weightedWaveTables,
+            initialGain,
+            controls.getAdsr(),
+            initialLfoFrequencyHz,
+            initialLfoGain);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
 
-        // The audio pipeline of the instrument.
-        auto audioPipeline = synth::AudioPipeline{synth, outputDevice};
+        // Effects
+        auto delay = std::make_shared<synth::Delay>(controls.delay_ms / 1000 * audioOutputStream.sampleRate(), controls.delayGain);
 
-        // Effects.
-        audioPipeline.addEffect(std::make_unique<synth::Delay>(/*numSamples=*/ 8000, /*gain=*/ 0.4f));
+        // The audio pipeline of the instrument.
+        auto audioPipeline = synth::AudioPipeline{
+            synth,
+            {delay},
+            outputDevice
+        };
 
         // The thread responsible for running our audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
@@ -144,8 +173,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 synth->setLfoGain(controls.lfoGain);
             }
 
-            if (controls.adsr != newControls.adsr) {
-                envelope.setAdsr(controls.adsr);
+            if (controls.getAdsr() != newControls.getAdsr()) {
+                envelope.setAdsr(controls.getAdsr());
                 synth->setEnvelope(envelope);
             }
 

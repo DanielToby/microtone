@@ -64,8 +64,9 @@ private:
 //! Effects are applied in the order they are provided in.
 class AudioPipeline {
 public:
-    AudioPipeline(std::shared_ptr<I_SourceNode> source, std::shared_ptr<I_SinkNode> sink) :
+    AudioPipeline(std::shared_ptr<I_SourceNode> source, std::vector<std::shared_ptr<I_FunctionNode>> effects, std::shared_ptr<I_SinkNode> sink) :
         _source{std::move(source)},
+        _effects{std::move(effects)},
         _sink{std::move(sink)} {}
 
     void addEffect(std::unique_ptr<I_FunctionNode> effect) {
@@ -84,7 +85,7 @@ public:
 
 private:
     std::shared_ptr<I_SourceNode> _source;
-    std::vector<std::unique_ptr<I_FunctionNode>> _effects;
+    std::vector<std::shared_ptr<I_FunctionNode>> _effects;
     std::shared_ptr<I_SinkNode> _sink;
 };
 
