@@ -13,9 +13,10 @@ constexpr auto M_PI = 3.14159265358979323846;
 const std::size_t WAVETABLE_LENGTH = 512;
 using WaveTable = std::array<float, WAVETABLE_LENGTH>;
 
-struct WeightedWaveTable {
-    WaveTable waveTable;
-    double weight;
+template <std::size_t N>
+struct WeightedWaveTables {
+    std::array<WaveTable, N> waveTables;
+    std::array<float, N> weights;
 };
 
 //! Constructs the wave table using fillFn, fetching a value for each index i in WAVETABLE_LENGTH

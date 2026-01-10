@@ -14,16 +14,20 @@
 
 namespace synth {
 
+//! The synth has a fixed number of wavetables.
+using TripleWaveTableT = WeightedWaveTables<3>;
+using TripleWeightsT = std::array<float, 3>;
+
 class Synthesizer : public I_SourceNode {
 public:
-    Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain);
+    Synthesizer(double sampleRate, const TripleWaveTableT& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain);
     Synthesizer(const Synthesizer&) = delete;
     Synthesizer& operator=(const Synthesizer&) = delete;
     Synthesizer(Synthesizer&&) noexcept;
     Synthesizer& operator=(Synthesizer&&) noexcept;
     ~Synthesizer();
 
-    void setWaveTables(const std::vector<WeightedWaveTable>& tables);
+    void setOscillatorWeights(const TripleWeightsT& tables);
     void setEnvelope(const Envelope& envelope);
     void setFilter(const Filter& filter);
     void setGain(float gain);

@@ -57,7 +57,8 @@ public:
         _envelope.triggerOff();
     }
 
-    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+    template <std::size_t NumWaveTables>
+    float nextSample(const WeightedWaveTables<NumWaveTables>& weightedWaveTables) {
         auto velocityScalar = static_cast<float>(_velocity);
         auto nextOscillatorOutput = _oscillator.nextSample(weightedWaveTables);
         auto lfoOutput = _lfo.nextSample();

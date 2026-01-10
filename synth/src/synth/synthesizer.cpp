@@ -16,7 +16,7 @@ namespace {
 
 //! These things are modifiable while the synth is active.
 struct SynthesizerState {
-    std::vector<WeightedWaveTable> weightedWaveTables;
+    TripleWaveTableT waveTables;
     float gain;
     std::vector<Voice> voices;
     common::midi::Keyboard keyboard;
@@ -28,7 +28,7 @@ struct SynthesizerState {
     return pitch * std::pow(2.0f, static_cast<float>(note - 69) / 12.0);
 }
 
-[[nodiscard]] std::vector<Voice> buildVoices(double sampleRate, const ADSR& adsr, double lfoFrequencyHertz, double lfoGain) {
+[[nodiscard]] std::vector<Voice> buildVoices(double sampleRate, const ADSR& adsr, double lfoFrequencyHertz, float lfoGain) {
     auto result = std::vector<Voice>{};
     for (auto i = 0; i < 127; ++i) {
         result.emplace_back(
@@ -54,8 +54,7 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 [[nodiscard]] float nextSample(SynthesizerState& state) {
     auto result = 0.0f;
     for (auto i = 0; i < state.voices.size(); ++i) {
-        auto& voice  = state.voices[i];
-        result += voice.nextSample(state.weightedWaveTables);
+        result += state.voices[i].nextSample(state.waveTables);
     }
     return result;
 }
@@ -64,15 +63,15 @@ void triggerVoiceIfNecessary(Voice& voice, const common::midi::Note& previousNot
 
 class Synthesizer::impl {
 public:
-    impl(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequency, float lfoGain) :
+    impl(double sampleRate, const TripleWaveTableT& waveTables, float gain, const ADSR& adsr, float lfoFrequency, float lfoGain) :
         _state{{SynthesizerState{waveTables, gain, buildVoices(sampleRate, adsr, lfoFrequency, lfoGain)}}},
         _sampleRate(sampleRate) {}
 
     ~impl() = default;
 
-    void setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+    void setOscillatorWeights(const TripleWeightsT& weightedWaveTables) {
         _state.write([&](SynthesizerState& state) {
-            state.weightedWaveTables = weightedWaveTables;
+            state.waveTables.weights = weightedWaveTables;
         });
     }
 
@@ -154,7 +153,7 @@ private:
     double _sampleRate = -1;
 };
 
-Synthesizer::Synthesizer(double sampleRate, const std::vector<WeightedWaveTable>& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain) :
+Synthesizer::Synthesizer(double sampleRate, const TripleWaveTableT& waveTables, float gain, const ADSR& adsr, float lfoFrequencyHz, float lfoGain) :
     _impl{std::make_unique<impl>(sampleRate, waveTables, gain, adsr, lfoFrequencyHz, lfoGain)} {
 }
 
@@ -171,8 +170,8 @@ Synthesizer& Synthesizer::operator=(Synthesizer&& other) noexcept {
 
 Synthesizer::~Synthesizer() = default;
 
-void Synthesizer::setWaveTables(const std::vector<WeightedWaveTable>& weightedWaveTables) {
-    _impl->setWaveTables(weightedWaveTables);
+void Synthesizer::setOscillatorWeights(const TripleWeightsT& weightedWaveTables) {
+    _impl->setOscillatorWeights(weightedWaveTables);
 }
 
 void Synthesizer::setEnvelope(const Envelope& envelope) {

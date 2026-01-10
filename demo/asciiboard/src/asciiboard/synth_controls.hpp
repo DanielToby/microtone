@@ -1,30 +1,36 @@
 #pragma once
 
-#include <synth/adsr.hpp>
-
-#include <cstdio>
+#include <synth/synthesizer.hpp>
 
 namespace asciiboard {
 
 struct SynthControls {
-    int attack{0};
-    int decay{0};
-    int sustain{0};
-    int release{0};
+    int attack_pct{0};
+    int decay_pct{0};
+    int sustain_pct{0};
+    int release_pct{0};
 
-    int sineWeight{0};
-    int squareWeight{0};
-    int triangleWeight{0};
+    int sineWeight_pct{0};
+    int squareWeight_pct{0};
+    int triangleWeight_pct{0};
 
     float gain{0.f};
-    float lfoFrequencyHz{0.f};
+    float lfoFrequency_Hz{0.f};
     float lfoGain{0.f};
 
     float delay_ms{0.f};
     float delayGain{0.f};
 
+    [[nodiscard]] synth::TripleWeightsT getOscillatorWeights() const {
+        return {
+            static_cast<float>(sineWeight_pct / 100.),
+            static_cast<float>(squareWeight_pct / 100.),
+            static_cast<float>(triangleWeight_pct / 100.),
+        };
+    }
+
     [[nodiscard]] synth::ADSR getAdsr() const {
-        return {attack / 100., decay / 100., sustain / 100., release / 100.};
+        return {attack_pct / 100., decay_pct / 100., sustain_pct / 100., release_pct / 100.};
     }
 
     [[nodiscard]] std::size_t getDelay_samples(double sampleRate) const {

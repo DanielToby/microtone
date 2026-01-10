@@ -7,9 +7,9 @@ namespace synth {
 
 class LowFrequencyOscillator {
 public:
-    LowFrequencyOscillator(double frequency, double sampleRate, double gain) :
+    LowFrequencyOscillator(double frequency, double sampleRate, float gain) :
         _oscillator{frequency, sampleRate},
-        _weightedWaveTable{buildWaveTable(examples::sineWaveFill), gain} {}
+        _weightedWaveTable{{buildWaveTable(examples::sineWaveFill)}, {gain}} {}
 
     LowFrequencyOscillator(const LowFrequencyOscillator& other) = default;
 
@@ -21,13 +21,13 @@ public:
         _oscillator.setFrequency(frequencyHz);
     }
 
-    void setGain(double gain) {
-        _weightedWaveTable.weight = gain;
+    void setGain(float gain) {
+        _weightedWaveTable.weights[0] = gain;
     }
 
 private:
     Oscillator _oscillator;
-    WeightedWaveTable _weightedWaveTable;
+    WeightedWaveTables<1> _weightedWaveTable;
 };
 
 }

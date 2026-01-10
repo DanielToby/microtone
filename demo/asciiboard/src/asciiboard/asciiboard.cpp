@@ -87,9 +87,9 @@ public:
             });
         });
 
-        auto sineSlider = Slider("Sine:", &controls.sineWeight, 0, 100, 1);
-        auto squareSlider = Slider(" Square:", &controls.squareWeight, 0, 100, 1);
-        auto triangleSlider = Slider(" Triangle:", &controls.triangleWeight, 0, 100, 1);
+        auto sineSlider = Slider("Sine:", &controls.sineWeight_pct, 0, 100, 1);
+        auto squareSlider = Slider(" Square:", &controls.squareWeight_pct, 0, 100, 1);
+        auto triangleSlider = Slider(" Triangle:", &controls.triangleWeight_pct, 0, 100, 1);
 
         auto oscillatorControlsContainer = Container::Horizontal({
             sineSlider,
@@ -106,7 +106,7 @@ public:
 
         // Gain and LFO Frequency
         auto gainSlider = Slider("Gain:", &controls.gain, .1, 1., .1);
-        auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &controls.lfoFrequencyHz, .01, 20, .1);
+        auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &controls.lfoFrequency_Hz, .01, 20, .1);
         auto lfoGainSlider = Slider("LFO Gain:", &controls.lfoGain, .1, 1., .1);
         auto gainAndLfoFrequencyContainer = Container::Horizontal({gainSlider, lfoFrequencyHzSlider, lfoGainSlider});
         auto gainAndLfoFrequencyControls = Renderer(gainAndLfoFrequencyContainer,
@@ -145,12 +145,12 @@ public:
             // The remaining width is split among the other phases.
             auto remainingWidth = (envelopeGraphWidth - sustainWidth);
 
-            auto totalTime = controls.attack + controls.decay + controls.release;
-            auto x1 = (static_cast<double>(controls.attack) / totalTime) * remainingWidth;
-            auto x2 = ((static_cast<double>(controls.attack) + controls.decay) / totalTime) * remainingWidth;
+            auto totalTime = controls.attack_pct + controls.decay_pct + controls.release_pct;
+            auto x1 = (static_cast<double>(controls.attack_pct) / totalTime) * remainingWidth;
+            auto x2 = ((static_cast<double>(controls.attack_pct) + controls.decay_pct) / totalTime) * remainingWidth;
             auto x3 = x2 + sustainWidth;
 
-            auto sustainHeight = effectiveHeight - (effectiveHeight * (static_cast<double>(controls.sustain) / 100));
+            auto sustainHeight = effectiveHeight - (effectiveHeight * (static_cast<double>(controls.sustain_pct) / 100));
 
             c.DrawPointLine(0, effectiveHeight, x1, 0, Color::Cyan);
             c.DrawPointLine(x1, 0, x2, sustainHeight, Color::BlueLight);
@@ -166,10 +166,10 @@ public:
                                                            filler()});
                                           });
 
-        auto attackSlider = Slider("Attack:", &controls.attack, 1, 100, 1);
-        auto decaySlider = Slider(" Decay:", &controls.decay, 1, 100, 1);
-        auto sustainSlider = Slider(" Sustain:", &controls.sustain, 0, 100, 1);
-        auto releaseSlider = Slider(" Release:", &controls.release, 1, 100, 1);
+        auto attackSlider = Slider("Attack:", &controls.attack_pct, 1, 100, 1);
+        auto decaySlider = Slider(" Decay:", &controls.decay_pct, 1, 100, 1);
+        auto sustainSlider = Slider(" Sustain:", &controls.sustain_pct, 0, 100, 1);
+        auto releaseSlider = Slider(" Release:", &controls.release_pct, 1, 100, 1);
         auto envelopeControlsContainer = Container::Horizontal({attackSlider, decaySlider, sustainSlider, releaseSlider});
 
         auto envelopeControls = Renderer(envelopeControlsContainer,

@@ -21,7 +21,8 @@ public:
         _currentIndex{0} {
     }
 
-    float nextSample(const std::vector<WeightedWaveTable>& weightedWaveTables) {
+    template <std::size_t NumWaveTables>
+    float nextSample(const WeightedWaveTables<NumWaveTables>& weightedWaveTables) {
         // Linear interpolation improves the signal approximation accuracy at discrete index.
         auto indexBelow = static_cast<int>(std::floor(_currentIndex));
         auto indexAbove = (indexBelow + 1) % WAVETABLE_LENGTH;
@@ -30,23 +31,13 @@ public:
         _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
 
         auto nextSample = 0.0f;
-        for (const auto& weightedWaveTable : weightedWaveTables) {
-            auto value = fractionBelow * weightedWaveTable.waveTable[indexBelow] + fractionAbove * weightedWaveTable.waveTable[indexAbove];
-            nextSample += static_cast<float>(value * weightedWaveTable.weight);
+        for (auto i = 0; i < NumWaveTables; i++) {
+            const auto& waveTable = weightedWaveTables.waveTables[i];
+            const auto& weight = weightedWaveTables.weights[i];
+            nextSample += static_cast<float>((fractionBelow * waveTable[indexBelow] + fractionAbove * waveTable[indexAbove]) * weight);
         }
 
         return nextSample;
-    }
-
-    float nextSample(const WeightedWaveTable& weightedWaveTable) {
-        // Linear interpolation improves the signal approximation accuracy at discrete index.
-        auto indexBelow = static_cast<int>(std::floor(_currentIndex));
-        auto indexAbove = (indexBelow + 1) % WAVETABLE_LENGTH;
-        auto fractionAbove = _currentIndex - indexBelow;
-        auto fractionBelow = 1.0 - fractionAbove;
-        _currentIndex = std::fmod((_currentIndex + WAVETABLE_LENGTH * _frequency / _sampleRate), WAVETABLE_LENGTH);
-
-        return static_cast<float>(fractionBelow * weightedWaveTable.waveTable[indexBelow] + fractionAbove * weightedWaveTable.waveTable[indexAbove]) * weightedWaveTable.weight;
     }
 
     void setFrequency(float frequency) {

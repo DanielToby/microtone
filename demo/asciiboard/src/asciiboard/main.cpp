@@ -86,25 +86,27 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Initial GUI / synthesizer values
         auto controls = asciiboard::SynthControls{
-            .attack = 1,
-            .decay = 10,
-            .sustain = 80,
-            .release = 1,
-            .sineWeight = 80,
-            .squareWeight = 0,
-            .triangleWeight = 20,
+            .attack_pct = 1,
+            .decay_pct = 10,
+            .sustain_pct = 80,
+            .release_pct = 1,
+            .sineWeight_pct = 80,
+            .squareWeight_pct = 0,
+            .triangleWeight_pct = 20,
             .gain = 0.9f,
-            .lfoFrequencyHz = 0.25f,
+            .lfoFrequency_Hz = 0.25f,
             .lfoGain = 0.1f,
             .delay_ms = 180.f,
             .delayGain = 0.4f,
         };
 
         // These wave tables are sampled by the synthesizers oscillators.
-        auto weightedWaveTables = std::vector{
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::sineWaveFill), controls.sineWeight / 100.},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::squareWaveFill), controls.squareWeight / 100.},
-            synth::WeightedWaveTable{synth::buildWaveTable(synth::examples::triangleWaveFill), controls.triangleWeight / 100.}};
+        auto weightedWaveTables = synth::TripleWaveTableT{
+            .waveTables = {
+                synth::buildWaveTable(synth::examples::sineWaveFill),
+                synth::buildWaveTable(synth::examples::squareWaveFill),
+                synth::buildWaveTable(synth::examples::triangleWaveFill)},
+            .weights = controls.getOscillatorWeights()};
 
         // ADSR of the synthesizer.
         auto envelope = synth::Envelope(controls.getAdsr(), audioOutputStream.sampleRate());
@@ -115,7 +117,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             weightedWaveTables,
             controls.gain,
             controls.getAdsr(),
-            controls.lfoFrequencyHz,
+            controls.lfoFrequency_Hz,
             controls.lfoGain);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
@@ -142,21 +144,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         renderLoop.start();
 
         auto onControlsChangedFn = [&](const asciiboard::SynthControls& newControls) {
-            if (controls.sineWeight != newControls.sineWeight || controls.squareWeight != newControls.squareWeight || controls.triangleWeight != newControls.triangleWeight) {
-                weightedWaveTables[0].weight = controls.sineWeight;
-                weightedWaveTables[1].weight = controls.squareWeight;
-                weightedWaveTables[2].weight = controls.triangleWeight;
-
-                //! TODO: setWeights.
-                synth->setWaveTables(weightedWaveTables);
+            if (controls.getOscillatorWeights() != newControls.getOscillatorWeights()) {
+                synth->setOscillatorWeights(controls.getOscillatorWeights());
             }
 
             if (controls.gain != newControls.gain) {
                 synth->setGain(controls.gain);
             }
 
-            if (controls.lfoFrequencyHz != newControls.lfoFrequencyHz) {
-                synth->setLfoFrequency(controls.lfoFrequencyHz);
+            if (controls.lfoFrequency_Hz != newControls.lfoFrequency_Hz) {
+                synth->setLfoFrequency(controls.lfoFrequency_Hz);
             }
 
             if (controls.lfoGain != newControls.lfoGain) {
