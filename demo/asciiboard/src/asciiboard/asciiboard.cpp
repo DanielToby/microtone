@@ -107,7 +107,7 @@ public:
         // Gain and LFO Frequency
         auto gainSlider = Slider("Gain:", &controls.gain, .1, 1., .1);
         auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &controls.lfoFrequency_Hz, .01, 20, .1);
-        auto lfoGainSlider = Slider("LFO Gain:", &controls.lfoGain, .1, 1., .1);
+        auto lfoGainSlider = Slider("LFO Gain:", &controls.lfoGain, 0., 1., .1);
         auto gainAndLfoFrequencyContainer = Container::Horizontal({gainSlider, lfoFrequencyHzSlider, lfoGainSlider});
         auto gainAndLfoFrequencyControls = Renderer(gainAndLfoFrequencyContainer,
                                                     [&gainSlider, &lfoFrequencyHzSlider, &lfoGainSlider]() {
