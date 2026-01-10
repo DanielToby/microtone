@@ -85,29 +85,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // Initial GUI / synthesizer values
-        auto initialAttack = 1;
-        auto initialDecay = 10;
-        auto initialSustain = 80;
-        auto initialRelease = 1;
-        auto initialGain = .9f;
-        auto initialLfoFrequencyHz = .25f;
-        auto initialLfoGain = .1f;
-
-        auto initialDelay_ms = 180.f;
-        auto initialDelayGain = 0.4f;
         auto controls = asciiboard::SynthControls{
-            initialAttack,
-            initialDecay,
-            initialSustain,
-            initialRelease,
-            80,
-            0,
-            20,
-            initialGain,
-            initialLfoFrequencyHz,
-            initialLfoGain,
-            initialDelay_ms,
-            initialDelayGain,
+            .attack = 1,
+            .decay = 10,
+            .sustain = 80,
+            .release = 1,
+            .sineWeight = 80,
+            .squareWeight = 0,
+            .triangleWeight = 20,
+            .gain = 0.9f,
+            .lfoFrequencyHz = 0.25f,
+            .lfoGain = 0.1f,
+            .delay_ms = 180.f,
+            .delayGain = 0.4f,
         };
 
         // These wave tables are sampled by the synthesizers oscillators.
@@ -123,16 +113,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto synth = std::make_shared<synth::Synthesizer>(
             audioOutputStream.sampleRate(),
             weightedWaveTables,
-            initialGain,
+            controls.gain,
             controls.getAdsr(),
-            initialLfoFrequencyHz,
-            initialLfoGain);
+            controls.lfoFrequencyHz,
+            controls.lfoGain);
 
         // For now this is a simple audio output device, but it'll soon record into a memory buffer.
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
 
         // Effects
-        auto delay = std::make_shared<synth::Delay>(controls.delay_ms / 1000 * audioOutputStream.sampleRate(), controls.delayGain);
+        auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(audioOutputStream.sampleRate()), controls.delayGain);
 
         // The audio pipeline of the instrument.
         auto audioPipeline = synth::AudioPipeline{
@@ -179,7 +169,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             }
 
             if (controls.delay_ms != newControls.delay_ms) {
-                delay->setDelay(static_cast<std::size_t>(controls.delay_ms / 1000 * audioOutputStream.sampleRate()));
+                delay->setDelay(controls.getDelay_samples(audioOutputStream.sampleRate()));
             }
 
             if (controls.delayGain != newControls.delayGain) {
