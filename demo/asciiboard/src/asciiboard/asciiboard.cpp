@@ -44,8 +44,10 @@ public:
         auto controls = SynthControls{initialControls};
 
         // Constants.
-        constexpr auto graphHeight = 180;
-        auto scaleFactor = 0.5;
+        constexpr auto graphHeight = 120;
+        constexpr auto scaleFactor = 0.5;
+        constexpr auto envelopeGraphWidth = 80;
+
 
         // =========== Info ===========
         auto showInstructions = true;
@@ -70,8 +72,14 @@ public:
                                 Color::Purple);
             }
 
-            return vbox({text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
-                         canvas(std::move(c)) | hcenter});
+            return vbox({
+                text(fmt::format("Frequency [Mhz] x ({})", scaleFactor)) | hcenter,
+                vbox({
+                    filler(),
+                    canvas(std::move(c)) | hcenter,
+                    filler(),
+                }) | flex,
+            });
         });
 
         auto sineSlider = Slider("Sine:", &controls.sineWeight, 0, 100, 1);
@@ -115,8 +123,7 @@ public:
 
         // =========== Envelope tab ===========
         auto envelopeGraph = Renderer([&] {
-            auto width = 80;
-            auto c = Canvas(width, graphHeight);
+            auto c = Canvas(envelopeGraphWidth, graphHeight);
             auto effectiveHeight = graphHeight - 5;
             /*
              *           / \
@@ -128,10 +135,10 @@ public:
              */
 
             // The "sustain" phase always has a width of w/4.
-            auto sustainWidth = width / 4;
+            auto sustainWidth = envelopeGraphWidth / 4;
 
             // The remaining width is split among the other phases.
-            auto remainingWidth = (width - sustainWidth);
+            auto remainingWidth = (envelopeGraphWidth - sustainWidth);
 
             auto totalTime = controls.attack + controls.decay + controls.release;
             auto x1 = (static_cast<double>(controls.attack) / totalTime) * remainingWidth;
@@ -143,10 +150,16 @@ public:
             c.DrawPointLine(0, effectiveHeight, x1, 0, Color::Cyan);
             c.DrawPointLine(x1, 0, x2, sustainHeight, Color::BlueLight);
             c.DrawPointLine(x2, sustainHeight, x3, sustainHeight, Color::Purple);
-            c.DrawPointLine(x3, sustainHeight, width, effectiveHeight, Color::Red);
+            c.DrawPointLine(x3, sustainHeight, envelopeGraphWidth, effectiveHeight, Color::Red);
 
             return vbox({text("Envelope (ms)") | hcenter, canvas(std::move(c)) | hcenter});
         });
+        auto envelopeContainer = Renderer(envelopeGraph,
+                                          [&envelopeGraph]() {
+                                              return hbox({filler(),
+                                                           envelopeGraph->Render(),
+                                                           filler()});
+                                          });
 
         auto attackSlider = Slider("Attack:", &controls.attack, 1, 100, 1);
         auto decaySlider = Slider(" Decay:", &controls.decay, 1, 100, 1);
@@ -162,16 +175,13 @@ public:
                                                           releaseSlider->Render()});
                                          });
 
-        auto envelopeContainer = Container::Vertical({envelopeGraph, envelopeControls});
-        auto envelopeTab = Renderer(envelopeContainer, [&] {
-            return vbox({hbox({filler(),
-                               envelopeGraph->Render(),
-                               envelopeControls->Render(),
-
-                               filler()}),
+        auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph, envelopeControls});
+        auto envelopeTab = Renderer(envelopeAndControlsContainer, [&] {
+            return vbox({envelopeContainer->Render() | flex,
                          envelopeControls->Render()}) |
                    borderRounded | color(Color::BlueLight);
         });
+
 
         // =========== Effects tab ===========
         auto delayGainSlider = Slider("Delay gain:", &controls.delayGain, 0., 1., .05);
