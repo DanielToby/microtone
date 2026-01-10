@@ -57,7 +57,7 @@ void trySelectPort(io::MidiInputStream& midiInput) {
 }
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
-    common::Log::init();
+    common::Log::init(/* enableConsoleLogging= */ false);
     M_INFO(fmt::format("Started logging: {}", common::Log::getDefaultLogfilePath()));
 
     try {

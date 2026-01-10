@@ -19,7 +19,7 @@ public:
         critical
     };
 
-    static void init();
+    static void init(bool enableConsoleLogging);
     static std::shared_ptr<spdlog::logger> getLogger();
     static std::string getDefaultLogfilePath();
     static void shutdown();
