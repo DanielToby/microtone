@@ -84,7 +84,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             midiGenerator.start();
         }
 
-        // Initial GUI / synthesizer values
+        // GUI / synthesizer controls
         auto controls = asciiboard::SynthControls{
             .attack_pct = 1,
             .decay_pct = 10,
@@ -100,35 +100,31 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             .delayGain = 0.4f,
         };
 
-        // These wave tables are sampled by the synthesizers oscillators.
-        auto weightedWaveTables = synth::TripleWaveTableT{
-            .waveTables = {
-                synth::buildWaveTable(synth::examples::sineWaveFill),
-                synth::buildWaveTable(synth::examples::squareWaveFill),
-                synth::buildWaveTable(synth::examples::triangleWaveFill)},
-            .weights = controls.getOscillatorWeights()};
-
-        // The synthesizer thread is created and started.
+        // Audio input (source)
         auto synth = std::make_shared<synth::Synthesizer>(
             audioOutputStream.sampleRate(),
-            weightedWaveTables,
+            synth::TripleWaveTableT{
+                .waveTables = {
+                    synth::buildWaveTable(synth::examples::sineWaveFill),
+                    synth::buildWaveTable(synth::examples::squareWaveFill),
+                    synth::buildWaveTable(synth::examples::triangleWaveFill)},
+                .weights = controls.getOscillatorWeights()},
             controls.gain,
             controls.getAdsr(),
             controls.lfoFrequency_Hz,
             controls.lfoGain);
 
-        // For now this is a simple audio output device, but it'll soon record into a memory buffer.
-        auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
-
         // Effects
         auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(audioOutputStream.sampleRate()), controls.delayGain);
+
+        // Audio output (sink)
+        auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
 
         // The audio pipeline of the instrument.
         auto audioPipeline = synth::AudioPipeline{
             synth,
             {delay},
-            outputDevice
-        };
+            outputDevice};
 
         // The thread responsible for running our audio pipeline.
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
@@ -141,34 +137,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         renderLoop.start();
 
         auto onControlsChangedFn = [&](const asciiboard::SynthControls& newControls) {
-            if (controls.getOscillatorWeights() != newControls.getOscillatorWeights()) {
-                synth->setOscillatorWeights(controls.getOscillatorWeights());
-            }
-
-            if (controls.gain != newControls.gain) {
-                synth->setGain(controls.gain);
-            }
-
-            if (controls.lfoFrequency_Hz != newControls.lfoFrequency_Hz) {
-                synth->setLfoFrequency(controls.lfoFrequency_Hz);
-            }
-
-            if (controls.lfoGain != newControls.lfoGain) {
-                synth->setLfoGain(controls.lfoGain);
-            }
-
-            if (controls.getAdsr() != newControls.getAdsr()) {
-                synth->setAdsr(controls.getAdsr());
-            }
-
-            if (controls.delay_ms != newControls.delay_ms) {
-                delay->setDelay(controls.getDelay_samples(audioOutputStream.sampleRate()));
-            }
-
-            if (controls.delayGain != newControls.delayGain) {
-                delay->setGain(controls.delayGain);
-            }
-
+            controls.applyChanges(*synth, newControls);
+            controls.applyChanges(*delay, newControls, audioOutputStream.sampleRate());
             controls = newControls;
         };
 

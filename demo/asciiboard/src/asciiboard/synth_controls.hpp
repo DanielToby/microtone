@@ -1,5 +1,6 @@
 #pragma once
 
+#include <synth/effects/delay.hpp>
 #include <synth/synthesizer.hpp>
 
 namespace asciiboard {
@@ -35,6 +36,40 @@ struct SynthControls {
 
     [[nodiscard]] std::size_t getDelay_samples(double sampleRate) const {
         return static_cast<std::size_t>(delay_ms / 1000 * sampleRate);
+    }
+
+    //! Applies any updated controls relevant to the synthesizer.
+    void applyChanges(synth::Synthesizer& synth, const SynthControls& newControls) const {
+        if (this->getOscillatorWeights() != newControls.getOscillatorWeights()) {
+            synth.setOscillatorWeights(newControls.getOscillatorWeights());
+        }
+
+        if (this->gain != newControls.gain) {
+            synth.setGain(newControls.gain);
+        }
+
+        if (this->lfoFrequency_Hz != newControls.lfoFrequency_Hz) {
+            synth.setLfoFrequency(newControls.lfoFrequency_Hz);
+        }
+
+        if (this->lfoGain != newControls.lfoGain) {
+            synth.setLfoGain(newControls.lfoGain);
+        }
+
+        if (this->getAdsr() != newControls.getAdsr()) {
+            synth.setAdsr(newControls.getAdsr());
+        }
+    }
+
+    //! Applies any updated controls relevant to the Delay effect.
+    void applyChanges(synth::Delay& delay, const SynthControls& newControls, double sampleRate) const {
+        if (this->delay_ms != newControls.delay_ms) {
+            delay.setDelay(newControls.getDelay_samples(sampleRate));
+        }
+
+        if (this->delayGain != newControls.delayGain) {
+            delay.setGain(newControls.delayGain);
+        }
     }
 };
 
