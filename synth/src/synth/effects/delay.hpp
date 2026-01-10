@@ -17,7 +17,7 @@ public:
         // It's safe to apply this even when we haven't seen numSamples yet, because the buffer is zero-initialized.
         auto out = in + _gain * _memory[_tail];
 
-        _memory[_head] = in;
+        _memory[_head] = out;
         _head = (_head + 1) % _memory.size();
         _tail = (_tail + 1) % _memory.size();
 
