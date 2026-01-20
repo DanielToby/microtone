@@ -10,6 +10,13 @@ set(SOURCES
     src/asciiboard/main.cpp
     src/asciiboard/render_loop.hpp
     src/asciiboard/synth_controls.hpp
+    src/asciiboard/components/effects_controls.hpp
+    src/asciiboard/components/envelope_controls.hpp
+    src/asciiboard/components/envelope_graph.hpp
+    src/asciiboard/components/info_message.hpp
+    src/asciiboard/components/oscillator_controls.hpp
+    src/asciiboard/components/oscilloscope.hpp
+    src/asciiboard/components/piano_roll.hpp
 )
 
 add_executable(asciiboard ${SOURCES})
