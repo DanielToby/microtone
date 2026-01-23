@@ -1,6 +1,7 @@
 #pragma once
 
 #include <synth/effects/delay.hpp>
+#include <synth/effects/low_pass_filter.hpp>
 #include <synth/synthesizer.hpp>
 
 namespace asciiboard {
@@ -21,6 +22,8 @@ struct SynthControls {
 
     float delay_ms{0.f};
     float delayGain{0.f};
+
+    float lowPassCutoffFrequency_Hz{0.f};
 
     [[nodiscard]] synth::TripleWeightsT getOscillatorWeights() const {
         return {
@@ -69,6 +72,13 @@ struct SynthControls {
 
         if (this->delayGain != newControls.delayGain) {
             delay.setGain(newControls.delayGain);
+        }
+    }
+
+    //! Applies any updated controls relevant to the Low Pass Filter effect.
+    void applyChanges(synth::LowPassFilter& lowPassFilter, const SynthControls& newControls) const {
+        if (this->lowPassCutoffFrequency_Hz != newControls.lowPassCutoffFrequency_Hz) {
+            lowPassFilter.setCutoffFrequencyHz(newControls.lowPassCutoffFrequency_Hz);
         }
     }
 };

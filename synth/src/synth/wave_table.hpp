@@ -1,14 +1,11 @@
 #pragma once
 
 #include <array>
-#include <cmath>
 #include <functional>
 
-namespace synth {
+#include "synth/math.hpp"
 
-#ifdef WIN32
-constexpr auto M_PI = 3.14159265358979323846;
-#endif
+namespace synth {
 
 const std::size_t WAVETABLE_LENGTH = 512;
 using WaveTable = std::array<float, WAVETABLE_LENGTH>;

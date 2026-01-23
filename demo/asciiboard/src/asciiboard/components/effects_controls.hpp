@@ -22,14 +22,22 @@ public:
                                       return hbox({_delayGainSlider->Render(), _delaySlider->Render()});
                                   });
 
+        _lowPassCutoffSlider = Slider("Low Pass Cutoff Frequency (Hz):", &controls->lowPassCutoffFrequency_Hz, 0.01, 5000., 250.);
+        _equalizerContainer = Container::Horizontal({_lowPassCutoffSlider});
+        _equalizerControls = Renderer(_equalizerContainer,
+                                      [this]() {
+                                          return hbox({_lowPassCutoffSlider->Render()});
+                                      });
+
         _effectsSpacer = Renderer([this] {
             auto c = Canvas(_width, _height);
             return vbox({canvas(std::move(c)) | hcenter});
         });
 
-        _effectsContainer = Container::Vertical({_delayControls, _effectsSpacer});
+        _effectsContainer = Container::Vertical({_delayControls, _equalizerControls, _effectsSpacer});
         _component = Renderer(_effectsContainer, [&] {
             return vbox({_delayControls->Render(),
+                         _equalizerControls->Render(),
                          hbox({filler(),
                                _effectsSpacer->Render(),
                                filler()})}) |
@@ -51,6 +59,11 @@ private:
     ftxui::Component _delaySlider;
     ftxui::Component _delayContainer;
     ftxui::Component _delayControls;
+
+    ftxui::Component _lowPassCutoffSlider;
+    ftxui::Component _equalizerContainer;
+    ftxui::Component _equalizerControls;
+
     ftxui::Component _effectsSpacer;
     ftxui::Component _effectsContainer;
 };

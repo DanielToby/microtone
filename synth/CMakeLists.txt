@@ -20,11 +20,14 @@ set(SOURCES
     src/synth/filter.hpp
     src/synth/instrument.hpp
     src/synth/low_frequency_oscillator.hpp
+    src/synth/math.hpp
     src/synth/oscillator.hpp
     src/synth/synthesizer.cpp
     src/synth/synthesizer.hpp
     src/synth/voice.hpp
     src/synth/wave_table.hpp
+    src/synth/effects/delay.hpp
+    src/synth/effects/low_pass_filter.hpp
 )
 
 target_sources(synth PUBLIC ${SOURCES})
