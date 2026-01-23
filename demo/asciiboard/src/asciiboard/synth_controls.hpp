@@ -1,6 +1,7 @@
 #pragma once
 
 #include <synth/effects/delay.hpp>
+#include <synth/effects/high_pass_filter.hpp>
 #include <synth/effects/low_pass_filter.hpp>
 #include <synth/synthesizer.hpp>
 
@@ -24,6 +25,7 @@ struct SynthControls {
     float delayGain{0.f};
 
     float lowPassCutoffFrequency_Hz{0.f};
+    float highPassCutoffFrequency_Hz{0.f};
 
     [[nodiscard]] synth::TripleWeightsT getOscillatorWeights() const {
         return {
@@ -79,6 +81,13 @@ struct SynthControls {
     void applyChanges(synth::LowPassFilter& lowPassFilter, const SynthControls& newControls) const {
         if (this->lowPassCutoffFrequency_Hz != newControls.lowPassCutoffFrequency_Hz) {
             lowPassFilter.setCutoffFrequencyHz(newControls.lowPassCutoffFrequency_Hz);
+        }
+    }
+
+    //! Applies any updated controls relevant to the High Pass Filter effect.
+    void applyChanges(synth::HighPassFilter& lowPassFilter, const SynthControls& newControls) const {
+        if (this->highPassCutoffFrequency_Hz != newControls.highPassCutoffFrequency_Hz) {
+            lowPassFilter.setCutoffFrequencyHz(newControls.highPassCutoffFrequency_Hz);
         }
     }
 };

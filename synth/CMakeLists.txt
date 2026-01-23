@@ -27,6 +27,7 @@ set(SOURCES
     src/synth/voice.hpp
     src/synth/wave_table.hpp
     src/synth/effects/delay.hpp
+    src/synth/effects/high_pass_filter.hpp
     src/synth/effects/low_pass_filter.hpp
 )
 
