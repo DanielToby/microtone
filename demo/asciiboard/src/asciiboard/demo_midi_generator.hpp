@@ -18,7 +18,7 @@ struct Note {
     int velocity;
 };
 
-constexpr auto chromaticScale = std::array{
+constexpr auto chromaticScaleVaryingVelocity = std::array{
     Note{60, 40}, // Middle C.
     Note{61, 45},
     Note{62, 50},
@@ -43,6 +43,33 @@ constexpr auto chromaticScale = std::array{
     Note{63, 55},
     Note{62, 50},
     Note{61, 45}
+};
+
+constexpr auto chromaticScaleFixedVelocity = std::array{
+    Note{60, 50}, // Middle C.
+    Note{61, 50},
+    Note{62, 50},
+    Note{63, 50},
+    Note{64, 50},
+    Note{65, 50},
+    Note{66, 50},
+    Note{67, 50},
+    Note{68, 50},
+    Note{69, 50},
+    Note{70, 50},
+    Note{71, 50},
+    Note{72, 50},
+    Note{71, 50},
+    Note{70, 50},
+    Note{69, 50},
+    Note{68, 50},
+    Note{67, 50},
+    Note{66, 50},
+    Note{65, 50},
+    Note{64, 50},
+    Note{63, 50},
+    Note{62, 50},
+    Note{61, 50}
 };
 
 }
@@ -74,7 +101,7 @@ private:
     void loop() {
         _running.store(true);
         while (_running.load() == true) {
-            const auto& scale = detail::chromaticScale;
+            const auto& scale = detail::chromaticScaleFixedVelocity;
             auto notePlaying = _notePlaying.load();
             auto index = _index.load();
             if (notePlaying) {
