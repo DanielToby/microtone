@@ -11,6 +11,7 @@ struct State {
     bool showInfoMessage{false};
     int selectedTab{0};
 
+    bool isOscilloscopeLive{false};
     int oscilloscopeScaleFactorIndex{0};
     int oscilloscopeTimelineSizeIndex{0};
 

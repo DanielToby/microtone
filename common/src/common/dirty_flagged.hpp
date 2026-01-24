@@ -7,6 +7,26 @@
 
 namespace common {
 
+//! This one is only suitable for a single reader; otherwise readers will invalidate each other!
+template <typename T>
+struct SingleReaderDirtyFlagged {
+    explicit SingleReaderDirtyFlagged(const T& item) :
+        item(item) {}
+
+    T item;
+    bool dirty{false};
+
+    T& getWritable() {
+        dirty = true;
+        return item;
+    }
+
+    const T& getReadable() {
+        dirty = false;
+        return item;
+    }
+};
+
 //! NumReaders must be known at compile time to prevent this class from allocating.
 template <std::size_t NumReaders>
 struct DirtyFlag {
