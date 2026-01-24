@@ -2,45 +2,35 @@
 
 #include <ftxui/component/component.hpp>
 
-#include "asciiboard/synth_controls.hpp"
+#include "asciiboard/state.hpp"
 
 namespace asciiboard {
 
 class EnvelopeControls {
 public:
-    explicit EnvelopeControls(const std::shared_ptr<SynthControls>& controls) :
-        _controls(controls) {
+    explicit EnvelopeControls(const std::shared_ptr<State>& controls) :
+        _controls(controls) {}
+
+    [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
 
-        _attackSlider = Slider("Attack:", &controls->attack_pct, 1, 100, 1);
-        _decaySlider = Slider(" Decay:", &controls->decay_pct, 1, 100, 1);
-        _sustainSlider = Slider(" Sustain:", &controls->sustain_pct, 0, 100, 1);
-        _releaseSlider = Slider(" Release:", &controls->release_pct, 1, 100, 1);
-        _envelopeControlsContainer = Container::Horizontal({_attackSlider, _decaySlider, _sustainSlider, _releaseSlider});
+        auto attackSlider = Slider("Attack:", &_controls->attack_pct, 1, 100, 1);
+        auto decaySlider = Slider(" Decay:", &_controls->decay_pct, 1, 100, 1);
+        auto sustainSlider = Slider(" Sustain:", &_controls->sustain_pct, 0, 100, 1);
+        auto releaseSlider = Slider(" Release:", &_controls->release_pct, 1, 100, 1);
+        auto envelopeControlsContainer = Container::Horizontal({attackSlider, decaySlider, sustainSlider, releaseSlider});
 
-        _component = Renderer(_envelopeControlsContainer,
-                              [this]() {
-                                  return hbox({_attackSlider->Render(),
-                                               _decaySlider->Render(),
-                                               _sustainSlider->Render(),
-                                               _releaseSlider->Render()});
-                              });
-    }
-
-    [[nodiscard]] const ftxui::Component& component() const {
-        return _component;
+        return Renderer(envelopeControlsContainer,
+                        [=] {
+                            return hbox({attackSlider->Render(),
+                                         decaySlider->Render(),
+                                         sustainSlider->Render(),
+                                         releaseSlider->Render()});
+                        });
     }
 
 private:
-    ftxui::Component _component;
-
-    ftxui::Component _attackSlider;
-    ftxui::Component _decaySlider;
-    ftxui::Component _sustainSlider;
-    ftxui::Component _releaseSlider;
-    ftxui::Component _envelopeControlsContainer;
-
-    std::shared_ptr<SynthControls> _controls;
+    std::shared_ptr<State> _controls;
 };
 
 }

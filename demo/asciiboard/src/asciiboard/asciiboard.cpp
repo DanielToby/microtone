@@ -35,9 +35,9 @@ constexpr auto effectsTabWidth = 80;
 
 class Asciiboard::impl {
 public:
-    explicit impl(const SynthControls& initialControls, double sampleRate) :
+    explicit impl(const State& initialControls, double sampleRate) :
         _screen{ScreenInteractive::Fullscreen()},
-        _controls{std::make_unique<SynthControls>(initialControls)},
+        _controls{std::make_unique<State>(initialControls)},
         _oscilloscope(sampleRate, graphWidth, graphHeight, _controls) {}
 
     void addOutputData(const common::audio::FrameBlock& audioBlock) {
@@ -52,54 +52,63 @@ public:
 
     void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
         // =========== Info ===========
-        auto info = InfoMessage{"Press <enter> to submit changes to the controls. Press 'q' to quit.",
-                                fmt::format("Logs are written to: {}", common::Log::getDefaultLogfilePath())};
+        auto infoState = InfoMessage{"Press <enter> to submit changes to the controls. Press 'q' to quit.",
+                                     fmt::format("Logs are written to: {}", common::Log::getDefaultLogfilePath()),
+                                     _controls};
+        auto info = infoState.component();
 
         // =========== Oscillators tab ===========
-        auto oscillatorControls = OscillatorControls{_controls};
-        auto oscillatorsContainer = Container::Vertical({_oscilloscope.component(), oscillatorControls.component()});
+        auto oscillatorControlsState = OscillatorControls{_controls};
+        auto oscillatorControls = oscillatorControlsState.component();
+        auto oscilloscope = _oscilloscope.component();
+        auto oscillatorsContainer = Container::Vertical({oscilloscope, oscillatorControls});
         auto oscillatorsTab = Renderer(oscillatorsContainer, [&] {
             return vbox({
-                       _oscilloscope.component()->Render() | flex,
-                       oscillatorControls.component()->Render(),
+                       oscilloscope->Render() | flex,
+                       oscillatorControls->Render(),
                    }) |
                    borderRounded | hcenter | color(Color::BlueLight);
         });
 
         // =========== Envelope tab ===========
-        auto envelopeGraph = EnvelopeGraph(envelopeGraphWidth, graphHeight, _controls);
-        auto envelopeControls = EnvelopeControls(_controls);
-        auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph.component(), envelopeControls.component()});
+        auto envelopeGraphState = EnvelopeGraph(envelopeGraphWidth, graphHeight, _controls);
+        auto envelopeGraph = envelopeGraphState.component();
+        auto envelopeControlsState = EnvelopeControls(_controls);
+        auto envelopeControls = envelopeControlsState.component();
+        auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph, envelopeControls});
         auto envelopeTab = Renderer(envelopeAndControlsContainer, [&] {
-            return vbox({envelopeGraph.component()->Render() | flex,
-                         envelopeControls.component()->Render()}) |
+            return vbox({envelopeGraph->Render() | flex,
+                         envelopeControls->Render()}) |
                    borderRounded | color(Color::BlueLight);
         });
 
         // =========== Effects tab ===========
-        auto effectsTab = EffectsControls(effectsTabWidth, graphHeight, _controls);
+        auto effectsState = EffectsControls(effectsTabWidth, graphHeight, _controls);
+        auto effectsTab = effectsState.component();
 
         // =========== Tab Bar ===========
-        auto tab_index = 0;
-        auto tab_entries = std::vector<std::string>{"oscillators", "envelope", "effects"};
-        auto selectedTab = Menu(&tab_entries, &tab_index, MenuOption::HorizontalAnimated());
-        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab.component()}, &tab_index);
+        auto tabEntries = std::vector<std::string>{"oscillators", "envelope", "effects"};
+        auto tabBar = Menu(&tabEntries, &_controls->selectedTab, MenuOption::HorizontalAnimated());
+        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab}, &_controls->selectedTab);
 
-        auto mainContents = Container::Vertical({info.component(),
-                                                 selectedTab,
+        // =========== Piano Roll ===========
+        auto pianoRoll = _pianoRoll.component();
+
+        auto mainContents = Container::Vertical({info,
+                                                 tabBar,
                                                  tabContent,
-                                                 _pianoRoll.component()});
+                                                 pianoRoll});
 
         auto mainRenderer = Renderer(mainContents, [&] {
             Element document = vbox({text("microtone") | bold | hcenter,
-                                     selectedTab->Render(),
+                                     tabBar->Render(),
                                      tabContent->Render(),
-                                     _pianoRoll.component()->Render()});
+                                     pianoRoll->Render()});
 
-            if (info.show()) {
+            if (_controls->showInfoMessage) {
                 document = dbox({
                     document,
-                    info.component()->Render() | clear_under | center,
+                    info->Render() | clear_under | center,
                 });
             }
             return document;
@@ -121,12 +130,12 @@ public:
     }
 
     ScreenInteractive _screen;
-    std::shared_ptr<SynthControls> _controls;
+    std::shared_ptr<State> _controls;
     Oscilloscope _oscilloscope;
     PianoRoll _pianoRoll;
 };
 
-Asciiboard::Asciiboard(const SynthControls& initialControls, double sampleRate) :
+Asciiboard::Asciiboard(const State& initialControls, double sampleRate) :
     _impl{std::make_unique<impl>(initialControls, sampleRate)} {};
 
 Asciiboard::Asciiboard(Asciiboard&& other) noexcept :

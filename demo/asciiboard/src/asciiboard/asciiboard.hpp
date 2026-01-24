@@ -1,6 +1,6 @@
 #pragma once
 
-#include <asciiboard/synth_controls.hpp>
+#include <asciiboard/state.hpp>
 
 #include <functional>
 #include <memory>
@@ -10,12 +10,12 @@
 
 namespace asciiboard {
 
-using OnControlsChangedFn = std::function<void(const SynthControls&)>;
+using OnControlsChangedFn = std::function<void(const State&)>;
 using OnAboutToQuitFn = std::function<void()>;
 
 class Asciiboard {
 public:
-    Asciiboard(const SynthControls& initialControls, double sampleRate);
+    Asciiboard(const State& initialControls, double sampleRate);
     Asciiboard(const Asciiboard&) = delete;
     Asciiboard& operator=(const Asciiboard&) = delete;
     Asciiboard(Asciiboard&&) noexcept;

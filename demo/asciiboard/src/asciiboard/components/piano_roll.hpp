@@ -11,8 +11,6 @@ namespace asciiboard {
 class PianoRoll {
 public:
     PianoRoll() {
-        using namespace ftxui;
-
         _basePianoRoll = [](int width, int height) {
             std::vector<int> output(width, 0);
             for (auto i = 0; i < width; ++i) {
@@ -33,8 +31,11 @@ public:
             }
             return output;
         };
+    }
 
-        _component = Renderer([this]() {
+    [[nodiscard]] ftxui::Component component() const {
+        using namespace ftxui;
+        return Renderer([this] {
             return hbox({filler(),
                          vbox({graph(std::ref(_activeNotes)) | size(HEIGHT, EQUAL, 2) | color(Color::GreenLight),
                                graph(std::ref(_basePianoRoll)) | size(HEIGHT, EQUAL, 2) | color(Color::Default)}) |
@@ -42,10 +43,6 @@ public:
                          filler()}) |
                    borderRounded | color(Color::RedLight);
         });
-    }
-
-    [[nodiscard]] const ftxui::Component& component() const {
-        return _component;
     }
 
     void setMidiKeyboard(const common::midi::Keyboard& keyboard) {
@@ -58,7 +55,6 @@ private:
         return v == 1 || v == 3 || v == 6 || v == 8 || v == 10;
     }
 
-    ftxui::Component _component;
     common::midi::Keyboard _keyboard;
 
     std::function<std::vector<int>(int, int)> _basePianoRoll;

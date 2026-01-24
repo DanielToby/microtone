@@ -9,7 +9,7 @@ set(SOURCES
     src/asciiboard/demo_midi_generator.hpp
     src/asciiboard/main.cpp
     src/asciiboard/render_loop.hpp
-    src/asciiboard/synth_controls.hpp
+    src/asciiboard/state.hpp
     src/asciiboard/components/effects_controls.hpp
     src/asciiboard/components/envelope_controls.hpp
     src/asciiboard/components/envelope_graph.hpp

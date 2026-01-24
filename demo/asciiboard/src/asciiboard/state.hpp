@@ -7,7 +7,10 @@
 
 namespace asciiboard {
 
-struct SynthControls {
+struct State {
+    bool showInfoMessage{false};
+    int selectedTab{0};
+
     int oscilloscopeScaleFactorIndex{0};
     int oscilloscopeTimelineSizeIndex{0};
 
@@ -47,7 +50,7 @@ struct SynthControls {
     }
 
     //! Applies any updated controls relevant to the synthesizer.
-    void applyChanges(synth::Synthesizer& synth, const SynthControls& newControls) const {
+    void applyChanges(synth::Synthesizer& synth, const State& newControls) const {
         if (this->getOscillatorWeights() != newControls.getOscillatorWeights()) {
             synth.setOscillatorWeights(newControls.getOscillatorWeights());
         }
@@ -70,7 +73,7 @@ struct SynthControls {
     }
 
     //! Applies any updated controls relevant to the Delay effect.
-    void applyChanges(synth::Delay& delay, const SynthControls& newControls, double sampleRate) const {
+    void applyChanges(synth::Delay& delay, const State& newControls, double sampleRate) const {
         if (this->delay_ms != newControls.delay_ms) {
             delay.setDelay(newControls.getDelay_samples(sampleRate));
         }
@@ -81,14 +84,14 @@ struct SynthControls {
     }
 
     //! Applies any updated controls relevant to the Low Pass Filter effect.
-    void applyChanges(synth::LowPassFilter& lowPassFilter, const SynthControls& newControls) const {
+    void applyChanges(synth::LowPassFilter& lowPassFilter, const State& newControls) const {
         if (this->lowPassCutoffFrequency_Hz != newControls.lowPassCutoffFrequency_Hz) {
             lowPassFilter.setCutoffFrequencyHz(newControls.lowPassCutoffFrequency_Hz);
         }
     }
 
     //! Applies any updated controls relevant to the High Pass Filter effect.
-    void applyChanges(synth::HighPassFilter& lowPassFilter, const SynthControls& newControls) const {
+    void applyChanges(synth::HighPassFilter& lowPassFilter, const State& newControls) const {
         if (this->highPassCutoffFrequency_Hz != newControls.highPassCutoffFrequency_Hz) {
             lowPassFilter.setCutoffFrequencyHz(newControls.highPassCutoffFrequency_Hz);
         }

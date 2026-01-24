@@ -52,13 +52,15 @@ template <typename Range>
 
 class Oscilloscope {
 public:
-    Oscilloscope(double sampleRate, int graphWidth, int graphHeight, const std::shared_ptr<SynthControls>& controls) :
+    Oscilloscope(double sampleRate, int graphWidth, int graphHeight, const std::shared_ptr<State>& controls) :
         _sampleRate(sampleRate),
         _graphHeight(graphHeight),
         _graphWidth(graphWidth),
         _controls(controls),
         _scaleFactorStrings(detail::toScaleFactorStrings(detail::scaleFactors)),
-        _millisecondStrings(detail::toMillisecondStrings(detail::blocksToShow, _sampleRate)) {
+        _millisecondStrings(detail::toMillisecondStrings(detail::blocksToShow, _sampleRate)) {}
+
+    [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
 
         auto scaleFactorSelector = Toggle(&_scaleFactorStrings, &_controls->oscilloscopeScaleFactorIndex);
@@ -90,14 +92,14 @@ public:
                     const auto y1 = getYValue(_data.at(blockIndex).at(i + 1));
 
                     // Skip points that are out of range.
-                    if ((y0 < 0 && y1 < 0) || (y0 > graphHeight && y1 > graphHeight)) {
+                    if ((y0 < 0 && y1 < 0) || (y0 > _graphHeight && y1 > _graphHeight)) {
                         continue;
                     }
 
                     c.DrawPointLine(x0,
-                                    std::clamp(y0, 0, graphHeight),
+                                    std::clamp(y0, 0, _graphHeight),
                                     x1,
-                                    std::clamp(y1, 0, graphHeight),
+                                    std::clamp(y1, 0, _graphHeight),
                                     Color::Purple);
                 }
             }
@@ -106,7 +108,7 @@ public:
 
         auto container = Container::Vertical({oscilloscopeControlsContainer, canvasComponent});
 
-        _component = Renderer(container, [=, this] {
+        return Renderer(container, [=] {
             return vbox({
                 hbox({
                     scaleFactorSelector->Render(),
@@ -123,9 +125,6 @@ public:
         });
     }
 
-    [[nodiscard]] const ftxui::Component& component() const {
-        return _component;
-    }
     void addAudioBlock(const common::audio::FrameBlock& block) {
         _data.push_back(block);
         if (_data.size() > detail::blocksToShow[_controls->oscilloscopeTimelineSizeIndex]) {
@@ -137,11 +136,10 @@ private:
     double _sampleRate{44100};
     int _graphHeight{100};
     int _graphWidth{100};
-    std::shared_ptr<SynthControls> _controls;
+    std::shared_ptr<State> _controls;
     std::vector<std::string> _scaleFactorStrings;
     std::vector<std::string> _millisecondStrings;
 
-    ftxui::Component _component;
     std::deque<common::audio::FrameBlock> _data;
 };
 

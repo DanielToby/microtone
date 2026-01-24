@@ -2,19 +2,21 @@
 
 #include <ftxui/component/component.hpp>
 
-#include "asciiboard/synth_controls.hpp"
+#include "asciiboard/state.hpp"
 
 namespace asciiboard {
 
 class EnvelopeGraph {
 public:
-    EnvelopeGraph(int width, int height, const std::shared_ptr<SynthControls>& controls) :
+    EnvelopeGraph(int width, int height, const std::shared_ptr<State>& controls) :
         _width(width),
         _height(height),
-        _controls(controls) {
+        _controls(controls) {}
+
+    [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
 
-        _graph = Renderer([this] {
+        auto graph = Renderer([this] {
             auto c = Canvas(_width, _height);
             auto effectiveHeight = _height - 5;
             /*
@@ -47,26 +49,19 @@ public:
             return vbox({text("Envelope (ms)") | hcenter, canvas(std::move(c)) | hcenter});
         });
 
-        _component = Renderer(_graph,
-                              [this]() {
-                                  return hbox({filler(),
-                                               _graph->Render(),
-                                               filler()});
-                              });
-    }
-
-    [[nodiscard]] const ftxui::Component& component() const {
-        return _component;
+        return Renderer(graph,
+                        [=] {
+                            return hbox({filler(),
+                                         graph->Render(),
+                                         filler()});
+                        });
     }
 
 private:
-    ftxui::Component _graph;
-    ftxui::Component _component;
-
     int _width{200};
     int _height{200};
 
-    std::shared_ptr<SynthControls> _controls;
+    std::shared_ptr<State> _controls;
 };
 
 }

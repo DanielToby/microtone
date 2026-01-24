@@ -87,7 +87,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // GUI / synthesizer controls
-        auto controls = asciiboard::SynthControls{
+        auto controls = asciiboard::State{
+            .showInfoMessage = true,
             .oscilloscopeScaleFactorIndex = 2,
             .oscilloscopeTimelineSizeIndex = 2,
             .attack_pct = 1,
@@ -148,7 +149,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();
 
-        auto onControlsChangedFn = [&](const asciiboard::SynthControls& newControls) {
+        auto onControlsChangedFn = [&](const asciiboard::State& newControls) {
             controls.applyChanges(*synth, newControls);
             controls.applyChanges(*delay, newControls, sampleRate);
             controls.applyChanges(*lowPassFilter, newControls);
