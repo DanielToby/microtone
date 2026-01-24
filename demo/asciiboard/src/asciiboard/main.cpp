@@ -88,6 +88,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // GUI / synthesizer controls
         auto controls = asciiboard::SynthControls{
+            .oscilloscopeScaleFactorIndex = 2,
+            .oscilloscopeTimelineSizeIndex = 2,
             .attack_pct = 1,
             .decay_pct = 10,
             .sustain_pct = 80,

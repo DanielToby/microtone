@@ -8,6 +8,9 @@
 namespace asciiboard {
 
 struct SynthControls {
+    int oscilloscopeScaleFactorIndex{0};
+    int oscilloscopeTimelineSizeIndex{0};
+
     int attack_pct{0};
     int decay_pct{0};
     int sustain_pct{0};

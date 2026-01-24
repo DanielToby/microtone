@@ -9,15 +9,43 @@ namespace asciiboard {
 namespace detail {
 
 constexpr auto scaleFactors = std::array{
-    .25,
-    .5,
-    1.0,
-    2.0,
-    5.0
-};
+    .25f,
+    .5f,
+    1.0f,
+    2.0f,
+    5.0f};
 
-[[nodiscard]] double toMilliseconds(double numSamples, double sampleRate) {
-    return numSamples / sampleRate * 1000;
+constexpr auto blocksToShow = std::array{
+    1,
+    2,
+    5,
+    10,
+    20};
+
+template <typename Range>
+[[nodiscard]] std::vector<std::string> toScaleFactorStrings(const Range& values) {
+    // TODO: C++23 std::ranges::to
+    std::vector<std::string> result;
+    result.reserve(values.size());
+    for (const auto& v : values) {
+        result.push_back(fmt::format("{}x", v));
+    }
+    return result;
+}
+
+[[nodiscard]] inline double toMilliseconds(double numBlocks, double sampleRate) {
+    return numBlocks * common::audio::AudioBlockSize / sampleRate * 1000;
+}
+
+template <typename Range>
+[[nodiscard]] std::vector<std::string> toMillisecondStrings(const Range& values, double sampleRate) {
+    // TODO: C++23 std::ranges::to
+    std::vector<std::string> result;
+    result.reserve(values.size());
+    for (const auto& v : values) {
+        result.push_back(fmt::format("{}ms", static_cast<int>(toMilliseconds(v, sampleRate))));
+    }
+    return result;
 }
 
 }
@@ -27,20 +55,32 @@ public:
     Oscilloscope(double sampleRate, int graphWidth, int graphHeight, const std::shared_ptr<SynthControls>& controls) :
         _sampleRate(sampleRate),
         _graphHeight(graphHeight),
-        _graphWidth(graphWidth) {
+        _graphWidth(graphWidth),
+        _controls(controls),
+        _scaleFactorStrings(detail::toScaleFactorStrings(detail::scaleFactors)),
+        _millisecondStrings(detail::toMillisecondStrings(detail::blocksToShow, _sampleRate)) {
         using namespace ftxui;
-        _component = Renderer([controls, this] {
-            const auto getXValue = [this](std::size_t blockIndex, std::size_t i) {
-                const auto totalSize = static_cast<double>(_numBlocksToShow * common::audio::AudioBlockSize);
-                auto index = static_cast<double>(blockIndex * common::audio::AudioBlockSize + i);
-                return static_cast<int>(index / totalSize * _graphWidth);
-            };
-            const auto getYValue = [this](float y) {
-                const auto totalSize = 2.f; // [-1, 1].
-                const auto value = y + 1; // Positive.
 
-                return static_cast<int>(value / totalSize * detail::scaleFactors[_scaleFactorIndex] * _graphHeight);
-            };
+        auto scaleFactorSelector = Toggle(&_scaleFactorStrings, &_controls->oscilloscopeScaleFactorIndex);
+        auto timelineScaleSelector = Toggle(&_millisecondStrings, &_controls->oscilloscopeTimelineSizeIndex);
+        auto oscilloscopeControlsContainer = Container::Horizontal({scaleFactorSelector, timelineScaleSelector});
+
+        const auto getXValue = [this](std::size_t blockIndex, std::size_t i) {
+            const auto totalSize = static_cast<double>(detail::blocksToShow[_controls->oscilloscopeTimelineSizeIndex] * common::audio::AudioBlockSize);
+            auto index = static_cast<double>(blockIndex * common::audio::AudioBlockSize + i);
+            return static_cast<int>(index / totalSize * _graphWidth);
+        };
+        const auto getYValue = [this](float y) {
+            const auto scaledValue = y * detail::scaleFactors[_controls->oscilloscopeScaleFactorIndex];
+            const auto totalSize = 2.f;                // [-1, 1].
+            auto value = (scaledValue + 1) / totalSize;// [0, 1], may overflow from scale factor.
+            if (std::abs(value) < 1e-5f) {
+                value = 0.f;
+            }
+            return static_cast<int>(value * static_cast<float>(_graphHeight));
+        };
+
+        auto canvasComponent = Renderer([=, this] {
             auto c = Canvas(_graphWidth, _graphHeight);
             for (auto blockIndex = 0; blockIndex < _data.size(); ++blockIndex) {
                 for (auto i = 0; i < common::audio::AudioBlockSize - 1; ++i) {
@@ -48,21 +88,35 @@ public:
                     const auto y0 = getYValue(_data.at(blockIndex).at(i));
                     const auto x1 = getXValue(blockIndex, i + 1);
                     const auto y1 = getYValue(_data.at(blockIndex).at(i + 1));
-                    c.DrawPointLine(x0, y0, x1, y1, Color::Purple);
+
+                    // Skip points that are out of range.
+                    if ((y0 < 0 && y1 < 0) || (y0 > graphHeight && y1 > graphHeight)) {
+                        continue;
+                    }
+
+                    c.DrawPointLine(x0,
+                                    std::clamp(y0, 0, graphHeight),
+                                    x1,
+                                    std::clamp(y1, 0, graphHeight),
+                                    Color::Purple);
                 }
             }
+            return canvas(c) | hcenter | flex;
+        });
 
+        auto container = Container::Vertical({oscilloscopeControlsContainer, canvasComponent});
+
+        _component = Renderer(container, [=, this] {
             return vbox({
                 hbox({
-                    text(fmt::format("{}x, ", detail::scaleFactors[_scaleFactorIndex])),
-                    text(fmt::format(
-                        "{:.2f}ms",
-                        detail::toMilliseconds(static_cast<double>(_numBlocksToShow * common::audio::AudioBlockSize), _sampleRate))),
+                    scaleFactorSelector->Render(),
+                    filler() | size(WIDTH, EQUAL, 4),
+                    timelineScaleSelector->Render(),
                 }) | hcenter,
 
                 vbox({
                     filler(),
-                    canvas(std::move(c)) | hcenter,
+                    canvasComponent->Render() | hcenter,
                     filler(),
                 }) | flex,
             });
@@ -74,7 +128,7 @@ public:
     }
     void addAudioBlock(const common::audio::FrameBlock& block) {
         _data.push_back(block);
-        if (_data.size() > _numBlocksToShow) {
+        if (_data.size() > detail::blocksToShow[_controls->oscilloscopeTimelineSizeIndex]) {
             _data.pop_front();
         }
     }
@@ -83,10 +137,12 @@ private:
     double _sampleRate{44100};
     int _graphHeight{100};
     int _graphWidth{100};
-    std::size_t _scaleFactorIndex{2};
+    std::shared_ptr<SynthControls> _controls;
+    std::vector<std::string> _scaleFactorStrings;
+    std::vector<std::string> _millisecondStrings;
+
     ftxui::Component _component;
     std::deque<common::audio::FrameBlock> _data;
-    std::size_t _numBlocksToShow{50};
 };
 
 }

@@ -7,7 +7,7 @@
 
 namespace synth {
 
-const std::size_t WAVETABLE_LENGTH = 512;
+const std::size_t WAVETABLE_LENGTH = common::audio::AudioBlockSize;
 using WaveTable = std::array<float, WAVETABLE_LENGTH>;
 
 template <std::size_t N>
