@@ -65,9 +65,6 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
     M_INFO(fmt::format("Started logging: {}", common::Log::getDefaultLogfilePath()));
 
     try {
-        // Asciiboard (GUI)
-        auto asciiboard = std::make_shared<asciiboard::Asciiboard>();
-
         // The audio output thread is created and started. We do this first to find out the sample rate.
         auto outputBufferHandle = std::make_shared<common::RingBuffer<common::audio::FrameBlock>>();
         auto audioOutputStream = io::AudioOutputStream{outputBufferHandle};
@@ -106,6 +103,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             .lowPassCutoffFrequency_Hz = 400.f,
             .highPassCutoffFrequency_Hz = 200.f,
         };
+        auto asciiboard = std::make_shared<asciiboard::Asciiboard>(controls, sampleRate);
 
         // Audio input (source)
         auto synth = std::make_shared<synth::Synthesizer>(
@@ -161,7 +159,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         };
 
         // Blocks this thread
-        asciiboard->loop(controls, onControlsChangedFn, onAboutToQuitFn);
+        asciiboard->loop(onControlsChangedFn, onAboutToQuitFn);
 
     } catch (common::MicrotoneException& e) {
         std::cout << fmt::format("Microtone error: {}", e.what()) << std::endl;

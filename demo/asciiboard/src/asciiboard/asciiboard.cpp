@@ -27,7 +27,7 @@ using namespace ftxui;
 namespace {
 
 constexpr auto graphHeight = 120;
-constexpr auto scaleFactor = 0.5;
+constexpr auto graphWidth = 600;
 constexpr auto envelopeGraphWidth = 80;
 constexpr auto effectsTabWidth = 80;
 
@@ -35,12 +35,13 @@ constexpr auto effectsTabWidth = 80;
 
 class Asciiboard::impl {
 public:
-    explicit impl() :
+    explicit impl(const SynthControls& initialControls, double sampleRate) :
         _screen{ScreenInteractive::Fullscreen()},
-        _oscilloscope(graphHeight, scaleFactor) {}
+        _controls{std::make_unique<SynthControls>(initialControls)},
+        _oscilloscope(sampleRate, graphWidth, graphHeight, _controls) {}
 
     void addOutputData(const common::audio::FrameBlock& audioBlock) {
-        _oscilloscope.setLatestAudioBlock(audioBlock);
+        _oscilloscope.addAudioBlock(audioBlock);
         _screen.PostEvent(Event::Custom);
     }
 
@@ -49,16 +50,13 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-    void loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
-        // Modified by the UI.
-        auto controls = std::make_shared<SynthControls>(initialControls);
-
+    void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
         // =========== Info ===========
         auto info = InfoMessage{"Press <enter> to submit changes to the controls. Press 'q' to quit.",
                                 fmt::format("Logs are written to: {}", common::Log::getDefaultLogfilePath())};
 
         // =========== Oscillators tab ===========
-        auto oscillatorControls = OscillatorControls{controls};
+        auto oscillatorControls = OscillatorControls{_controls};
         auto oscillatorsContainer = Container::Vertical({_oscilloscope.component(), oscillatorControls.component()});
         auto oscillatorsTab = Renderer(oscillatorsContainer, [&] {
             return vbox({
@@ -69,8 +67,8 @@ public:
         });
 
         // =========== Envelope tab ===========
-        auto envelopeGraph = EnvelopeGraph(envelopeGraphWidth, graphHeight, controls);
-        auto envelopeControls = EnvelopeControls(controls);
+        auto envelopeGraph = EnvelopeGraph(envelopeGraphWidth, graphHeight, _controls);
+        auto envelopeControls = EnvelopeControls(_controls);
         auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph.component(), envelopeControls.component()});
         auto envelopeTab = Renderer(envelopeAndControlsContainer, [&] {
             return vbox({envelopeGraph.component()->Render() | flex,
@@ -79,7 +77,7 @@ public:
         });
 
         // =========== Effects tab ===========
-        auto effectsTab = EffectsControls(effectsTabWidth, graphHeight, controls);
+        auto effectsTab = EffectsControls(effectsTabWidth, graphHeight, _controls);
 
         // =========== Tab Bar ===========
         auto tab_index = 0;
@@ -114,7 +112,7 @@ public:
                 return true;
             }
             if (event == Event::Return) {
-                onControlsChangedFn(*controls);
+                onControlsChangedFn(*_controls);
             }
             return false;
         });
@@ -123,12 +121,13 @@ public:
     }
 
     ScreenInteractive _screen;
+    std::shared_ptr<SynthControls> _controls;
     Oscilloscope _oscilloscope;
     PianoRoll _pianoRoll;
 };
 
-Asciiboard::Asciiboard() :
-    _impl{std::make_unique<impl>()} {};
+Asciiboard::Asciiboard(const SynthControls& initialControls, double sampleRate) :
+    _impl{std::make_unique<impl>(initialControls, sampleRate)} {};
 
 Asciiboard::Asciiboard(Asciiboard&& other) noexcept :
     _impl{std::move(other._impl)} {
@@ -149,8 +148,8 @@ void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
     _impl->updateMidiKeyboard(keyboard);
 }
 
-void Asciiboard::loop(const SynthControls& initialControls, const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {
-    _impl->loop(initialControls, onControlsChangedFn, onAboutToQuitFn);
+void Asciiboard::loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {
+    _impl->loop(onControlsChangedFn, onAboutToQuitFn);
 }
 
 Asciiboard::~Asciiboard() = default;
