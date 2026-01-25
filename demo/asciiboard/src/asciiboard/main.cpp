@@ -11,8 +11,7 @@
 #include <synth/instrument.hpp>
 #include <synth/wave_table.hpp>
 #include <synth/effects/delay.hpp>
-#include <synth/effects/high_pass_filter.hpp>
-#include <synth/effects/low_pass_filter.hpp>
+#include <synth/effects/modulated_filter.hpp>
 
 #include <fmt/format.h>
 
@@ -109,8 +108,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
             .lfoGain = 0.1f,
             .delay_ms = 180.f,
             .delayGain = 0.4f,
-            .lowPassCutoffFrequency_Hz = 400.f,
-            .highPassCutoffFrequency_Hz = 200.f,
+            .filterTypeIndex = 0,
+            .filterCutoffFrequencyHz = 350,
+            .filterLfoDepthHz = 10.f,
+            .filterLfoFrequencyHz = .25f,
         };
         auto asciiboard = std::make_shared<asciiboard::Asciiboard>(controls, sampleRate);
 
@@ -130,8 +131,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Effects
         auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(sampleRate), controls.delayGain);
-        auto lowPassFilter = std::make_shared<synth::LowPassFilter>(sampleRate, controls.lowPassCutoffFrequency_Hz);
-        auto highPassFilter = std::make_shared<synth::HighPassFilter>(sampleRate, controls.highPassCutoffFrequency_Hz);
+        auto filter = std::make_shared<synth::ModulatedFilter>(
+            sampleRate,
+            static_cast<synth::FilterType>(controls.filterTypeIndex),
+            controls.filterCutoffFrequencyHz,
+            controls.filterLfoDepthHz,
+            controls.filterLfoFrequencyHz);
 
         // Audio output (sink)
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
@@ -139,9 +144,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // The audio pipeline of the instrument.
         auto audioPipeline = synth::AudioPipeline{
             synth,
-            {delay,
-             lowPassFilter,
-             highPassFilter},
+            {
+                delay,
+                filter,
+            },
             outputDevice};
 
         // The thread responsible for polling the input source, applying effects, and pushing results into the output.
@@ -158,8 +164,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto onControlsChangedFn = [&](const asciiboard::State& newControls) {
             controls.applyChanges(*synth, newControls);
             controls.applyChanges(*delay, newControls, sampleRate);
-            controls.applyChanges(*lowPassFilter, newControls);
-            controls.applyChanges(*highPassFilter, newControls);
+            controls.applyChanges(*filter, newControls);
             controls = newControls;
         };
 

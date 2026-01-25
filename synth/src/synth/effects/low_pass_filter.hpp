@@ -11,6 +11,12 @@ public:
     LowPassFilter(double sampleRate, float cutoffFrequencyHz) :
         _state(State{sampleRate, cutoffFrequencyHz}) {}
 
+    LowPassFilter(const LowPassFilter& other) : _state(other._state) {}
+    LowPassFilter& operator=(const LowPassFilter& other) {
+        _state = other._state;
+        return *this;
+    }
+
     [[nodiscard]] float transform(float in) override {
         auto out = in;
         _state.write([&](State& state) {

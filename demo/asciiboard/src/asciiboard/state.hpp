@@ -1,8 +1,7 @@
 #pragma once
 
 #include <synth/effects/delay.hpp>
-#include <synth/effects/high_pass_filter.hpp>
-#include <synth/effects/low_pass_filter.hpp>
+#include <synth/effects/modulated_filter.hpp>
 #include <synth/synthesizer.hpp>
 
 namespace asciiboard {
@@ -31,8 +30,10 @@ struct State {
     float delay_ms{0.f};
     float delayGain{0.f};
 
-    float lowPassCutoffFrequency_Hz{0.f};
-    float highPassCutoffFrequency_Hz{0.f};
+    int filterTypeIndex{0};
+    float filterCutoffFrequencyHz{0.f};
+    float filterLfoDepthHz{0.f};
+    float filterLfoFrequencyHz{0.f};
 
     [[nodiscard]] synth::TripleWeightsT getOscillatorWeights() const {
         return {
@@ -84,17 +85,19 @@ struct State {
         }
     }
 
-    //! Applies any updated controls relevant to the Low Pass Filter effect.
-    void applyChanges(synth::LowPassFilter& lowPassFilter, const State& newControls) const {
-        if (this->lowPassCutoffFrequency_Hz != newControls.lowPassCutoffFrequency_Hz) {
-            lowPassFilter.setCutoffFrequencyHz(newControls.lowPassCutoffFrequency_Hz);
+    //! Applies any updated controls relevant to the modulated filter.
+    void applyChanges(synth::ModulatedFilter& filter, const State& newControls) const {
+        if (this->filterTypeIndex != newControls.filterTypeIndex) {
+            filter.setFilterType(static_cast<synth::FilterType>(newControls.filterTypeIndex));
         }
-    }
-
-    //! Applies any updated controls relevant to the High Pass Filter effect.
-    void applyChanges(synth::HighPassFilter& lowPassFilter, const State& newControls) const {
-        if (this->highPassCutoffFrequency_Hz != newControls.highPassCutoffFrequency_Hz) {
-            lowPassFilter.setCutoffFrequencyHz(newControls.highPassCutoffFrequency_Hz);
+        if (this->filterCutoffFrequencyHz != newControls.filterCutoffFrequencyHz) {
+            filter.setCutoffFrequencyHz(newControls.filterCutoffFrequencyHz);
+        }
+        if (this->filterLfoDepthHz != newControls.filterLfoDepthHz) {
+            filter.setLFODepthHz(newControls.filterLfoDepthHz);
+        }
+        if (this->filterLfoFrequencyHz != newControls.filterLfoFrequencyHz) {
+            filter.setLFOFrequencyHz(newControls.filterLfoFrequencyHz);
         }
     }
 };

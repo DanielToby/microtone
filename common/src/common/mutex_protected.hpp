@@ -13,7 +13,12 @@ public:
     using ValueType = T;
 
     MutexProtected() = default;
+    MutexProtected(const MutexProtected& other) : _value(other._value) {}
     explicit MutexProtected(const T& value) : _value(value) {}
+    MutexProtected& operator=(const MutexProtected& other) {
+        _value = other._value;
+        return *this;
+    }
 
     MutexProtected& operator=(MutexProtected&& other) noexcept {
         if (this != &other) {

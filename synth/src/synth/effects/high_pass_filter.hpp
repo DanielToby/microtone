@@ -12,6 +12,12 @@ public:
     HighPassFilter(double sampleRate, float cutoffFrequencyHz) :
         _state(State{sampleRate, cutoffFrequencyHz}) {}
 
+    HighPassFilter(const HighPassFilter& other) : _state(other._state) {}
+    HighPassFilter& operator=(const HighPassFilter& other) {
+        _state = other._state;
+        return *this;
+    }
+
     [[nodiscard]] float transform(float in) override {
         auto out = in;
         _state.write([&](State& state) {
