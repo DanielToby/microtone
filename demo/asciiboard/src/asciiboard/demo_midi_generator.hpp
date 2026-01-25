@@ -9,7 +9,6 @@
 #include <thread>
 
 namespace asciiboard::demo {
-
 namespace detail {
 
 //! A demo note.
@@ -71,15 +70,36 @@ constexpr auto chromaticScaleFixedVelocity = std::array{
     Note{62, 50},
     Note{61, 50}
 };
-
 }
+
+enum class Sequence {
+    ChromaticScale = 0,
+    CMaj7
+};
+
+enum class UseFixedVelocity : bool { no, yes };
+
+[[nodiscard]] inline const auto& getScale(UseFixedVelocity useFixedVelocity) {
+    if (static_cast<bool>(useFixedVelocity)) {
+        return detail::chromaticScaleFixedVelocity;
+    }
+    return detail::chromaticScaleVaryingVelocity;
+}
+
+struct MidiGeneratorOptions {
+    std::chrono::milliseconds noteOnTime;
+    std::chrono::milliseconds noteOffTime;
+    Sequence sequence;
+    UseFixedVelocity useFixedVelocity;
+};
 
 //! Generates midi messages for demos.
 class MidiGenerator {
 public:
     MidiGenerator() = delete;
-    explicit MidiGenerator(std::shared_ptr<common::midi::TwoReaderMidiHandle> midiHandle) :
-        _midiHandle(std::move(midiHandle)) {}
+    explicit MidiGenerator(std::shared_ptr<common::midi::TwoReaderMidiHandle> midiHandle, MidiGeneratorOptions options) :
+        _midiHandle(std::move(midiHandle)),
+        _options(options) {}
 
     ~MidiGenerator() {
         this->stop();
@@ -101,26 +121,57 @@ private:
     void loop() {
         _running.store(true);
         while (_running.load() == true) {
-            const auto& scale = detail::chromaticScaleFixedVelocity;
-            auto notePlaying = _notePlaying.load();
-            auto index = _index.load();
-            if (notePlaying) {
-                _midiHandle->noteOff(scale[index].note);
-                _notePlaying.store(false);
-                _index.store((index + 1) % scale.size());
-                std::this_thread::sleep_for(std::chrono::milliseconds(800));
-            } else {
-                _midiHandle->noteOn(scale[index].note, scale[index].velocity);
-                _notePlaying.store(true);
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            const auto notePlaying = _notePlaying.load();
+            const auto index = _index.load();
+            const auto& scale = getScale(_options.useFixedVelocity);
+
+            auto alternate = [&, this](auto onNoteOn, auto onNoteOff) {
+                if (notePlaying) {
+                    std::invoke(onNoteOff);
+                    _notePlaying.store(false);
+                    _index.store((index + 1) % scale.size());
+                    std::this_thread::sleep_for(_options.noteOffTime);
+                } else {
+                    std::invoke(onNoteOn);
+                    _notePlaying.store(true);
+                    std::this_thread::sleep_for(_options.noteOnTime);
+                }
+            };
+
+            switch (_options.sequence) {
+            case Sequence::ChromaticScale: {
+                alternate([&, this] {
+                    _midiHandle->noteOn(scale[index].note, scale[index].velocity); },
+                          [&, this] {
+                              _midiHandle->noteOff(scale[index].note);
+                          });
+                break;
+            }
+            case Sequence::CMaj7: {
+                alternate([&, this] {
+                    _midiHandle->noteOn(scale[index].note, scale[index].velocity);
+                    _midiHandle->noteOn(scale[index].note + 4, scale[index].velocity);
+                    _midiHandle->noteOn(scale[index].note + 7, scale[index].velocity);
+                    _midiHandle->noteOn(scale[index].note + 11, scale[index].velocity); },
+                          [&, this] {
+                              _midiHandle->noteOff(scale[index].note);
+                              _midiHandle->noteOff(scale[index].note + 4);
+                              _midiHandle->noteOff(scale[index].note + 7);
+                              _midiHandle->noteOff(scale[index].note + 11);
+                          });
+                break;
+            }
+            default:
+                throw common::MicrotoneException("Unsupported generated midi sequence.");
             }
         }
     }
 
     std::shared_ptr<common::midi::TwoReaderMidiHandle> _midiHandle;
+    MidiGeneratorOptions _options;
+
     std::atomic<bool> _running{false};
     std::thread _thread;
-
     std::atomic<std::size_t> _index = 0;
     std::atomic<bool> _notePlaying{false};
 };

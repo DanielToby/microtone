@@ -79,7 +79,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         trySelectPort(midiInputStream);
 
         // If midi isn't available, a demo midi generator is used.
-        auto midiGenerator = asciiboard::demo::MidiGenerator(midiHandle);
+        auto midiGenerator = asciiboard::demo::MidiGenerator(midiHandle, asciiboard::demo::MidiGeneratorOptions{
+            .noteOnTime = std::chrono::milliseconds(500),
+            .noteOffTime = std::chrono::milliseconds(1000),
+            .sequence = asciiboard::demo::Sequence::CMaj7,
+            .useFixedVelocity = asciiboard::demo::UseFixedVelocity::yes
+        });
         if (midiInputStream.isOpen()) {
             midiInputStream.start();
         } else {
