@@ -67,7 +67,7 @@ public:
                        oscilloscope->Render() | flex,
                        oscillatorControls->Render(),
                    }) |
-                   borderRounded | hcenter | color(Color::BlueLight);
+                   borderRounded | color(Color::BlueLight);
         });
 
         // =========== Envelope tab ===========
