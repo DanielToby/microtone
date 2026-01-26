@@ -48,9 +48,9 @@ public:
         _counter = 0;
     }
 
-    void rampTo(double value, double time) {
-        _increment = (value - _currentValue) / (_sampleRate * time);
-        _counter = static_cast<int>(_sampleRate * time);
+    void rampTo(double value, double time_s) {
+        _increment = (value - _currentValue) / (_sampleRate * time_s);
+        _counter = static_cast<int>(_sampleRate * time_s);
     }
 
     float nextSample() {
