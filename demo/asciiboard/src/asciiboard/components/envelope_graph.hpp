@@ -3,6 +3,7 @@
 #include <ftxui/component/component.hpp>
 
 #include "asciiboard/state.hpp"
+#include "asciiboard/components/graph.hpp"
 
 namespace asciiboard {
 
@@ -11,57 +12,71 @@ public:
     EnvelopeGraph(int width, int height, const std::shared_ptr<State>& controls) :
         _width(width),
         _height(height),
-        _controls(controls) {}
+        _controls(controls),
+        _graph{_width, _height, getTitle(), getColors()},
+        _lastUsedAdsr(_controls->getAdsr()) {}
 
     [[nodiscard]] ftxui::Component component() const {
-        using namespace ftxui;
-
-        auto graph = Renderer([this] {
-            auto c = Canvas(_width, _height);
-            auto effectiveHeight = _height - 5;
-            /*
-             *           / \
-             *         /    \
-             *       /       \___________
-             *     /                     \
-             *     0     x1  x2          x3
-             *     a     d   s           r
-             */
-
-            // The "sustain" phase always has a width of w/4.
-            const auto sustainWidth = _width / 4;
-
-            // The remaining width is split among the other phases.
-            const auto remainingWidth = (_width - sustainWidth);
-
-            const auto totalTime = _controls->attack_pct + _controls->decay_pct + _controls->release_pct;
-            const auto x1 = (static_cast<double>(_controls->attack_pct) / totalTime) * remainingWidth;
-            const auto x2 = ((static_cast<double>(_controls->attack_pct) + _controls->decay_pct) / totalTime) * remainingWidth;
-            const auto x3 = x2 + sustainWidth;
-
-            const auto sustainHeight = effectiveHeight - (effectiveHeight * (static_cast<double>(_controls->sustain_pct) / 100));
-
-            c.DrawPointLine(0, effectiveHeight, x1, 0, Color::Cyan);
-            c.DrawPointLine(x1, 0, x2, sustainHeight, Color::BlueLight);
-            c.DrawPointLine(x2, sustainHeight, x3, sustainHeight, Color::Purple);
-            c.DrawPointLine(x3, sustainHeight, _width, effectiveHeight, Color::Red);
-
-            return vbox({text("Envelope (ms)") | hcenter, canvas(std::move(c)) | hcenter});
+        return _graph.component([this] {
+            return getPoints(_controls->getAdsr(), _width, _height);
         });
-
-        return Renderer(graph,
-                        [=] {
-                            return hbox({filler(),
-                                         graph->Render(),
-                                         filler()});
-                        });
     }
 
 private:
+    [[nodiscard]] static std::string getTitle() {
+        return "Envelope (ms)";
+    }
+
+    [[nodiscard]] static std::vector<Point2D> getPoints(const synth::ADSR& adsr, int graphWidth, int graphHeight) {
+        // A, D, S, and R are all [0, 1].
+        // A, D, and R refer to millisecond values (x-axis).
+        // S is intensity (y-axis).
+        constexpr auto maxWidth = 4.;
+        constexpr auto maxHeight = 1.;
+
+        // Segment widths
+        auto sustainWidth = maxWidth - adsr.attack - adsr.decay - adsr.release;
+
+        constexpr auto attackHeight = 0.;
+        auto sustainHeight = (1. - adsr.sustain) * maxHeight;
+
+        auto lerp = [](double in, const std::array<double, 2>& inRange, const std::array<double, 2>& outRange) {
+            return in * (outRange[1] - outRange[0]) / (inRange[1] - inRange[0]);
+        };
+
+        // Adds a 4 pixel margin around the graph, so values are in range [4, graphWidth - 4], [4, graphHeight - 4]
+        constexpr auto margin = 4.;
+        auto toGraphX = [&lerp, &maxWidth, &graphWidth, &margin](double x) {
+            return static_cast<int>(lerp(x, {0., maxWidth}, {margin, graphWidth - margin}));
+        };
+        auto toGraphY = [&lerp, &maxHeight, &graphHeight, &margin](double y) {
+            return static_cast<int>(lerp(y, {0., maxHeight}, {margin, graphHeight - margin}));
+        };
+
+        return {
+            Point2D{toGraphX(0), toGraphY(maxHeight)},
+            Point2D{toGraphX(adsr.attack), toGraphY(attackHeight)},
+            Point2D{toGraphX(adsr.attack + adsr.decay), toGraphY(sustainHeight)},
+            Point2D{toGraphX(adsr.attack + adsr.decay + sustainWidth), toGraphY(sustainHeight)},
+            Point2D{toGraphX(maxWidth), toGraphY(maxHeight)},
+        };
+    }
+
+    [[nodiscard]] static std::vector<ftxui::Color> getColors() {
+        return {
+            ftxui::Color::Cyan,
+            ftxui::Color::BlueLight,
+            ftxui::Color::Purple,
+            ftxui::Color::Red};
+    }
+
     int _width{200};
     int _height{200};
-
     std::shared_ptr<State> _controls;
+    Graph _graph;
+
+    // Drawing is cached based on this.
+    synth::ADSR _lastUsedAdsr;
 };
 
 }

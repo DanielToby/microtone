@@ -27,8 +27,8 @@ using namespace ftxui;
 namespace {
 
 constexpr auto graphHeight = 120;
-constexpr auto graphWidth = 600;
-constexpr auto envelopeGraphWidth = 80;
+constexpr auto graphWidth = 200;
+constexpr auto envelopeGraphWidth = 200;
 constexpr auto effectsTabWidth = 80;
 
 }
@@ -77,8 +77,10 @@ public:
         auto envelopeControls = envelopeControlsState.component();
         auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph, envelopeControls});
         auto envelopeTab = Renderer(envelopeAndControlsContainer, [&] {
-            return vbox({envelopeGraph->Render() | flex,
-                         envelopeControls->Render()}) |
+            return vbox({
+                        envelopeGraph->Render() | flex,
+                        envelopeControls->Render()
+                   }) |
                    borderRounded | color(Color::BlueLight);
         });
 

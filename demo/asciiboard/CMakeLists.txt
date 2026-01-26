@@ -13,6 +13,7 @@ set(SOURCES
     src/asciiboard/components/effects_controls.hpp
     src/asciiboard/components/envelope_controls.hpp
     src/asciiboard/components/envelope_graph.hpp
+    src/asciiboard/components/graph.hpp
     src/asciiboard/components/info_message.hpp
     src/asciiboard/components/oscillator_controls.hpp
     src/asciiboard/components/oscilloscope.hpp
