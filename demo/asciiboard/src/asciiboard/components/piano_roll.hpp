@@ -8,38 +8,59 @@
 
 namespace asciiboard {
 
+namespace detail {
+
+[[nodiscard]] inline bool isBlackKeyPixel(int x, int y) {
+    if (y > 3) {
+        return false;
+    }
+    // C#
+    if (x == 2 || x == 3) {
+        return true;
+    }
+    // D#
+    if (x == 5 || x == 6) {
+        return true;
+    }
+    // F#
+    if (x == 11 || x == 12) {
+        return true;
+    }
+    // G#
+    if (x == 14 || x == 15) {
+        return true;
+    }
+    // A#
+    if (x == 17 || x == 18) {
+        return true;
+    }
+    return false;
+}
+
+}
+
 class PianoRoll {
 public:
-    PianoRoll() {
-        _basePianoRoll = [](int width, int height) {
-            std::vector<int> output(width, 0);
-            for (auto i = 0; i < width; ++i) {
-                if (!isBlackKey(i)) {
-                    // White key
-                    output[i] = height - 1;
-                }
-            }
-            return output;
-        };
-
-        _activeNotes = [&](int width, [[maybe_unused]] int height) {
-            std::vector<int> output(width, -1);
-            for (auto i = 0; i < std::min(width, static_cast<int>(_keyboard.audibleNotes.size())); ++i) {
-                if (_keyboard.audibleNotes[i].isOn()) {
-                    output[i] = 1;
-                }
-            }
-            return output;
-        };
-    }
+    PianoRoll() = default;
 
     [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
         return Renderer([this] {
+            auto width = 20;
+            auto height = 6;
+            auto c = Canvas(width, height);
+            for (auto x = 0; x <= width; ++x) {
+                for (auto y = 0; y <= height; ++y) {
+                    if (detail::isBlackKeyPixel(x, y)) {
+                        c.DrawBlock(x, y, true, Color::Black);
+                    } else {
+                        c.DrawBlock(x, y, true, Color::White);
+                    }
+                }
+            }
+
             return hbox({filler(),
-                         vbox({graph(std::ref(_activeNotes)) | size(HEIGHT, EQUAL, 2) | color(Color::GreenLight),
-                               graph(std::ref(_basePianoRoll)) | size(HEIGHT, EQUAL, 2) | color(Color::Default)}) |
-                             size(WIDTH, EQUAL, 66),
+                         canvas(c),
                          filler()}) |
                    borderRounded | color(Color::RedLight);
         });
@@ -56,9 +77,6 @@ private:
     }
 
     common::midi::Keyboard _keyboard;
-
-    std::function<std::vector<int>(int, int)> _basePianoRoll;
-    std::function<std::vector<int>(int, int)> _activeNotes;
 };
 
 }
