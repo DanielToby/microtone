@@ -11,27 +11,27 @@ namespace asciiboard {
 namespace detail {
 
 [[nodiscard]] inline bool isBlackKeyPixel(int x, int y) {
-    if (y > 3) {
+    if (y > 8) {
         return false;
     }
     // C#
-    if (x == 2 || x == 3) {
+    if (x >= 4 && x <= 6) {
         return true;
     }
     // D#
-    if (x == 5 || x == 6) {
+    if (x >= 10 && x <= 12) {
         return true;
     }
     // F#
-    if (x == 11 || x == 12) {
+    if (x >= 22 && x <= 24) {
         return true;
     }
     // G#
-    if (x == 14 || x == 15) {
+    if (x >= 28 && x <= 30) {
         return true;
     }
     // A#
-    if (x == 17 || x == 18) {
+    if (x >= 34 && x <= 36) {
         return true;
     }
     return false;
@@ -46,15 +46,15 @@ public:
     [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
         return Renderer([this] {
-            auto width = 20;
-            auto height = 6;
+            auto width = 42;
+            auto height = 14;
             auto c = Canvas(width, height);
-            for (auto x = 0; x <= width; ++x) {
-                for (auto y = 0; y <= height; ++y) {
+            for (auto x = 0; x < width; ++x) {
+                for (auto y = 0; y < height; ++y) {
                     if (detail::isBlackKeyPixel(x, y)) {
-                        c.DrawBlock(x, y, true, Color::Black);
+                        c.DrawBlock(x, y, true, Color::DarkBlue);
                     } else {
-                        c.DrawBlock(x, y, true, Color::White);
+                        c.DrawBlock(x, y, true, Color::DarkViolet);
                     }
                 }
             }
@@ -71,11 +71,6 @@ public:
     }
 
 private:
-    [[nodiscard]] static bool isBlackKey(const int key) {
-        const auto v = key % 12;
-        return v == 1 || v == 3 || v == 6 || v == 8 || v == 10;
-    }
-
     common::midi::Keyboard _keyboard;
 };
 
