@@ -31,17 +31,26 @@ struct Note {
     }
 };
 
+constexpr std::size_t NumMidiNodes = 127;
+
 //! The state of the midi controller.
 struct Keyboard {
     friend class KeyboardFactory;
 
-    std::array<Note, 127> audibleNotes;
+    std::array<Note, NumMidiNodes> audibleNotes;
 
     [[nodiscard]] bool operator==(const Keyboard& other) const {
         return audibleNotes == other.audibleNotes && pressedNotes == other.pressedNotes && sustainOn == other.sustainOn;
     }
     [[nodiscard]] bool operator!=(const Keyboard& other) const {
         return !(*this == other);
+    }
+
+    [[nodiscard]] bool isNotePressed(const std::size_t note) const {
+        if (note > NumMidiNodes) {
+            throw std::out_of_range("Not a valid midi note.");
+        }
+        return pressedNotes[note].isOn();
     }
 
 private:
