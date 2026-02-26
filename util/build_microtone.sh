@@ -6,5 +6,5 @@ source "$HOME/.microtone_env"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-cmake "$SOURCE_DIR"
-make -j"$(nproc)"
+cmake "$SOURCE_DIR" -DENABLE_GPIO_CONTROL:BOOL=ON
+make -j"$(nproc)" -

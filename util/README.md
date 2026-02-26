@@ -2,6 +2,8 @@
 
 These are here to make developing on raspberry pi easier.
 
+> Note: GPIO control is enabled by default on raspberry pi.
+
 To configure:
 ```sh
 cp util/.microtone_env "$HOME/.microtone_env"
