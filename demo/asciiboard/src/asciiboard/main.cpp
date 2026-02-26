@@ -6,6 +6,7 @@
 #include <common/log.hpp>
 
 #include <io/audio_output_stream.hpp>
+#include <io/gpio_input.hpp>
 #include <io/midi_input_stream.hpp>
 
 #include <synth/instrument.hpp>

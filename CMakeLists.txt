@@ -9,6 +9,12 @@ elseif(UNIX)
     set (PLATFORM "linux")
 endif()
 
+option(ENABLE_GPIO_CONTROL "Enable GPIO controls" OFF)
+
+if (ENABLE_GPIO_CONTROL AND NOT ${PLATFORM} STREQUAL "linux")
+    message(FATAL_ERROR "GPIO control is only supported on linux.")
+endif()
+
 add_subdirectory(common)
 add_subdirectory(demo)
 add_subdirectory(io)

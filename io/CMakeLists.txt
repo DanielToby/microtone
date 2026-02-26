@@ -19,6 +19,8 @@ target_include_directories(io PUBLIC
 set(SOURCES
     src/io/audio_output_stream.cpp
     src/io/audio_output_stream.hpp
+    src/io/gpio_input.cpp
+    src/io/gpio_input.hpp
     src/io/midi_input_stream.cpp
     src/io/midi_input_stream.hpp
     src/io/midi_message.hpp
@@ -26,23 +28,25 @@ set(SOURCES
 
 target_sources(io PUBLIC ${SOURCES})
 
-if(APPLE)
-    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES
-        "-framework AudioToolbox"
-        "-framework Carbon"
-        "-framework CoreAudio"
-        "-framework CoreFoundation"
-        "-framework CoreServices"
-        "-framework CoreMIDI"
-    )
-elseif(WIN32)
-    set(PLATFORM_SPECIFIC_AUDIO_DEPENDENCIES "")
-endif()
-
 target_link_libraries(io
-PUBLIC
-    common
-PRIVATE
-    portaudio
-    rtmidi
+    PUBLIC
+        common
+    PRIVATE
+        portaudio
+        rtmidi
 )
+
+target_compile_definitions(io
+    PRIVATE
+        $<$<BOOL:${ENABLE_GPIO_CONTROL}>:ENABLE_GPIO_CONTROL>
+)
+
+if(ENABLE_GPIO_CONTROL)
+    find_library(GPIOD_LIBRARY gpiodcxx)
+
+    if(NOT GPIOD_LIBRARY)
+        message(FATAL_ERROR "libgpiodcxx not found.")
+    endif()
+
+    target_link_libraries(io PRIVATE GPIOD_LIBRARY)
+endif()
