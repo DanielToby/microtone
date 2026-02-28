@@ -94,7 +94,12 @@ public:
         auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab}, &_controls->selectedTab);
 
         // =========== Piano Roll ===========
-        auto pianoRoll = _pianoRoll.component();
+        auto pianoRollComponent =_pianoRoll.component();
+        auto pianoRoll = Renderer(pianoRollComponent, [=] {
+            return vbox({
+                        pianoRollComponent->Render() | flex,
+                   }) | borderRounded | color(Color::BlueLight);
+        });
 
         auto mainContents = Container::Vertical({info,
                                                  tabBar,

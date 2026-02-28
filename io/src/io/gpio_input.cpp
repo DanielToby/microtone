@@ -125,9 +125,9 @@ private:
 
 class GPIOInput::impl {
 public:
-    explicit impl(const HardwareConfiguration& hardwareConfig) {}
+    explicit impl([[maybe_unused]] const HardwareConfiguration& hardwareConfig) {}
     static void start() {
-        M_INFO("GPIO input is disabled.");
+        M_INFO("GPIO input is disabled. Configure CMake with -DENABLE_GPIO_CONTROL=ON to enable it.");
     }
     static void stop() {}
 };

@@ -15,9 +15,13 @@ constexpr std::size_t bufferSize = 21;
 struct Interval {
     std::size_t low;
     std::size_t high;
+
+    [[nodiscard]] std::size_t size() const {
+        return high - low;
+    }
 };
 
-const auto midiNoteRange = Interval{
+constexpr auto midiNoteRange = Interval{
     12, // C-1
     84  // C5
 };
@@ -57,8 +61,8 @@ const auto blackKeyProperties = KeyProperties{
     .color = KeyColor::Black,
     .width = 2,
     .height = 6,
-    .drawColor = ftxui::Color::DeepPink1,
-    .pressedColor = ftxui::Color::Magenta};
+    .drawColor = ftxui::Color::Purple,
+    .pressedColor = ftxui::Color::DarkViolet};
 
 constexpr auto numMidiNotes = 12;
 const std::array<KeyInOctave, numMidiNotes> drawnNotes = {{
@@ -82,19 +86,10 @@ const std::array<KeyInOctave, numMidiNotes> drawnNotes = {{
     return {drawnNotes[note], octave};
 }
 
-inline void drawBlockScaled(
-    ftxui::Canvas& canvas,
-    std::size_t x,
-    std::size_t y,
-    std::size_t scale,
-    ftxui::Color color) {
+inline void drawBlockScaled(ftxui::Canvas& canvas, std::size_t x, std::size_t y, std::size_t scale, ftxui::Color color) {
     for (std::size_t dx = 0; dx < scale; ++dx) {
         for (std::size_t dy = 0; dy < scale; ++dy) {
-            canvas.DrawPoint(
-                x * scale + dx,
-                y * scale + dy,
-                true,
-                color);
+            canvas.DrawPoint(x * scale + dx, y * scale + dy, true, color);
         }
     }
 }
@@ -127,15 +122,14 @@ inline void drawKeysIf(ftxui::Canvas& canvas,
     constexpr std::size_t scale = 2; //< FTXUI block drawing needs a minimum scale factor of 2 to look right.
 
     // The black keys are all contained by the white keys, so the canvas is defined by white key properties.
-    const std::size_t width = common::midi::NumMidiNodes * whiteKeyProperties.width * scale;
+    const std::size_t width = midiNoteRange.size() * whiteKeyProperties.width * scale;
     const std::size_t height = whiteKeyProperties.height * scale;
 
     const auto isWhiteKey = [](const PianoKey& key) { return key.keyInOctave.keyProperties.color == KeyColor::White; };
     const auto isBlackKey = [](const PianoKey& key) { return key.keyInOctave.keyProperties.color == KeyColor::Black; };
 
-    ftxui::Canvas canvas(width, height);
-
     // The z-order here matters; black keys obstruct the white keys.
+    ftxui::Canvas canvas(width, height);
     drawKeysIf(canvas, keyboard, isWhiteKey, scale);
     drawKeysIf(canvas, keyboard, isBlackKey, scale);
 
@@ -149,10 +143,9 @@ public:
     [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
         return Renderer([this] {
-            return hbox({filler(),
-                         canvas(detail::draw(_keyboard)),
-                         filler()}) |
-                   borderRounded | color(Color::RedLight);
+            return vbox({filler(),
+                         canvas(detail::draw(_keyboard)) | hcenter | flex,
+                         filler()});
         });
     }
 

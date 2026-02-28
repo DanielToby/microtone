@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <string>
@@ -49,7 +50,7 @@ struct PushButtonConfig {
 
 class PushButton : public I_GPIOComponent {
 public:
-    PushButton(const GPIOState& initialState, PushButtonConfig config) : _previousState(initialState), _config(std::move(config)) {}
+    PushButton(PushButtonConfig config) : _previousState(), _config(std::move(config)) {}
 
     [[nodiscard]] bool isPinReserved(std::size_t pin) const override {
         return pin == _config.pin;
@@ -78,8 +79,8 @@ struct RotaryEncoderConfig {
 
 class RotaryEncoder : public I_GPIOComponent {
 public:
-    RotaryEncoder(const GPIOState& initialState, const RotaryEncoderConfig& config) :
-        _previousState(packState(config, initialState)),
+    RotaryEncoder(const RotaryEncoderConfig& config) :
+        _previousState(packState(config, GPIOState{})),
         _config(config) {}
 
     [[nodiscard]] bool isPinReserved(std::size_t pin) const override {
