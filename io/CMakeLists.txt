@@ -37,16 +37,13 @@ target_link_libraries(io
 )
 
 target_compile_definitions(io
-    PRIVATE
+    PUBLIC
         $<$<BOOL:${ENABLE_GPIO_CONTROL}>:ENABLE_GPIO_CONTROL>
 )
 
 if(ENABLE_GPIO_CONTROL)
-    find_library(GPIOD_LIBRARY gpiodcxx)
-
-    if(NOT GPIOD_LIBRARY)
-        message(FATAL_ERROR "libgpiodcxx not found.")
-    endif()
-
-    target_link_libraries(io PRIVATE GPIOD_LIBRARY)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GPIODCXX REQUIRED libgpiodcxx>=2.0)
+    target_include_directories(io PRIVATE ${GPIODCXX_INCLUDE_DIRS})
+    target_link_libraries(io PRIVATE ${GPIODCXX_LIBRARIES})
 endif()

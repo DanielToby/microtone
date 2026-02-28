@@ -1,13 +1,7 @@
 #include <io/gpio_input.hpp>
 
 #ifdef ENABLE_GPIO_CONTROL
-
-#include <gpiod/version.h>
-
-#if GPIOD_VERSION_MAJOR < 2
-#error "libgpiod >= 2.0 is required"
-#endif
-
+#include <gpiod.hpp>
 #endif
 
 #include <atomic>

@@ -8,7 +8,9 @@ sudo apt install -y \
     build-essential \
     cmake \
     git \
-    libasound2-dev
+    libasound2-dev \
+    libgpiod-dev \
+    gpiod
 
 mkdir -p "$DEVELOPER_DIR"
 cd "$DEVELOPER_DIR"

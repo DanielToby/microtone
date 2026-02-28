@@ -161,7 +161,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
 
         // Hardware controls. Not hooked up to the UI yet.
         auto hardwareInputStream = io::GPIOInput(io::HardwareConfiguration{
-            .chipName = "gpiochip0",
+            .chipName = "/dev/gpiochip0",
             .consumerName = "microtone",
             .components = {
                 std::make_shared<io::PushButton>(
