@@ -156,8 +156,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto instrument = synth::Instrument{midiHandle, std::move(audioPipeline)};
         instrument.start();
 
+        // Start audio output after the instrument is started:
+        audioOutputStream.start();
+
         // Hardware controls. Not hooked up to the UI yet.
-        auto hardwareControls = io::GPIOInput(io::HardwareConfiguration{
+        auto hardwareInputStream = io::GPIOInput(io::HardwareConfiguration{
             .chipName = "gpiochip0",
             .consumerName = "microtone",
             .components = {
@@ -174,9 +177,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                         .onReleased = [] { M_INFO("Right button released"); },
                     }),
             }});
-
-        // Start audio output after the instrument is started:
-        audioOutputStream.start();
+        hardwareInputStream.start();
 
         auto renderLoop = asciiboard::RenderLoop{asciiboard, midiHandle, synth};
         renderLoop.start();

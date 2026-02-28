@@ -136,6 +136,9 @@ public:
     GPIOInput& operator=(GPIOInput&&) noexcept;
     ~GPIOInput();
 
+    void start() const;
+    void stop() const;
+
 private:
     class impl;
     std::unique_ptr<impl> _impl;

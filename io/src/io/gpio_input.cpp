@@ -151,4 +151,12 @@ GPIOInput& GPIOInput::operator=(GPIOInput&& other) noexcept {
 
 GPIOInput::~GPIOInput() = default;
 
+void GPIOInput::start() const {
+    _impl->start();
+}
+
+void GPIOInput::stop() const {
+    _impl->stop();
+}
+
 }
