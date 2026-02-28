@@ -15,6 +15,8 @@ if (ENABLE_GPIO_CONTROL AND NOT ${PLATFORM} STREQUAL "linux")
     message(FATAL_ERROR "GPIO control is only supported on linux.")
 endif()
 
+message(STATUS "ENABLE_GPIO_CONTROL: ${ENABLE_GPIO_CONTROL}")
+
 add_subdirectory(common)
 add_subdirectory(demo)
 add_subdirectory(io)

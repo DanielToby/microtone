@@ -122,7 +122,6 @@ private:
 
 #else
 
-
 class GPIOInput::impl {
 public:
     explicit impl([[maybe_unused]] const HardwareConfiguration& hardwareConfig) {}
