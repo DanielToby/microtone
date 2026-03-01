@@ -19,6 +19,7 @@ target_include_directories(io PUBLIC
 set(SOURCES
     src/io/audio_output_stream.cpp
     src/io/audio_output_stream.hpp
+    src/io/gpio_components.hpp
     src/io/gpio_input.cpp
     src/io/gpio_input.hpp
     src/io/midi_input_stream.cpp

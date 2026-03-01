@@ -12,6 +12,17 @@
 
 namespace io {
 
+namespace {
+
+[[nodiscard]] bool isReservedVisitor(const ComponentConfig& config, std::size_t pin) {
+    const auto isReserved = [&pin]<typename T0>(T0&& cfg) {
+        return detail::isPinReserved(std::forward<T0>(cfg), pin);
+    };
+    return std::visit(isReserved, config);
+}
+
+}
+
 #ifdef ENABLE_GPIO_CONTROL
 
 namespace {
@@ -33,8 +44,8 @@ struct LibGPIOManager {
     settings.set_debounce_period(std::chrono::milliseconds(1));
 
     for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
-        for (const auto& component : config.components) {
-            if (component->isPinReserved(pin)) {
+        for (const auto& componentConfig : config.componentConfigs) {
+            if (isReservedVisitor(componentConfig, pin)) {
                 request.add_line_settings(pin, settings);
             }
         }
@@ -47,8 +58,8 @@ struct LibGPIOManager {
 [[nodiscard]] GPIOState getInitialState(LibGPIOManager& manager, const HardwareConfiguration& config) {
     GPIOState state;
     for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
-        for (const auto& component : config.components) {
-            if (component->isPinReserved(pin)) {
+        for (const auto& componentConfig : config.componentConfigs) {
+            if (isReservedVisitor(componentConfig, pin)) {
                 const bool isOn = manager.lineRequest.get_value(pin) == gpiod::line::value::ACTIVE;
                 state.setPin(pin, isOn);
             }
@@ -62,15 +73,11 @@ struct LibGPIOManager {
 class GPIOInput::impl {
 public:
     explicit impl(const HardwareConfiguration& hardwareConfig) :
-        _hardwareConfig(hardwareConfig),
-        _gpioManager(makeGPIOManager(_hardwareConfig)),
-        _gpioState(getInitialState(_gpioManager, _hardwareConfig)) {
+        _gpioManager(makeGPIOManager(hardwareConfig)),
+        _gpioState(getInitialState(_gpioManager, hardwareConfig)),
+        _components(detail::makeComponents(hardwareConfig.componentConfigs, _gpioState)) {
         if (!hardwareConfig.isValid()) {
             throw common::MicrotoneException("Invalid GPIO configuration.");
-        }
-
-        for (const auto& component : hardwareConfig.components) {
-            component->initialize(_gpioState);
         }
     }
 
@@ -104,7 +111,7 @@ private:
                     const auto isOn = (value == gpiod::line::value::ACTIVE);
                     _gpioState.setPin(pin, isOn);
 
-                    for (const auto& component : _hardwareConfig.components) {
+                    for (const auto& component : _components) {
                         if (component->isPinReserved(pin)) {
                             component->update(_gpioState);
                         }
@@ -114,9 +121,9 @@ private:
         }
     }
 
-    HardwareConfiguration _hardwareConfig;
     LibGPIOManager _gpioManager;
     GPIOState _gpioState;
+    std::vector<std::shared_ptr<detail::I_GPIOComponent>> _components;
     gpiod::edge_event_buffer _eventBuffer;
 
     std::atomic<bool> _running{false};
@@ -135,6 +142,21 @@ public:
 };
 
 #endif
+
+bool HardwareConfiguration::isValid() const {
+    for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
+        const auto isReserved = [&pin]<typename T0>(T0&& cfg) {
+            return detail::isPinReserved(std::forward<T0>(cfg), pin);
+        };
+        const auto isReservedVisitor = [&isReserved](const auto& config) {
+            return std::visit(isReserved, config);
+        };
+        if (const auto numConsumers = std::ranges::count_if(componentConfigs, isReservedVisitor); numConsumers > 1) {
+            return false;
+        }
+    }
+    return true;
+}
 
 GPIOInput::GPIOInput(const HardwareConfiguration& config) :
     _impl{std::make_unique<impl>(config)} {

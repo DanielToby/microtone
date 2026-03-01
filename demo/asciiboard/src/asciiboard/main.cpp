@@ -164,8 +164,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         auto hardwareInputStream = io::GPIOInput(io::HardwareConfiguration{
             .chipName = "/dev/gpiochip0",
             .consumerName = "microtone",
-            .components = {
-                std::make_shared<io::PushButton>(
+            .componentConfigs = {
                     io::PushButtonConfig{
                         .pin = 23,
                         .onPressed = [] {},
@@ -174,8 +173,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                             asciiboard->toggleInfoMessage();
                             inEnterValueMode = false;
                         },
-                    }),
-                std::make_shared<io::RotaryEncoder>(
+                    },
                     io::RotaryEncoderConfig{
                         .CLK = 27,
                         .DT = 17,
@@ -189,8 +187,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                             asciiboard->postEvent(ftxui::Event::ArrowUp);
                             inEnterValueMode = false;
                         },
-                    }),
-                std::make_shared<io::PushButton>(
+                    },
                     io::PushButtonConfig{
                         .pin = 5,
                         .onPressed = [] {},
@@ -198,8 +195,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                             M_INFO("Right button released");
                             inEnterValueMode = !inEnterValueMode;
                         },
-                    }),
-                std::make_shared<io::RotaryEncoder>(
+                    },
                     io::RotaryEncoderConfig{
                         .CLK = 13,
                         .DT = 22,
@@ -219,7 +215,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                                 asciiboard->postEvent(ftxui::Event::TabReverse);
                             }
                         },
-                    }),
+                    },
             }});
         hardwareInputStream.start();
 
