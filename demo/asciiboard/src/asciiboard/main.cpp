@@ -170,11 +170,27 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                         .onPressed = [] { M_INFO("Left button pressed"); },
                         .onReleased = [] { M_INFO("Left button released"); },
                     }),
+                std::make_shared<io::RotaryEncoder>(
+                    io::RotaryEncoderConfig{
+                        .CLK = 27,
+                        .DT = 17,
+                        .deduplicateCount = 3,
+                        .onCWTurn = [] { M_INFO("Left Encoder Turned CW"); },
+                        .onCCWTurn = [] { M_INFO("Left Encoder Turned CCW"); },
+                    }),
                 std::make_shared<io::PushButton>(
                     io::PushButtonConfig{
                         .pin = 5,
                         .onPressed = [] { M_INFO("Right button pressed"); },
                         .onReleased = [] { M_INFO("Right button released"); },
+                    }),
+                std::make_shared<io::RotaryEncoder>(
+                    io::RotaryEncoderConfig{
+                        .CLK = 13,
+                        .DT = 22,
+                        .deduplicateCount = 3,
+                        .onCWTurn = [] { M_INFO("Right Encoder Turned CW"); },
+                        .onCCWTurn = [] { M_INFO("Right Encoder Turned CCW"); },
                     }),
             }});
         hardwareInputStream.start();

@@ -29,19 +29,13 @@ struct LibGPIOManager {
     gpiod::line_settings settings;
     settings.set_direction(gpiod::line::direction::INPUT);
     settings.set_edge_detection(gpiod::line::edge::BOTH);
-    settings.set_bias(gpiod::line::bias::PULL_UP);
+    settings.set_bias(gpiod::line::bias::DISABLED);
     settings.set_debounce_period(std::chrono::milliseconds(3));
 
-    GPIOState reservedPins;
     for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
         for (const auto& component : config.components) {
             if (component->isPinReserved(pin)) {
-                if (reservedPins.isOn(pin)) {
-                    throw common::MicrotoneException("Multiple components connected to the same pin.");
-                }
-
                 request.add_line_settings(pin, settings);
-                reservedPins.setPin(pin, true);
             }
         }
     }
@@ -71,11 +65,19 @@ public:
         _hardwareConfig(hardwareConfig),
         _gpioManager(makeGPIOManager(_hardwareConfig)),
         _gpioState(getInitialState(_gpioManager, _hardwareConfig)) {
+        if (!hardwareConfig.isValid()) {
+            throw common::MicrotoneException("Invalid GPIO configuration.");
+        }
+
+        for (const auto& component : hardwareConfig.components) {
+            component->initialize(_gpioState);
+        }
     }
 
     void start() {
         _running = true;
         _thread = std::thread(&impl::processLoop, this);
+        M_INFO("Opened GPIO input stream.");
     }
 
     void stop() {
@@ -83,6 +85,7 @@ public:
         if (_thread.joinable()) {
             _thread.join();
         }
+        M_INFO("Closed GPIO input stream.");
     }
 
     ~impl() {
@@ -92,13 +95,19 @@ public:
 private:
     void processLoop() {
         while (_running) {
-            for (const auto& edgeEvent : _eventBuffer) {
-                const auto pin = edgeEvent.line_offset();
-                for (const auto& component : _hardwareConfig.components) {
-                    if (component->isPinReserved(pin)) {
-                        const bool isOn = _gpioManager.lineRequest.get_value(pin) == gpiod::line::value::ACTIVE;
-                        _gpioState.setPin(pin, isOn);
-                        component->update(_gpioState);
+            if (_gpioManager.lineRequest.wait_edge_events(std::chrono::seconds(1))) {
+                _gpioManager.lineRequest.read_edge_events(_eventBuffer);
+
+                for (const auto& edgeEvent : _eventBuffer) {
+                    const auto pin = edgeEvent.line_offset();
+                    const auto value = _gpioManager.lineRequest.get_value(pin);
+                    const auto isOn = (value == gpiod::line::value::ACTIVE);
+                    _gpioState.setPin(pin, isOn);
+
+                    for (const auto& component : _hardwareConfig.components) {
+                        if (component->isPinReserved(pin)) {
+                            component->update(_gpioState);
+                        }
                     }
                 }
             }
