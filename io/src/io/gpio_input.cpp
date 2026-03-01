@@ -35,11 +35,11 @@ struct LibGPIOManager {
     GPIOState reservedPins;
     for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
         for (const auto& component : config.components) {
-            if (reservedPins.isOn(pin)) {
-                throw common::MicrotoneException("Multiple components connected to the same pin.");
-            }
-
             if (component->isPinReserved(pin)) {
+                if (reservedPins.isOn(pin)) {
+                    throw common::MicrotoneException("Multiple components connected to the same pin.");
+                }
+
                 request.add_line_settings(pin, settings);
                 reservedPins.setPin(pin, true);
             }
