@@ -54,6 +54,11 @@ public:
         _screen.PostEvent(event);
     }
 
+    void toggleInfoMessage() {
+        _controls->showInfoMessage = !_controls->showInfoMessage;
+        _screen.PostEvent(Event::Return);
+    }
+
     void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
         // =========== Info ===========
         auto infoState = InfoMessage{"Press <enter> to submit changes to the controls. Press 'q' to quit.",
@@ -174,6 +179,10 @@ void Asciiboard::postEvent(ftxui::Event event) {
 
 void Asciiboard::loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {
     _impl->loop(onControlsChangedFn, onAboutToQuitFn);
+}
+
+void Asciiboard::toggleInfoMessage() {
+    _impl->toggleInfoMessage();
 }
 
 Asciiboard::~Asciiboard() = default;

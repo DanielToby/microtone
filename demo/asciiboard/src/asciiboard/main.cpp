@@ -168,33 +168,32 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 std::make_shared<io::PushButton>(
                     io::PushButtonConfig{
                         .pin = 23,
-                        .onPressed = [] {
-                            M_INFO("Left button pressed");
-                        },
-                        .onReleased = [&asciiboard] {
+                        .onPressed = [] {},
+                        .onReleased = [&] {
                             M_INFO("Left button released");
-                            asciiboard->postEvent(ftxui::Event::Return);
+                            asciiboard->toggleInfoMessage();
+                            inEnterValueMode = false;
                         },
                     }),
                 std::make_shared<io::RotaryEncoder>(
                     io::RotaryEncoderConfig{
                         .CLK = 27,
                         .DT = 17,
-                        .onCWTurn = [&asciiboard] {
+                        .onCWTurn = [&] {
                             M_INFO("Left Encoder Turned CW");
                             asciiboard->postEvent(ftxui::Event::ArrowDown);
+                            inEnterValueMode = false;
                         },
-                        .onCCWTurn = [&asciiboard] {
+                        .onCCWTurn = [&] {
                             M_INFO("Left Encoder Turned CCW");
                             asciiboard->postEvent(ftxui::Event::ArrowUp);
+                            inEnterValueMode = false;
                         },
                     }),
                 std::make_shared<io::PushButton>(
                     io::PushButtonConfig{
                         .pin = 5,
-                        .onPressed = [] {
-                            M_INFO("Right button pressed");
-                        },
+                        .onPressed = [] {},
                         .onReleased = [&inEnterValueMode] {
                             M_INFO("Right button released");
                             inEnterValueMode = !inEnterValueMode;

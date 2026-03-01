@@ -28,6 +28,7 @@ public:
     void addOutputData(const common::audio::FrameBlock& lastAudioBlock);
     void updateMidiKeyboard(const common::midi::Keyboard& latestKeyboard);
     void postEvent(ftxui::Event);
+    void toggleInfoMessage();
 
 private:
     class impl;

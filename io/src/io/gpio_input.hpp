@@ -122,9 +122,9 @@ public:
         }
 
         if (currentState == 0b00) {
-            if (_accumulatedTurn >= 4) {
+            if (_accumulatedTurn >= 2) {
                 std::invoke(_config.onCWTurn);
-            } else if (_accumulatedTurn <= -4) {
+            } else if (_accumulatedTurn <= -2) {
                 std::invoke(_config.onCCWTurn);
             }
             _accumulatedTurn = 0;
