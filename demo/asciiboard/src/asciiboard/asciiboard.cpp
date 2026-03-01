@@ -50,6 +50,10 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
+    void postEvent(Event event) {
+        _screen.PostEvent(event);
+    }
+
     void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
         // =========== Info ===========
         auto infoState = InfoMessage{"Press <enter> to submit changes to the controls. Press 'q' to quit.",
@@ -162,6 +166,10 @@ void Asciiboard::addOutputData(const common::audio::FrameBlock& lastAudioBlock) 
 
 void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
     _impl->updateMidiKeyboard(keyboard);
+}
+
+void Asciiboard::postEvent(ftxui::Event event) {
+    _impl->postEvent(event);
 }
 
 void Asciiboard::loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {

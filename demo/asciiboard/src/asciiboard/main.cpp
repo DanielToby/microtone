@@ -159,7 +159,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // Start audio output after the instrument is started:
         audioOutputStream.start();
 
-        // Hardware controls. Not hooked up to the UI yet.
+        // Hardware controls.
+        bool inEnterValueMode = false;
         auto hardwareInputStream = io::GPIOInput(io::HardwareConfiguration{
             .chipName = "/dev/gpiochip0",
             .consumerName = "microtone",
@@ -167,30 +168,58 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                 std::make_shared<io::PushButton>(
                     io::PushButtonConfig{
                         .pin = 23,
-                        .onPressed = [] { M_INFO("Left button pressed"); },
-                        .onReleased = [] { M_INFO("Left button released"); },
+                        .onPressed = [] {
+                            M_INFO("Left button pressed");
+                        },
+                        .onReleased = [&asciiboard] {
+                            M_INFO("Left button released");
+                            asciiboard->postEvent(ftxui::Event::Return);
+                        },
                     }),
                 std::make_shared<io::RotaryEncoder>(
                     io::RotaryEncoderConfig{
                         .CLK = 27,
                         .DT = 17,
-                        .deduplicateCount = 3,
-                        .onCWTurn = [] { M_INFO("Left Encoder Turned CW"); },
-                        .onCCWTurn = [] { M_INFO("Left Encoder Turned CCW"); },
+                        .onCWTurn = [&asciiboard] {
+                            M_INFO("Left Encoder Turned CW");
+                            asciiboard->postEvent(ftxui::Event::ArrowDown);
+                        },
+                        .onCCWTurn = [&asciiboard] {
+                            M_INFO("Left Encoder Turned CCW");
+                            asciiboard->postEvent(ftxui::Event::ArrowUp);
+                        },
                     }),
                 std::make_shared<io::PushButton>(
                     io::PushButtonConfig{
                         .pin = 5,
-                        .onPressed = [] { M_INFO("Right button pressed"); },
-                        .onReleased = [] { M_INFO("Right button released"); },
+                        .onPressed = [] {
+                            M_INFO("Right button pressed");
+                        },
+                        .onReleased = [&inEnterValueMode] {
+                            M_INFO("Right button released");
+                            inEnterValueMode = !inEnterValueMode;
+                        },
                     }),
                 std::make_shared<io::RotaryEncoder>(
                     io::RotaryEncoderConfig{
                         .CLK = 13,
                         .DT = 22,
-                        .deduplicateCount = 3,
-                        .onCWTurn = [] { M_INFO("Right Encoder Turned CW"); },
-                        .onCCWTurn = [] { M_INFO("Right Encoder Turned CCW"); },
+                        .onCWTurn = [&] {
+                            M_INFO("Right Encoder Turned CW");
+                            if (inEnterValueMode) {
+                                asciiboard->postEvent(ftxui::Event::ArrowRight);
+                            } else {
+                                asciiboard->postEvent(ftxui::Event::Tab);
+                            }
+                        },
+                        .onCCWTurn = [&] {
+                            M_INFO("Right Encoder Turned CCW");
+                            if (inEnterValueMode) {
+                                asciiboard->postEvent(ftxui::Event::ArrowLeft);
+                            } else {
+                                asciiboard->postEvent(ftxui::Event::TabReverse);
+                            }
+                        },
                     }),
             }});
         hardwareInputStream.start();

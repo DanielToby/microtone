@@ -89,7 +89,6 @@ private:
 struct RotaryEncoderConfig {
     std::size_t CLK;
     std::size_t DT;
-    std::size_t deduplicateCount;
     OnEventFn onCWTurn;
     OnEventFn onCCWTurn;
 };
@@ -115,13 +114,9 @@ public:
 
         auto currentState = packState(_config, state);
         auto currentTurn = getTurn(*_previousState, currentState);
-        _duplicateCount = (currentTurn == _previousTurn) ? _duplicateCount + 1 : 0;
-        _previousTurn = currentTurn;
-
-        const auto shouldEmit = _duplicateCount == _config.deduplicateCount;
-        if (currentTurn == CCW && shouldEmit) {
+        if (currentTurn == CCW) {
             std::invoke(_config.onCCWTurn);
-        } else if (currentTurn == CW && shouldEmit) {
+        } else if (currentTurn == CW) {
             std::invoke(_config.onCWTurn);
         }
 
@@ -152,9 +147,7 @@ private:
         return table[index];
     }
 
-    std::optional<int> _previousState; //< Populated after initialization.
-    Turn _previousTurn{None};
-    std::size_t _duplicateCount{0};
+    std::optional<int> _previousState;
     RotaryEncoderConfig _config;
 };
 

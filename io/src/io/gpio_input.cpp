@@ -30,7 +30,7 @@ struct LibGPIOManager {
     settings.set_direction(gpiod::line::direction::INPUT);
     settings.set_edge_detection(gpiod::line::edge::BOTH);
     settings.set_bias(gpiod::line::bias::DISABLED);
-    settings.set_debounce_period(std::chrono::milliseconds(3));
+    settings.set_debounce_period(std::chrono::milliseconds(10));
 
     for (std::size_t pin = 1; pin < GPIOState::maxPin; ++pin) {
         for (const auto& component : config.components) {
