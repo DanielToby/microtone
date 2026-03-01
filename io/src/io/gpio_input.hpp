@@ -113,11 +113,21 @@ public:
         }
 
         auto currentState = packState(_config, state);
+
         auto currentTurn = getTurn(*_previousState, currentState);
         if (currentTurn == CCW) {
-            std::invoke(_config.onCCWTurn);
+            _accumulatedTurn--;
         } else if (currentTurn == CW) {
-            std::invoke(_config.onCWTurn);
+            _accumulatedTurn++;
+        }
+
+        if (currentState == 0b00) {
+            if (_accumulatedTurn >= 4) {
+                std::invoke(_config.onCWTurn);
+            } else if (_accumulatedTurn <= -4) {
+                std::invoke(_config.onCCWTurn);
+            }
+            _accumulatedTurn = 0;
         }
 
         _previousState = currentState;
@@ -148,6 +158,7 @@ private:
     }
 
     std::optional<int> _previousState;
+    int _accumulatedTurn = 0;
     RotaryEncoderConfig _config;
 };
 
