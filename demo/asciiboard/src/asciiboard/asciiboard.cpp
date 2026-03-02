@@ -26,9 +26,9 @@ using namespace ftxui;
 
 namespace {
 
-constexpr auto graphHeight = 120;
-constexpr auto graphWidth = 200;
-constexpr auto envelopeGraphWidth = 200;
+constexpr auto graphHeight = 60;
+constexpr auto graphWidth = 180;
+constexpr auto envelopeGraphWidth = 180;
 constexpr auto effectsTabWidth = 80;
 
 }

@@ -19,7 +19,7 @@ public:
     [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
         auto closeButton = Button("Ok", [this] { _controls->showInfoMessage = false; });
-        return Renderer(closeButton, [=] {
+        return Renderer(closeButton, [this, closeButton] {
             return vbox({text(_firstMessage) | hcenter,
                          separatorEmpty() | size(HEIGHT, EQUAL, 1),
                          text(_secondMessage) | hcenter,
