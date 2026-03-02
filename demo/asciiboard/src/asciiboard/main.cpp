@@ -42,20 +42,29 @@ namespace {
 }
 
 //! Selects a midi port automatically, if possible. Awaits user input if there are multiple ports available.
-void trySelectPort(io::MidiInputStream& midiInput) {
-    switch (midiInput.portCount()) {
-    case 0:
-        std::cout << "No midi ports are available. Continuing with generated midi..." << std::endl;
-        break;
-    case 1:
-        std::cout << "Using midi port 0 (the only one available)." << std::endl;
-        midiInput.openPort(0);
-        break;
-    default:
+//! The blackList can be used to ignore virtual midi ports so they're not automatically selected.
+void trySelectPort(io::MidiInputStream& midiInput, const std::vector<std::string>& blacklist) {
+    const auto portCount = midiInput.portCount();
+    if (portCount > 1) {
         auto userPreference = getUserMidiPortPreference(midiInput);
+        M_INFO(fmt::format("Using midi port {}: {}.", userPreference, midiInput.portName(userPreference)));
         midiInput.openPort(userPreference);
-        break;
+        return;
     }
+
+    if (portCount == 1) {
+        const auto name = midiInput.portName(0);
+        auto matches = [&name](const std::string& blackListItem) {
+            return name.find(blackListItem) != std::string::npos;
+        };
+        if (!std::ranges::any_of(blacklist, matches)) {
+            M_INFO(fmt::format("Using midi port 0: {}.", midiInput.portName(0)));
+            midiInput.openPort(0);
+            return;
+        }
+    }
+
+    M_INFO("No midi ports are available. Continuing with generated midi.");
 }
 
 }
@@ -76,7 +85,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         // The midi thread is created and started.
         auto midiHandle = std::make_shared<common::midi::TwoReaderMidiHandle>();
         auto midiInputStream = io::MidiInputStream(midiHandle);
-        trySelectPort(midiInputStream);
+        trySelectPort(midiInputStream, {"Midi Through"});
 
         // If midi isn't available, a demo midi generator is used.
         auto midiGenerator = asciiboard::demo::MidiGenerator(midiHandle, asciiboard::demo::MidiGeneratorOptions{
