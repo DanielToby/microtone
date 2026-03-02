@@ -15,7 +15,7 @@
 #include "asciiboard/components/info_message.hpp"
 #include "asciiboard/components/oscillator_controls.hpp"
 #include "asciiboard/components/oscilloscope.hpp"
-#include "asciiboard/components/piano_roll.hpp"
+#include "asciiboard/components/compact_piano_roll.hpp"
 #include "common/log.hpp"
 
 #include <string>
@@ -148,7 +148,7 @@ public:
     ScreenInteractive _screen;
     std::shared_ptr<State> _controls;
     Oscilloscope _oscilloscope;
-    PianoRoll _pianoRoll;
+    CompactPianoRoll _pianoRoll;
 };
 
 Asciiboard::Asciiboard(const State& initialControls, double sampleRate) :
