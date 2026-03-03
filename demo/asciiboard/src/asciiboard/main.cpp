@@ -22,11 +22,11 @@
 namespace {
 
 //! Reads a port from standard in.
-[[nodiscard]] int getUserMidiPortPreference(const io::MidiInputStream& midiInput) {
+[[nodiscard]] int getUserMidiPortPreference(const io::MidiInputStream& midiInput, const std::vector<std::size_t>& options) {
     int selectedPort = -1;
     while (selectedPort < 0 || selectedPort >= midiInput.portCount()) {
         std::cout << fmt::format("Please choose a port between 0 and {}.", midiInput.portCount() - 1) << std::endl;
-        for (auto i = 0; i < midiInput.portCount(); ++i) {
+        for (const auto& i : options) {
             std::cout << fmt::format("{0}. {1}", i, midiInput.portName(i)) << std::endl;
         }
 
@@ -41,30 +41,34 @@ namespace {
     return selectedPort;
 }
 
-//! Selects a midi port automatically, if possible. Awaits user input if there are multiple ports available.
-//! The blackList can be used to ignore virtual midi ports so they're not automatically selected.
-void trySelectPort(io::MidiInputStream& midiInput, const std::vector<std::string>& blacklist) {
-    const auto portCount = midiInput.portCount();
-    if (portCount > 1) {
-        auto userPreference = getUserMidiPortPreference(midiInput);
-        M_INFO(fmt::format("Using midi port {}: {}.", userPreference, midiInput.portName(userPreference)));
-        midiInput.openPort(userPreference);
-        return;
-    }
-
-    if (portCount == 1) {
-        const auto name = midiInput.portName(0);
-        auto matches = [&name](const std::string& blackListItem) {
+[[nodiscard]] std::vector<std::size_t> getAvailableMidiPorts(const io::MidiInputStream& midiInput, const std::vector<std::string>& blacklist) {
+    std::vector<std::size_t> result;
+    for (auto i = 0; i < midiInput.portCount(); ++i) {
+        const auto name = midiInput.portName(i);
+        const auto matches = [&name](const std::string& blackListItem) {
             return name.find(blackListItem) != std::string::npos;
         };
         if (!std::ranges::any_of(blacklist, matches)) {
-            M_INFO(fmt::format("Using midi port 0: {}.", midiInput.portName(0)));
-            midiInput.openPort(0);
-            return;
+           result.push_back(i);
         }
     }
+    return result;
+}
 
-    M_INFO("No midi ports are available. Continuing with generated midi.");
+//! Selects a midi port automatically, if possible. Awaits user input if there are multiple ports available.
+//! The blackList can be used to ignore virtual midi ports so they're not automatically selected.
+void trySelectPort(io::MidiInputStream& midiInput, const std::vector<std::string>& blacklist) {
+    const auto availablePorts = getAvailableMidiPorts(midiInput, blacklist);
+    if (availablePorts.size() > 1) {
+        auto userPreference = getUserMidiPortPreference(midiInput, availablePorts);
+        M_INFO(fmt::format("Using midi port {}: {}.", userPreference, midiInput.portName(userPreference)));
+        midiInput.openPort(userPreference);
+    } else if (availablePorts.size() == 1) {
+        M_INFO(fmt::format("Using midi port 0: {}.", midiInput.portName(availablePorts[0])));
+        midiInput.openPort(availablePorts[0]);
+    } else {
+        M_INFO("No midi ports are available. Continuing with generated midi.");
+    }
 }
 
 }
