@@ -6,49 +6,150 @@
 
 namespace asciiboard {
 
+struct I_Incrementable {
+    virtual ~I_Incrementable() = default;
+    virtual void increment() = 0;
+    virtual void decrement() = 0;
+};
+
+template <typename T>
+struct Numeric : I_Incrementable {
+    T value;
+    T min;
+    T max;
+    T incrementAmount;
+
+    Numeric(T initial, T min, T max) : value{initial}, min{min}, max{max}, incrementAmount{fromPercent(1, min, max)} {
+        if (initial < min || initial > max) {
+            throw std::out_of_range("initial must be between min and max.");
+        }
+    }
+
+    [[nodiscard]] bool operator==(const Numeric& other) const {
+        return value == other.value;
+    }
+
+    [[nodiscard]] bool operator!=(const Numeric& other) const {
+        return !(*this == other);
+    }
+
+    [[nodiscard]] static int toPercent(T value, T min, T max) {
+        auto fractionAlong = (value - min) / (max - min);
+        return fractionAlong * 100;
+    }
+
+    [[nodiscard]] static T fromPercent(int pct, T min, T max) {
+        return min + pct / 100. * (max - min);
+    }
+
+    void increment() override {
+        value = std::min(value + incrementAmount, max);
+    }
+
+    void decrement() override {
+        value = std::max(value - incrementAmount, min);
+    }
+
+    [[nodiscard]] static Numeric<float> makeZeroToOne(float initial) {
+        if (initial < 0 || initial > 1) {
+            throw std::out_of_range("initial must be between 0 and 1");
+        }
+        return {initial, 0, 1};
+    }
+
+    [[nodiscard]] static Numeric<float> makeFrequency(float initial) {
+        if (initial < 20 || initial > 20000) {
+            throw std::out_of_range("initial must be between 20 and 20,000");
+        }
+        return {initial, 20, 20000};
+    }
+};
+
+class I_UIControls {
+public:
+    virtual ~I_UIControls() = default;
+
+    [[nodiscard]] virtual I_Incrementable& currentControl() = 0;
+    virtual void nextControl() = 0;
+    virtual void previousControl() = 0;
+};
+
+template <typename Range>
+struct SelectionInRange {
+    SelectionInRange(std::shared_ptr<int> index, const Range& range) : _index{std::move(index)}, _range{range} {}
+
+    [[nodiscard]] I_Incrementable& currentItem() {
+        return *_range[*_index];
+    }
+
+    void nextItem() {
+        if (*_index < _range.size() - 1) {
+            (*_index)++;
+        }
+    }
+
+    void previousItem() {
+        if (*_index > 0) {
+            (*_index)--;
+        }
+    }
+
+private:
+    std::shared_ptr<int> _index;
+    Range _range;
+};
+
 struct State {
-    bool showInfoMessage{false};
-    int selectedTab{0};
+    // Controls that affect the synth.
+    Numeric<float> attack;
+    Numeric<float> decay;
+    Numeric<float> sustain;
+    Numeric<float> release;
 
-    bool isOscilloscopeLive{false};
-    int oscilloscopeScaleFactorIndex{0};
-    int oscilloscopeTimelineSizeIndex{0};
+    Numeric<float> sineWeight;
+    Numeric<float> squareWeight;
+    Numeric<float> triangleWeight;
 
-    int attack_pct{0};
-    int decay_pct{0};
-    int sustain_pct{0};
-    int release_pct{0};
+    Numeric<float> gain;
+    Numeric<float> lfoFrequency;
+    Numeric<float> lfoGain;
 
-    int sineWeight_pct{0};
-    int squareWeight_pct{0};
-    int triangleWeight_pct{0};
+    Numeric<float> delay_ms;
+    Numeric<float> delayGain;
 
-    float gain{0.f};
-    float lfoFrequency_Hz{0.f};
-    float lfoGain{0.f};
+    Numeric<int> filterTypeIndex;
 
-    float delay_ms{0.f};
-    float delayGain{0.f};
+    Numeric<float> filterCutoffFrequency;
+    Numeric<float> filterLfoDepth;
+    Numeric<float> filterLfoFrequency;
 
-    int filterTypeIndex{0};
-    float filterCutoffFrequencyHz{0.f};
-    float filterLfoDepthHz{0.f};
-    float filterLfoFrequencyHz{0.f};
+    // UI-only state
+    std::shared_ptr<int> selectedTab = std::make_shared<int>(0);
+    std::shared_ptr<int> selectedOscillatorControl = std::make_shared<int>(0);
+    std::shared_ptr<int> selectedOEnvelopeControl = std::make_shared<int>(0);
+    std::shared_ptr<int> selectedEffectControl = std::make_shared<int>(0);
+
+    bool showInfoMessage{true};
+    bool isOscilloscopeLive{true};
+    int oscilloscopeScaleFactorIndex{2};
+    int oscilloscopeTimelineSizeIndex{2};
 
     [[nodiscard]] synth::TripleWeightsT getOscillatorWeights() const {
-        return {
-            static_cast<float>(sineWeight_pct / 100.),
-            static_cast<float>(squareWeight_pct / 100.),
-            static_cast<float>(triangleWeight_pct / 100.),
-        };
+        return {sineWeight.value, squareWeight.value, triangleWeight.value};
     }
 
     [[nodiscard]] synth::ADSR getAdsr() const {
-        return {attack_pct / 100., decay_pct / 100., sustain_pct / 100., release_pct / 100.};
+        return {attack.value, decay.value, sustain.value, release.value};
     }
 
     [[nodiscard]] std::size_t getDelay_samples(double sampleRate) const {
-        return static_cast<std::size_t>(delay_ms / 1000 * sampleRate);
+        return static_cast<std::size_t>(delay_ms.value / 1000 * sampleRate);
+    }
+
+    void resetControlSelections() {
+        *selectedOscillatorControl = 0;
+        *selectedOEnvelopeControl = 0;
+        *selectedEffectControl = 0;
     }
 
     //! Applies any updated controls relevant to the synthesizer.
@@ -58,15 +159,15 @@ struct State {
         }
 
         if (this->gain != newControls.gain) {
-            synth.setGain(newControls.gain);
+            synth.setGain(newControls.gain.value);
         }
 
-        if (this->lfoFrequency_Hz != newControls.lfoFrequency_Hz) {
-            synth.setLfoFrequency(newControls.lfoFrequency_Hz);
+        if (this->lfoFrequency != newControls.lfoFrequency) {
+            synth.setLfoFrequency(newControls.lfoFrequency.value);
         }
 
         if (this->lfoGain != newControls.lfoGain) {
-            synth.setLfoGain(newControls.lfoGain);
+            synth.setLfoGain(newControls.lfoGain.value);
         }
 
         if (this->getAdsr() != newControls.getAdsr()) {
@@ -81,23 +182,23 @@ struct State {
         }
 
         if (this->delayGain != newControls.delayGain) {
-            delay.setGain(newControls.delayGain);
+            delay.setGain(newControls.delayGain.value);
         }
     }
 
     //! Applies any updated controls relevant to the modulated filter.
     void applyChanges(synth::ModulatedFilter& filter, const State& newControls) const {
         if (this->filterTypeIndex != newControls.filterTypeIndex) {
-            filter.setFilterType(static_cast<synth::FilterType>(newControls.filterTypeIndex));
+            filter.setFilterType(static_cast<synth::FilterType>(newControls.filterTypeIndex.value));
         }
-        if (this->filterCutoffFrequencyHz != newControls.filterCutoffFrequencyHz) {
-            filter.setCutoffFrequencyHz(newControls.filterCutoffFrequencyHz);
+        if (this->filterCutoffFrequency != newControls.filterCutoffFrequency) {
+            filter.setCutoffFrequencyHz(newControls.filterCutoffFrequency.value);
         }
-        if (this->filterLfoDepthHz != newControls.filterLfoDepthHz) {
-            filter.setLFODepthHz(newControls.filterLfoDepthHz);
+        if (this->filterLfoDepth != newControls.filterLfoDepth) {
+            filter.setLFODepthHz(newControls.filterLfoDepth.value);
         }
-        if (this->filterLfoFrequencyHz != newControls.filterLfoFrequencyHz) {
-            filter.setLFOFrequencyHz(newControls.filterLfoFrequencyHz);
+        if (this->filterLfoFrequency != newControls.filterLfoFrequency) {
+            filter.setLFOFrequencyHz(newControls.filterLfoFrequency.value);
         }
     }
 };

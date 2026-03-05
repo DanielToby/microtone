@@ -6,6 +6,33 @@
 
 namespace asciiboard {
 
+struct SelectableEnvelopeControls : I_UIControls {
+    explicit SelectableEnvelopeControls(const std::shared_ptr<State>& state) :
+        _state(state),
+        _controls{
+            state->selectedOEnvelopeControl,
+            {&_state->attack,
+             &_state->decay,
+             &_state->sustain,
+             &_state->release}} {}
+
+    [[nodiscard]] I_Incrementable& currentControl() override {
+        return _controls.currentItem();
+    }
+
+    void nextControl() override {
+        _controls.nextItem();
+    }
+
+    void previousControl() override {
+        _controls.previousItem();
+    }
+
+private:
+    std::shared_ptr<State> _state;//< Stored to attach lifetime to that of _controls.
+    SelectionInRange<std::vector<I_Incrementable*>> _controls;
+};
+
 class EnvelopeControls {
 public:
     explicit EnvelopeControls(const std::shared_ptr<State>& controls) :
@@ -14,13 +41,38 @@ public:
     [[nodiscard]] ftxui::Component component() const {
         using namespace ftxui;
 
-        auto attackSlider = Slider("Attack:", &_controls->attack_pct, 1, 100, 1);
-        auto decaySlider = Slider(" Decay:", &_controls->decay_pct, 1, 100, 1);
-        auto sustainSlider = Slider(" Sustain:", &_controls->sustain_pct, 0, 100, 1);
-        auto releaseSlider = Slider(" Release:", &_controls->release_pct, 1, 100, 1);
-        auto envelopeControlsContainer = Container::Horizontal({attackSlider, decaySlider, sustainSlider, releaseSlider});
+        auto attackSlider = Slider(
+            "Attack:",
+            &_controls->attack.value,
+            _controls->attack.min,
+            _controls->attack.max,
+            _controls->attack.incrementAmount);
+        auto decaySlider = Slider(
+            " Decay:",
+            &_controls->decay.value,
+            _controls->decay.min,
+            _controls->decay.max,
+            _controls->decay.incrementAmount);
+        auto sustainSlider = Slider(
+            " Sustain:",
+            &_controls->sustain.value,
+            _controls->sustain.min,
+            _controls->sustain.max,
+            _controls->sustain.incrementAmount);
+        auto releaseSlider = Slider(
+            " Release:",
+            &_controls->release.value,
+            _controls->release.min,
+            _controls->release.max,
+            _controls->release.incrementAmount);
 
-        return Renderer(envelopeControlsContainer,
+        auto controlsContainer = Container::Tab({attackSlider,
+                                                 decaySlider,
+                                                 sustainSlider,
+                                                 releaseSlider},
+                                                _controls->selectedOEnvelopeControl.get());
+
+        return Renderer(controlsContainer,
                         [=] {
                             return hbox({attackSlider->Render(),
                                          decaySlider->Render(),

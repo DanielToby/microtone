@@ -27,8 +27,14 @@ public:
     void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn);
     void addOutputData(const common::audio::FrameBlock& lastAudioBlock);
     void updateMidiKeyboard(const common::midi::Keyboard& latestKeyboard);
-    void postEvent(ftxui::Event);
+
     void toggleInfoMessage();
+    void nextTab();
+    void previousTab();
+    void nextControl();
+    void previousControl();
+    void incrementValue();
+    void decrementValue();
 
 private:
     class impl;

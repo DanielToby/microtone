@@ -105,27 +105,25 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
         }
 
         // GUI / synthesizer controls
+        const auto zeroToOne = [](const float value) { return asciiboard::Numeric<float>::makeZeroToOne(value); };
+        const auto frequency = [](const float value) { return asciiboard::Numeric<float>::makeFrequency(value); };
         auto controls = asciiboard::State{
-            .showInfoMessage = true,
-            .isOscilloscopeLive = true,
-            .oscilloscopeScaleFactorIndex = 2,
-            .oscilloscopeTimelineSizeIndex = 2,
-            .attack_pct = 1,
-            .decay_pct = 10,
-            .sustain_pct = 80,
-            .release_pct = 1,
-            .sineWeight_pct = 80,
-            .squareWeight_pct = 0,
-            .triangleWeight_pct = 20,
-            .gain = 0.9f,
-            .lfoFrequency_Hz = 0.25f,
-            .lfoGain = 0.1f,
-            .delay_ms = 180.f,
-            .delayGain = 0.4f,
-            .filterTypeIndex = 0,
-            .filterCutoffFrequencyHz = 350,
-            .filterLfoDepthHz = 10.f,
-            .filterLfoFrequencyHz = .25f,
+            .attack = zeroToOne(.01),
+            .decay = zeroToOne(.1),
+            .sustain = zeroToOne(.8),
+            .release = zeroToOne(.09),
+            .sineWeight = zeroToOne(.8),
+            .squareWeight = zeroToOne(0.),
+            .triangleWeight = zeroToOne(0.2),
+            .gain = zeroToOne(0.9),
+            .lfoFrequency = asciiboard::Numeric<float>(.25, 0, 100),
+            .lfoGain = zeroToOne(.1),
+            .delay_ms = asciiboard::Numeric<float>{180., 0., 2000.},
+            .delayGain = zeroToOne(.4),
+            .filterTypeIndex = asciiboard::Numeric{0, 0, 1},
+            .filterCutoffFrequency = frequency(350),
+            .filterLfoDepth = asciiboard::Numeric<float>{10., 0., 1000.},
+            .filterLfoFrequency = asciiboard::Numeric<float>(.25, 0, 100),
         };
         auto asciiboard = std::make_shared<asciiboard::Asciiboard>(controls, sampleRate);
 
@@ -138,19 +136,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                     synth::buildWaveTable(synth::examples::squareWaveFill),
                     synth::buildWaveTable(synth::examples::triangleWaveFill)},
                 .weights = controls.getOscillatorWeights()},
-            controls.gain,
+            controls.gain.value,
             controls.getAdsr(),
-            controls.lfoFrequency_Hz,
-            controls.lfoGain);
+            controls.lfoFrequency.value,
+            controls.lfoGain.value);
 
         // Effects
-        auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(sampleRate), controls.delayGain);
+        auto delay = std::make_shared<synth::Delay>(controls.getDelay_samples(sampleRate), controls.delayGain.value);
         auto filter = std::make_shared<synth::ModulatedFilter>(
             sampleRate,
-            static_cast<synth::FilterType>(controls.filterTypeIndex),
-            controls.filterCutoffFrequencyHz,
-            controls.filterLfoDepthHz,
-            controls.filterLfoFrequencyHz);
+            static_cast<synth::FilterType>(controls.filterTypeIndex.value),
+            controls.filterCutoffFrequency.value,
+            controls.filterLfoDepth.value,
+            controls.filterLfoFrequency.value);
 
         // Audio output (sink)
         auto outputDevice = std::make_shared<synth::OutputDevice>(outputBufferHandle);
@@ -192,12 +190,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                         .DT = 17,
                         .onCWTurn = [&] {
                             M_INFO("Left Encoder Turned CW");
-                            asciiboard->postEvent(ftxui::Event::ArrowDown);
+                            asciiboard->nextTab();
                             inEnterValueMode = false;
                         },
                         .onCCWTurn = [&] {
                             M_INFO("Left Encoder Turned CCW");
-                            asciiboard->postEvent(ftxui::Event::ArrowUp);
+                            asciiboard->previousTab();
                             inEnterValueMode = false;
                         },
                     },
@@ -215,17 +213,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[]) {
                         .onCWTurn = [&] {
                             M_INFO("Right Encoder Turned CW");
                             if (inEnterValueMode) {
-                                asciiboard->postEvent(ftxui::Event::ArrowRight);
+                                asciiboard->incrementValue();
                             } else {
-                                asciiboard->postEvent(ftxui::Event::Tab);
+                                asciiboard->nextControl();
                             }
                         },
                         .onCCWTurn = [&] {
                             M_INFO("Right Encoder Turned CCW");
                             if (inEnterValueMode) {
-                                asciiboard->postEvent(ftxui::Event::ArrowLeft);
+                                asciiboard->decrementValue();
                             } else {
-                                asciiboard->postEvent(ftxui::Event::TabReverse);
+                                asciiboard->previousControl();
                             }
                         },
                     },

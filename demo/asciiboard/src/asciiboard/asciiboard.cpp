@@ -34,6 +34,31 @@ constexpr auto effectsTabWidth = 80;
 }
 
 class Asciiboard::impl {
+    [[nodiscard]] static Event quitEvent() {
+        return Event::Character('q');
+    }
+    [[nodiscard]] static Event toggleInfoMessageEvent() {
+        return Event::Return;
+    }
+    [[nodiscard]] static Event nextTabEvent() {
+        return Event::Tab;
+    }
+    [[nodiscard]] static Event previousTabEvent() {
+        return Event::TabReverse;
+    }
+    [[nodiscard]] static Event nextControlEvent() {
+        return Event::ArrowDown;
+    }
+    [[nodiscard]] static Event previousControlEvent() {
+        return Event::ArrowUp;
+    }
+    [[nodiscard]] static Event incrementValueEvent() {
+        return Event::ArrowRight;
+    }
+    [[nodiscard]] static Event decrementValueEvent() {
+        return Event::ArrowLeft;
+    }
+
 public:
     explicit impl(const State& initialControls, double sampleRate) :
         _screen{ScreenInteractive::Fullscreen()},
@@ -50,13 +75,32 @@ public:
         _screen.PostEvent(Event::Custom);
     }
 
-    void postEvent(Event event) {
-        _screen.PostEvent(event);
+    void toggleInfoMessage() {
+        _screen.PostEvent(toggleInfoMessageEvent());
     }
 
-    void toggleInfoMessage() {
-        _controls->showInfoMessage = !_controls->showInfoMessage;
-        _screen.PostEvent(Event::Return);
+    void nextTab() {
+        _screen.PostEvent(nextTabEvent());
+    }
+
+    void previousTab() {
+        _screen.PostEvent(previousTabEvent());
+    }
+
+    void nextControl() {
+        _screen.PostEvent(nextControlEvent());
+    }
+
+    void previousControl() {
+        _screen.PostEvent(previousControlEvent());
+    }
+
+    void incrementValue() {
+        _screen.PostEvent(incrementValueEvent());
+    }
+
+    void decrementValue() {
+        _screen.PostEvent(decrementValueEvent());
     }
 
     void loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuit) {
@@ -67,11 +111,10 @@ public:
         auto info = infoState.component();
 
         // =========== Oscillators tab ===========
-        auto oscillatorControlsState = OscillatorControls{_controls};
-        auto oscillatorControls = oscillatorControlsState.component();
+        auto oscillatorControls = makeOscillatorControls(_controls);
+        auto selectableOscillatorControls = SelectableOscillatorControls(_controls);
         auto oscilloscope = _oscilloscope.component();
-        auto oscillatorsContainer = Container::Vertical({oscilloscope, oscillatorControls});
-        auto oscillatorsTab = Renderer(oscillatorsContainer, [&] {
+        auto oscillatorsTab = Renderer(oscillatorControls, [&] {
             return vbox({
                        oscilloscope->Render() | flex,
                        oscillatorControls->Render(),
@@ -84,8 +127,8 @@ public:
         auto envelopeGraph = envelopeGraphState.component();
         auto envelopeControlsState = EnvelopeControls(_controls);
         auto envelopeControls = envelopeControlsState.component();
-        auto envelopeAndControlsContainer = Container::Vertical({envelopeGraph, envelopeControls});
-        auto envelopeTab = Renderer(envelopeAndControlsContainer, [&] {
+        auto selectableEnvelopeControls = SelectableEnvelopeControls(_controls);
+        auto envelopeTab = Renderer(envelopeControls, [&] {
             return vbox({
                         envelopeGraph->Render() | flex,
                         envelopeControls->Render()
@@ -95,12 +138,23 @@ public:
 
         // =========== Effects tab ===========
         auto effectsState = EffectsControls(effectsTabWidth, graphHeight, _controls);
+        auto selectableEffectsControls = SelectableEffectsControls(_controls);
         auto effectsTab = effectsState.component();
 
         // =========== Tab Bar ===========
         auto tabEntries = std::vector<std::string>{"oscillators", "envelope", "effects"};
-        auto tabBar = Menu(&tabEntries, &_controls->selectedTab, MenuOption::HorizontalAnimated());
-        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab}, &_controls->selectedTab);
+        auto tabOption = MenuOption::Horizontal();
+        tabOption.underline.enabled = false;
+        tabOption.entries_option.transform = [](EntryState state) {
+            Element e = text(state.label);
+            if (state.active) {
+                e = e | bold | underlined;
+            }
+            return e;
+        };
+
+        auto tabBar = Menu(&tabEntries, _controls->selectedTab.get(), tabOption);
+        auto tabContent = Container::Tab({oscillatorsTab, envelopeTab, effectsTab}, _controls->selectedTab.get());
 
         // =========== Piano Roll ===========
         auto pianoRollComponent =_pianoRoll.component();
@@ -110,12 +164,7 @@ public:
                    }) | borderRounded | color(Color::BlueLight);
         });
 
-        auto mainContents = Container::Vertical({info,
-                                                 tabBar,
-                                                 tabContent,
-                                                 pianoRoll});
-
-        auto mainRenderer = Renderer(mainContents, [&] {
+        auto mainRenderer = Renderer(tabContent, [&] {
             Element document = vbox({text("microtone") | bold | hcenter,
                                      tabBar->Render(),
                                      tabContent->Render(),
@@ -130,14 +179,60 @@ public:
             return document;
         });
 
+        auto getCurrentControls = [&]() -> I_UIControls* {
+            switch (*_controls->selectedTab) {
+            case 0:
+                return &selectableOscillatorControls;
+            case 1:
+                return &selectableEnvelopeControls;
+            case 2:
+                return &selectableEffectsControls;
+            default:
+                throw std::runtime_error("Invalid selectedPage");
+            }
+        };
+
         auto eventListener = CatchEvent(mainRenderer, [&](const Event& event) {
-            if (event == Event::Character('q')) {
+            if (event == quitEvent()) {
                 onAboutToQuit();
                 _screen.ExitLoopClosure()();
                 return true;
             }
-            if (event == Event::Return) {
+            if (event == toggleInfoMessageEvent()) {
+                _controls->showInfoMessage = !_controls->showInfoMessage;
+                return true;
+            }
+            if (event == nextTabEvent()) {
+                if (*_controls->selectedTab < tabEntries.size() - 1) {
+                    (*_controls->selectedTab)++;
+                }
+                _controls->resetControlSelections();
+                return true;
+            }
+            if (event == previousTabEvent()) {
+                if (*_controls->selectedTab > 0) {
+                    (*_controls->selectedTab)--;
+                }
+                _controls->resetControlSelections();
+                return true;
+            }
+            if (event == nextControlEvent()) {
+                getCurrentControls()->nextControl();
+                return true;
+            }
+            if (event == previousControlEvent()) {
+                getCurrentControls()->previousControl();
+                return true;
+            }
+            if (event == incrementValueEvent()) {
+                getCurrentControls()->currentControl().increment();
                 onControlsChangedFn(*_controls);
+                return true;
+            }
+            if (event == decrementValueEvent()) {
+                getCurrentControls()->currentControl().decrement();
+                onControlsChangedFn(*_controls);
+                return true;
             }
             return false;
         });
@@ -173,16 +268,36 @@ void Asciiboard::updateMidiKeyboard(const common::midi::Keyboard& keyboard) {
     _impl->updateMidiKeyboard(keyboard);
 }
 
-void Asciiboard::postEvent(ftxui::Event event) {
-    _impl->postEvent(event);
+void Asciiboard::toggleInfoMessage() {
+    _impl->toggleInfoMessage();
+}
+
+void Asciiboard::nextTab() {
+    _impl->nextTab();
+}
+
+void Asciiboard::previousTab() {
+    _impl->previousTab();
+}
+
+void Asciiboard::nextControl() {
+    _impl->nextControl();
+}
+
+void Asciiboard::previousControl() {
+    _impl->previousControl();
+}
+
+void Asciiboard::incrementValue() {
+    _impl->incrementValue();
+}
+
+void Asciiboard::decrementValue() {
+    _impl->decrementValue();
 }
 
 void Asciiboard::loop(const OnControlsChangedFn& onControlsChangedFn, const OnAboutToQuitFn& onAboutToQuitFn) {
     _impl->loop(onControlsChangedFn, onAboutToQuitFn);
-}
-
-void Asciiboard::toggleInfoMessage() {
-    _impl->toggleInfoMessage();
 }
 
 Asciiboard::~Asciiboard() = default;

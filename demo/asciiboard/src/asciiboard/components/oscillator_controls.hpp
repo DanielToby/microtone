@@ -2,57 +2,103 @@
 
 #include <ftxui/component/component.hpp>
 
+#include <asciiboard/state.hpp>
+
 namespace asciiboard {
 
-class OscillatorControls {
-public:
-    explicit OscillatorControls(const std::shared_ptr<State>& controls) :
-        _controls(controls) {}
+struct SelectableOscillatorControls : I_UIControls {
+    explicit SelectableOscillatorControls(const std::shared_ptr<State>& state) :
+        _state(state),
+        _controls{
+            _state->selectedOscillatorControl,
+            {&_state->gain,
+             &_state->sineWeight,
+             &_state->squareWeight,
+             &_state->triangleWeight,
+             &_state->lfoFrequency,
+             &state->lfoGain}} {}
 
-    [[nodiscard]] ftxui::Component component() const {
-        using namespace ftxui;
+    [[nodiscard]] I_Incrementable& currentControl() override {
+        return _controls.currentItem();
+    }
 
-        auto gainSlider = Slider("Master Gain:", &_controls->gain, .1, 1., .1);
-        auto sineSlider = Slider("Sine:", &_controls->sineWeight_pct, 0, 100, 1);
-        auto squareSlider = Slider(" Square:", &_controls->squareWeight_pct, 0, 100, 1);
-        auto triangleSlider = Slider("Triangle:", &_controls->triangleWeight_pct, 0, 100, 1);
+    void nextControl() override {
+        _controls.nextItem();
+    }
 
-        auto oscillatorMixerContainer = Container::Horizontal({
-            gainSlider,
-            sineSlider,
-            squareSlider,
-            triangleSlider,
-        });
-
-        auto oscillatorMixer = Renderer(oscillatorMixerContainer,
-                                        [=] {
-                                            return hbox({gainSlider->Render(),
-                                                         filler() | size(WIDTH, EQUAL, 1),
-                                                         sineSlider->Render(),
-                                                         filler() | size(WIDTH, EQUAL, 1),
-                                                         squareSlider->Render(),
-                                                         filler() | size(WIDTH, EQUAL, 1),
-                                                         triangleSlider->Render()});
-                                        });
-
-        // LFO Controls
-        auto lfoFrequencyHzSlider = Slider("LFO Frequency (Hz):", &_controls->lfoFrequency_Hz, .01, 20, .1);
-        auto lfoGainSlider = Slider("LFO Gain:", &_controls->lfoGain, 0., 1., .1);
-        auto lfoControlsContainer = Container::Horizontal({lfoFrequencyHzSlider, lfoGainSlider});
-        auto lfoControls = Renderer(lfoControlsContainer, [=] { return hbox({lfoFrequencyHzSlider->Render(), lfoGainSlider->Render()}); });
-
-        auto container = Container::Vertical({oscillatorMixer, lfoControls});
-        return Renderer(container, [=] {
-            return vbox({
-                oscillatorMixer->Render(),
-                filler() | size(HEIGHT, EQUAL, 1),
-                lfoControlsContainer->Render()
-            });
-        });
+    void previousControl() override {
+        _controls.previousItem();
     }
 
 private:
-    std::shared_ptr<State> _controls;
+    std::shared_ptr<State> _state; //< Stored to attach lifetime to that of _controls.
+    SelectionInRange<std::vector<I_Incrementable*>> _controls;
 };
+
+[[nodiscard]] inline ftxui::Component makeOscillatorControls(const std::shared_ptr<State>& controls) {
+    using namespace ftxui;
+
+    auto gainSlider = Slider(
+        "Master Gain:",
+        &controls->gain.value,
+        controls->gain.min,
+        controls->gain.max,
+        controls->gain.incrementAmount);
+
+    auto sineSlider = Slider(
+        "Sine:",
+        &controls->sineWeight.value,
+        controls->sineWeight.min,
+        controls->sineWeight.max,
+        controls->sineWeight.incrementAmount);
+
+    auto squareSlider = Slider(
+        "Square:",
+        &controls->squareWeight.value,
+        controls->squareWeight.min,
+        controls->squareWeight.max,
+        controls->squareWeight.incrementAmount);
+
+    auto triangleSlider = Slider(
+        "Triangle:",
+        &controls->triangleWeight.value,
+        controls->triangleWeight.min,
+        controls->triangleWeight.max,
+        controls->triangleWeight.incrementAmount);
+
+    auto lfoFrequencyHzSlider = Slider(
+        "LFO Frequency (Hz):",
+        &controls->lfoFrequency.value,
+        controls->lfoFrequency.min,
+        controls->lfoFrequency.max,
+        controls->lfoFrequency.incrementAmount);
+
+    auto lfoGainSlider = Slider(
+        "LFO Gain:",
+        &controls->lfoGain.value,
+        controls->lfoGain.min,
+        controls->lfoGain.max,
+        controls->lfoGain.incrementAmount);
+
+    auto controlsContainer = Container::Tab({gainSlider,
+                                             sineSlider,
+                                             squareSlider,
+                                             triangleSlider,
+                                             lfoFrequencyHzSlider,
+                                             lfoGainSlider},
+                                            controls->selectedOscillatorControl.get());
+
+    return Renderer(controlsContainer, [=] {
+        return vbox({hbox({gainSlider->Render(),
+                           filler() | size(WIDTH, EQUAL, 1),
+                           sineSlider->Render(),
+                           filler() | size(WIDTH, EQUAL, 1),
+                           squareSlider->Render(),
+                           filler() | size(WIDTH, EQUAL, 1),
+                           triangleSlider->Render()}),
+                     filler() | size(HEIGHT, EQUAL, 1),
+                     hbox({lfoFrequencyHzSlider->Render(), lfoGainSlider->Render()})});
+    });
+}
 
 }

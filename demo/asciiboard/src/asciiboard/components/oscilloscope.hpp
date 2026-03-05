@@ -106,8 +106,18 @@ public:
     [[nodiscard]] ftxui::Component component() {
         using namespace ftxui;
 
-        auto scaleFactorSelector = Toggle(&_scaleFactorStrings, &_controls->oscilloscopeScaleFactorIndex);
-        auto timelineScaleSelector = Toggle(&_millisecondStrings, &_controls->oscilloscopeTimelineSizeIndex);
+        auto toggleOption = MenuOption::Toggle();
+        toggleOption.underline.enabled = false;
+        toggleOption.entries_option.transform = [](EntryState state) {
+            Element e = text(state.label);
+            if (state.active) {
+                e = e | bold | underlined;
+            }
+            return e;
+        };
+
+        auto scaleFactorSelector = Menu(&_scaleFactorStrings, &_controls->oscilloscopeScaleFactorIndex, toggleOption);
+        auto timelineScaleSelector = Menu(&_millisecondStrings, &_controls->oscilloscopeTimelineSizeIndex, toggleOption);
         auto toggleLive = Checkbox("Live", &_controls->isOscilloscopeLive);
         auto stepBack = Button("-10ms", [this] {
             auto& blockWindow = _blockWindow.getWritable();
@@ -120,6 +130,7 @@ public:
                 blockWindow.stepForward();
             } }, ButtonOption::Ascii());
 
+        // TODO: Pull these controls out.
         auto oscilloscopeControlsContainer = Container::Horizontal({scaleFactorSelector, timelineScaleSelector, toggleLive, stepBack, stepForward});
 
         auto canvasComponent = Renderer([=, this] {
