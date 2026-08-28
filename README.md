@@ -1,7 +1,6 @@
 # microtone
 A cross-platform polyphonic synthesis library and MIDI reader, with a 3D printed housing / raspberry-pi-based device.
 
-https://youtu.be/RVEbBBraTGw
 [![Hardware Demo!](https://github.com/DanielToby/microtone/blob/main/assets/microtone-hardware-demo-thumbnail.png)](https://youtu.be/RVEbBBraTGw)
 
 [![Software Demo!](https://user-images.githubusercontent.com/41296254/170831269-3c965d7d-9fa6-4e9e-9729-c81c28f8a52b.png)](https://youtu.be/3SpMUx2KE4o)
